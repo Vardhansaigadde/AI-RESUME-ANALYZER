@@ -1,0 +1,37 @@
+# Virtual environment & Git
+.venv/
+venv/
+ENV/
+.git/
+.gitignore
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Datasets and exploratory files
+data/
+notebooks/
+reports/
+scratch/
+scratch*.py
+scratch_*.csv
+
+# Frontend workspace (deployed separately to Vercel/Netlify)
+frontend/
+node_modules/
+
+# Test suite and local coverage
+tests/
+.coverage
+htmlcov/
+
+# IDE and local editor artifacts
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
