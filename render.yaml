@@ -1,8 +1,8 @@
 services:
-  # FastAPI Machine Learning Backend Service
+  # FastAPI machine learning backend
   - type: web
     name: resume-analyzer-backend
-    env: docker
+    runtime: docker
     plan: free
     region: oregon
     dockerfilePath: ./Dockerfile
@@ -10,7 +10,7 @@ services:
     healthCheckPath: /
     autoDeploy: true
     envVars:
-      - key: PORT
-        value: 8000
+      # The frontend calls the API through Vercel's same-origin /api rewrite,
+      # so CORS is only needed for direct browser calls from these origins.
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://resumefitlens.vercel.app"

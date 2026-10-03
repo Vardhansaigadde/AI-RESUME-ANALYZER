@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { formatSkill } from '../utils/format';
 
 const chipContainerVariants = {
   hidden: { opacity: 0 },
@@ -107,7 +108,7 @@ export default function SkillChips({ matchedSkills = [], missingSkills = [] }) {
                 }}
               >
                 <span>✓</span>
-                <span>{skill}</span>
+                <span>{formatSkill(skill)}</span>
               </motion.span>
             ))}
           </motion.div>
@@ -191,7 +192,7 @@ export default function SkillChips({ matchedSkills = [], missingSkills = [] }) {
                 }}
               >
                 <span>+</span>
-                <span>{skill}</span>
+                <span>{formatSkill(skill)}</span>
               </motion.span>
             ))}
           </motion.div>

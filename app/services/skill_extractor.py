@@ -18,7 +18,7 @@ import logging
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, FrozenSet, List, Set, Tuple
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +120,112 @@ CONTEXT_DEPENDENT_SKILLS: Dict[str, Tuple[str, ...]] = {
 }
 
 
+# Unambiguous surface forms that should count as a canonical taxonomy skill.
+# Matched with the same boundary rules as the skills themselves; an alias is
+# only used if its canonical target exists in skills_list.json.
+SKILL_ALIASES: Dict[str, str] = {
+    # Languages & runtimes
+    "golang": "go",
+    "cpp": "c++",
+    "c plus plus": "c++",
+    "c sharp": "c#",
+    "dotnet": ".net",
+    "asp.net": ".net",
+    "es6": "javascript",
+    "ecmascript": "javascript",
+    "html5": "html",
+    "css3": "css",
+    "nodejs": "node.js",
+    "node js": "node.js",
+    "reactjs": "react",
+    "react.js": "react",
+    "react js": "react",
+    "vuejs": "vue",
+    "vue.js": "vue",
+    "angularjs": "angular",
+    "angular.js": "angular",
+    "spring boot": "spring",
+    # Data & ML
+    "ml": "machine learning",
+    "ai/ml": "machine learning",
+    "aiml": "machine learning",
+    "nlp": "natural language processing",
+    "sklearn": "scikit-learn",
+    "scikit learn": "scikit-learn",
+    "tensorflow 2": "tensorflow",
+    "keras": "deep learning",
+    "power-bi": "power bi",
+    "powerbi": "power bi",
+    "ms excel": "excel",
+    "microsoft excel": "excel",
+    "ms word": "word",
+    "microsoft word": "word",
+    "ms powerpoint": "powerpoint",
+    "microsoft powerpoint": "powerpoint",
+    "ms office": "microsoft office",
+    "dsa": "data structures",
+    "oop": "object-oriented programming",
+    "oops": "object-oriented programming",
+    "object oriented programming": "object-oriented programming",
+    # Databases
+    "postgres": "postgresql",
+    "mongo db": "mongodb",
+    "mssql": "sql server",
+    "ms sql": "sql server",
+    "ms sql server": "sql server",
+    "microsoft sql server": "sql server",
+    # Cloud & DevOps
+    "amazon web services": "aws",
+    "google cloud platform": "gcp",
+    "microsoft azure": "azure",
+    "k8s": "kubernetes",
+    "ci cd": "ci/cd",
+    "ci/cd pipelines": "ci/cd",
+    "continuous integration": "ci/cd",
+    "github actions": "ci/cd",
+    "restful api": "rest api",
+    "restful apis": "rest api",
+    "rest apis": "rest api",
+    "restful services": "rest api",
+    "rest services": "rest api",
+    "restful web services": "rest api",
+    # Business tools
+    "salesforce.com": "salesforce",
+    "intuit quickbooks": "quickbooks",
+    "adobe photoshop": "photoshop",
+    "adobe illustrator": "illustrator",
+    "adobe indesign": "indesign",
+    "emr": "electronic medical record systems",
+    "ehr": "electronic medical record systems",
+    "a/p": "accounts payable",
+    "a/r": "accounts receivable",
+    "intravenous": "iv therapy",
+    "registered nurse": "nursing",
+    "rn": "nursing",
+}
+
+# Aliases that are also common non-technical abbreviations and therefore need
+# nearby technical context (e.g. "ml" is also millilitres in nursing resumes).
+ALIAS_CONTEXT: Dict[str, Tuple[str, ...]] = {
+    "ml": (
+        "ai",
+        "machine",
+        "artificial",
+        "data",
+        "python",
+        "model",
+        "models",
+        "engineer",
+        "engineering",
+        "nlp",
+        "deep",
+        "scikit-learn",
+        "tensorflow",
+        "pytorch",
+    ),
+}
+
+
 def _has_required_context(
     text: str,
     match_start: int,
@@ -157,11 +263,12 @@ def _has_required_context(
     for kw in context_keywords:
         kw_norm = kw.lower().strip()
         if " " in kw_norm:
-            if kw_norm in window_str:
+            # Multi-word keyword: must appear as a whole phrase in the window
+            if re.search(r"(?<![a-z0-9])" + re.escape(kw_norm) + r"(?![a-z0-9])", window_str):
                 return True
-        else:
-            if kw_norm in window_tokens_set or kw_norm in window_str:
-                return True
+        elif kw_norm in window_tokens_set:
+            # Single-word keyword: whole-token match only ("ui" must not match "quickly")
+            return True
     return False
 
 
@@ -174,7 +281,7 @@ def _build_skill_pattern(skill: str) -> re.Pattern:
     - For 'go', match either 'go' or 'golang' at word boundaries.
     - Use a *lookbehind* and *lookahead* that rejects adjacent alphanumeric
       characters and symbol chars that legitimately appear inside
-      skill tokens ( + # . - / ' ). This lets "c++" match literally while
+      skill tokens ( + # - ' and a token-continuing "." ). This lets "c++" match literally while
       "c" does NOT fire inside "accord" or "architect".
     - The pattern is case-insensitive.
 
@@ -184,17 +291,19 @@ def _build_skill_pattern(skill: str) -> re.Pattern:
     Returns:
         Compiled regex pattern.
     """
-    _WORD_CHARS = r"a-z0-9\+\#\.\-/\'"
+    # Characters that, when adjacent, mean the match is part of a larger token
+    # (e.g. "c" inside "c++" or "accord"). "/" is deliberately NOT included so
+    # "HTML/CSS" and "Python/Django" match both skills, and a trailing "." only
+    # blocks a match when it continues a token (".net", "node.js"), so
+    # sentence-final "Python." still matches.
+    _WORD_CHARS = r"a-z0-9\+\#\-'"
 
-    if skill == "go":
-        target = r"(?:go|golang)"
-    else:
-        target = re.escape(skill)
+    target = re.escape(skill)
 
     pattern = (
-        r"(?<![" + _WORD_CHARS + r"])"
+        r"(?<![" + _WORD_CHARS + r"])(?<![a-z0-9]\.)"
         + target
-        + r"(?![" + _WORD_CHARS + r"])"
+        + r"(?![" + _WORD_CHARS + r"])(?!\.[a-z0-9])"
     )
     return re.compile(pattern, re.IGNORECASE)
 
@@ -202,17 +311,20 @@ def _build_skill_pattern(skill: str) -> re.Pattern:
 @lru_cache(maxsize=1)
 def _load_skill_patterns(
     skills_json: Path = _SKILLS_JSON,
-) -> Tuple[Tuple[str, re.Pattern], ...]:
-    """Load skills list and pre-compile regex patterns, cached after first load.
+) -> Tuple[Tuple[str, str, re.Pattern], ...]:
+    """Load skills list plus aliases and pre-compile regex patterns (cached).
 
-    Skills are sorted longest-first so multi-word phrases (e.g., "machine
-    learning") are matched before their constituent tokens ("learning").
+    Every taxonomy skill matches itself; every entry in SKILL_ALIASES whose
+    canonical target exists in the taxonomy is added as an extra surface form.
+    Surface forms are sorted longest-first so multi-word phrases (e.g.,
+    "machine learning") are matched before their constituent tokens
+    ("learning").
 
     Args:
         skills_json: Path to skills_list.json.
 
     Returns:
-        Tuple of (skill_string, compiled_pattern) pairs, longest skill first.
+        Tuple of (surface_form, canonical_skill, compiled_pattern), longest first.
 
     Raises:
         FileNotFoundError: If the skills JSON file does not exist.
@@ -227,25 +339,45 @@ def _load_skill_patterns(
         raw_skills: List[str] = json.load(f)
 
     # Normalize and deduplicate
-    seen: set = set()
-    skills: List[str] = []
+    surface_to_canonical: Dict[str, str] = {}
     for s in raw_skills:
         norm = s.strip().lower()
-        if norm and norm not in seen:
-            seen.add(norm)
-            skills.append(norm)
+        if norm and norm not in surface_to_canonical:
+            surface_to_canonical[norm] = norm
+
+    for alias, canonical in SKILL_ALIASES.items():
+        alias_norm = alias.strip().lower()
+        if canonical not in surface_to_canonical:
+            logger.warning("Skill alias '%s' targets unknown skill '%s'; skipped.", alias, canonical)
+            continue
+        surface_to_canonical.setdefault(alias_norm, canonical)
 
     # Sort: longest (by token count, then char count) first so multi-word
     # phrases match before their shorter substrings
-    skills.sort(key=lambda s: (len(s.split()), len(s)), reverse=True)
+    surfaces = sorted(
+        surface_to_canonical, key=lambda s: (len(s.split()), len(s)), reverse=True
+    )
 
     patterns = tuple(
-        (skill, _build_skill_pattern(skill)) for skill in skills
+        (surface, surface_to_canonical[surface], _build_skill_pattern(surface))
+        for surface in surfaces
     )
     logger.info(
-        "Loaded and compiled %d skill patterns from %s.", len(patterns), skills_json
+        "Loaded and compiled %d skill patterns (%d skills + aliases) from %s.",
+        len(patterns),
+        len(set(surface_to_canonical.values())),
+        skills_json,
     )
     return patterns
+
+
+def _context_keywords_for(surface: str, canonical: str) -> Optional[Tuple[str, ...]]:
+    """Return the context keywords a surface form needs, or None if unambiguous."""
+    if surface in ALIAS_CONTEXT:
+        return ALIAS_CONTEXT[surface]
+    if surface == canonical and canonical in CONTEXT_DEPENDENT_SKILLS:
+        return CONTEXT_DEPENDENT_SKILLS[canonical]
+    return None
 
 
 def extract_skills(text: str) -> Set[str]:
@@ -262,6 +394,8 @@ def extract_skills(text: str) -> Set[str]:
     - Context-dependent skills (e.g., "swift", "react", "spark", "go",
       "spring", "c", "r", "ruby", "rust") require nearby domain terms
       within 5 words to confirm technical usage.
+    - Aliases (SKILL_ALIASES, e.g. "k8s", "reactjs", "postgres") are reported
+      under their canonical skill name.
 
     Once a skill phrase is matched, the matched span is consumed (replaced
     with spaces in a working copy) so overlapping sub-matches are suppressed.
@@ -278,35 +412,32 @@ def extract_skills(text: str) -> Set[str]:
     patterns = _load_skill_patterns()
     found: Set[str] = set()
 
-    # Work on a lowercased mutable copy; mask consumed spans to prevent
-    # sub-string re-matches (e.g., "time management" consuming "management")
-    working = text.lower()
+    # Context is checked against the unmasked lowercased text; matching runs on
+    # a mutable copy where consumed spans are masked to prevent sub-string
+    # re-matches (e.g., "time management" consuming "management").
+    lowered = text.lower()
+    working = lowered
 
-    for skill, pattern in patterns:
-        if skill in CONTEXT_DEPENDENT_SKILLS:
-            required_context = CONTEXT_DEPENDENT_SKILLS[skill]
-            # Must find at least one match instance with valid surrounding context
-            has_valid_match = False
-            for match in pattern.finditer(working):
-                if _has_required_context(
-                    text,
+    for surface, canonical, pattern in patterns:
+        required_context = _context_keywords_for(surface, canonical)
+        if required_context is not None:
+            matched = any(
+                _has_required_context(
+                    lowered,
                     match.start(),
                     match.end(),
                     required_context,
                     window_words=5,
-                ):
-                    has_valid_match = True
-                    break
-
-            if has_valid_match:
-                found.add(skill)
-                # Mask matched occurrences with spaces
-                working = pattern.sub(lambda m: " " * len(m.group(0)), working)
+                )
+                for match in pattern.finditer(working)
+            )
         else:
-            if pattern.search(working):
-                found.add(skill)
-                # Mask all occurrences of this skill in the working copy
-                working = pattern.sub(lambda m: " " * len(m.group(0)), working)
+            matched = pattern.search(working) is not None
+
+        if matched:
+            found.add(canonical)
+            # Mask all occurrences of this surface form in the working copy
+            working = pattern.sub(lambda m: " " * len(m.group(0)), working)
 
     return found
 

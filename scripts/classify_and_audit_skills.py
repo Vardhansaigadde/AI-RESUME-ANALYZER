@@ -89,7 +89,7 @@ def is_technical_skill(skill: str) -> bool:
 
 def main():
     skills_json_path = REPO_ROOT / "app" / "data" / "skills_list.json"
-    clean_csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv"
+    clean_csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz"
 
     # -------------------------------------------------------------------------
     # 1. Classify the 300 exported skills

@@ -107,7 +107,7 @@ export default function ResultsView({ result, onReset }) {
             gap: '1.75rem',
           }}
         >
-          <SuggestionsSection suggestions={suggestions} onReset={onReset} />
+          <SuggestionsSection suggestions={suggestions} />
           <RoleBarChart suggestedRoles={suggestedRoles} confidence={result?.confidence} />
         </div>
       </div>

@@ -53,3 +53,7 @@ frontend/.vite/
 .DS_Store
 Thumbs.db
 
+
+# Temporary files written by tests
+scratch_test_*.csv
+scratch_test_*.json

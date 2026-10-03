@@ -7,6 +7,7 @@ from app.services.data_cleaning import (
     safe_parse_skills,
     clean_resume_dataframe,
     clean_job_fit_dataframe,
+    strip_leading_title,
 )
 
 
@@ -66,6 +67,26 @@ class TestDataCleaning(unittest.TestCase):
         self.assertEqual(dropped, 1)
         self.assertEqual(len(cleaned), 1)
         self.assertEqual(cleaned["ID"].iloc[0], 1)
+
+
+    def test_clean_text_is_idempotent(self):
+        """Inference re-cleans already-clean training text; it must not change."""
+        raw = "  Senior C++ / .NET Engineer — 10+ yrs; Node.js & CI/CD...\n\n<b>AWS</b>  "
+        once = clean_text(raw)
+        self.assertEqual(clean_text(once), once)
+
+    def test_strip_leading_title(self):
+        self.assertEqual(
+            strip_leading_title("  SALES ASSOCIATE Summary My goal is to grow."),
+            "Summary My goal is to grow.",
+        )
+        self.assertEqual(
+            strip_leading_title("HR MANAGER/GENERALIST Summary Background in HR."),
+            "Summary Background in HR.",
+        )
+        # No leading all-caps run: unchanged (whitespace normalized)
+        self.assertEqual(strip_leading_title("Highlights  Prog. Languages: C"), "Highlights Prog. Languages: C")
+        self.assertEqual(strip_leading_title(None), "")
 
 
 if __name__ == "__main__":

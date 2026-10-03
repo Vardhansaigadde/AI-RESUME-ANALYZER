@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import UploadView from './components/UploadView';
 import AnalyzingView from './components/AnalyzingView';
@@ -8,53 +8,74 @@ import PrivacyPolicyView from './components/PrivacyPolicyView';
 import TermsOfUseView from './components/TermsOfUseView';
 import Toast from './components/Toast';
 
+// Demo payloads for ?demo=high / ?demo=low. They mirror the real
+// /api/analyze response shape (lowercase canonical skills, dataset role
+// labels, the 3 model features and a score_breakdown that sums to the score)
+// so the demo exercises exactly the same rendering paths as a live result.
 const DEMO_HIGH_RESULT = {
-  match_score: 84.5,
-  matched_skills: ['Python', 'SQL', 'FastAPI', 'Machine Learning', 'Docker', 'Git', 'Pandas'],
-  missing_skills: ['Kubernetes', 'AWS', 'CI/CD'],
+  match_score: 82.86,
+  matched_skills: ['docker', 'git', 'machine learning', 'python', 'rest api', 'sql'],
+  missing_skills: ['aws', 'ci/cd', 'kubernetes'],
   features: {
-    tfidf_similarity: 0.782,
-    skill_overlap: 0.70,
-    role_alignment: 0.85,
+    tfidf_similarity: 0.2851,
+    skill_overlap_ratio: 0.6667,
+    resume_word_count: 612,
+  },
+  score_breakdown: {
+    baseline: 39.33,
+    tfidf_similarity: 20.04,
+    skill_overlap_ratio: 24.38,
+    resume_word_count: -0.89,
   },
   resume_skills_count: 14,
-  required_skills_count: 10,
+  required_skills_count: 9,
   suggested_roles: [
-    { role: 'Data Scientist', match_percent: 88.4 },
-    { role: 'Machine Learning Engineer', match_percent: 76.2 },
-    { role: 'Software Engineer', match_percent: 62.1 },
+    { role: 'INFORMATION-TECHNOLOGY', match_percent: 71.2 },
+    { role: 'ENGINEERING', match_percent: 12.4 },
+    { role: 'CONSULTANT', match_percent: 4.1 },
   ],
   suggestions: [
-    'Add evidence of production Kubernetes deployment experience to match infrastructure requirements.',
-    'Mention hands-on experience with AWS cloud services (S3, EC2, ECS) in your project summaries.',
-    'Highlight automated testing and CI/CD pipelines you configured or maintained.',
+    "'aws': This is a commonly required skill across job postings — strongly consider adding it.",
+    "Consider adding 'ci/cd' to better match the job requirements.",
+    "Consider adding 'kubernetes' to better match the job requirements.",
   ],
   confidence: 'high',
 };
 
 const DEMO_LOW_RESULT = {
-  match_score: 28.0,
-  matched_skills: ['Python', 'Git'],
-  missing_skills: ['Kubernetes', 'AWS', 'CI/CD', 'Docker', 'Microservices', 'GraphQL', 'Terraform'],
+  match_score: 30.49,
+  matched_skills: ['git', 'python'],
+  missing_skills: ['aws', 'ci/cd', 'docker', 'kubernetes', 'rest api', 'sql', 'terraform'],
   features: {
-    tfidf_similarity: 0.312,
-    skill_overlap: 0.22,
-    role_alignment: 0.35,
+    tfidf_similarity: 0.0712,
+    skill_overlap_ratio: 0.2222,
+    resume_word_count: 168,
   },
-  resume_skills_count: 3,
+  score_breakdown: {
+    baseline: 39.33,
+    tfidf_similarity: -8.05,
+    skill_overlap_ratio: 3.08,
+    resume_word_count: -3.87,
+  },
+  resume_skills_count: 5,
   required_skills_count: 9,
   suggested_roles: [
-    { role: 'Data Analyst', match_percent: 36.5 },
-    { role: 'Technical Writer', match_percent: 29.8 },
-    { role: 'Operations', match_percent: 21.4 },
+    { role: 'INFORMATION-TECHNOLOGY', match_percent: 38.5 },
+    { role: 'ENGINEERING', match_percent: 17.9 },
+    { role: 'DESIGNER', match_percent: 9.3 },
   ],
   suggestions: [
-    'Target role requires significant cloud infrastructure tooling (AWS, Terraform, Kubernetes).',
-    'Demonstrate microservices and CI/CD pipeline automation projects in your experience section.',
-    'Include hands-on containerization and distributed system design achievements.',
+    "'sql': This is a commonly required skill across job postings — strongly consider adding it.",
+    "Consider adding 'aws' to better match the job requirements.",
+    "Consider adding 'docker' to better match the job requirements.",
+    "Include a dedicated 'Projects' section to showcase practical, hands-on applications of your skills.",
   ],
   confidence: 'low',
 };
+
+// The backend runs on Render's free tier, which sleeps when idle; the first
+// request after a sleep can take close to a minute.
+const REQUEST_TIMEOUT_MS = 120000;
 
 export default function App() {
   const getInitialView = () => {
@@ -142,6 +163,9 @@ export default function App() {
     setError(null);
     setView('analyzing');
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
     try {
       const formData = new FormData();
       formData.append('resume_file', file);
@@ -153,6 +177,7 @@ export default function App() {
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -163,7 +188,10 @@ export default function App() {
             errorMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
           }
         } catch {
-          // Response was not JSON
+          // Response was not JSON (e.g. a proxy error page while the server wakes up)
+          if (response.status === 502 || response.status === 503 || response.status === 504) {
+            errorMsg = 'The analysis server is starting up. Please wait a moment and try again.';
+          }
         }
         throw new Error(errorMsg);
       }
@@ -171,12 +199,24 @@ export default function App() {
       const data = await response.json();
       setResult(data);
       setView('results');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Analysis failed:', err);
-      setError(err.message || 'Failed to complete analysis. Please ensure the backend is running.');
+      if (err.name === 'AbortError') {
+        setError('The analysis took too long. The server may be waking up — please try again.');
+      } else if (err instanceof TypeError) {
+        setError('Could not reach the analysis server. Check your connection and try again.');
+      } else {
+        setError(err.message || 'Failed to complete analysis. Please try again.');
+      }
       setView('upload');
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
+
+  // Stable reference so the Toast's auto-dismiss timer isn't restarted on every render
+  const clearError = useCallback(() => setError(null), []);
 
   const handleReset = () => {
     handleGoHome();
@@ -194,7 +234,7 @@ export default function App() {
       )}
 
       {/* Slide-in Error Toast */}
-      <Toast message={error} onClose={() => setError(null)} />
+      <Toast message={error} onClose={clearError} />
 
       {/* Top Navigation Bar */}
       <header
@@ -244,6 +284,7 @@ export default function App() {
                 jobText={jobText}
                 setJobText={setJobText}
                 onAnalyze={handleAnalyze}
+                onError={setError}
               />
             </motion.div>
           )}

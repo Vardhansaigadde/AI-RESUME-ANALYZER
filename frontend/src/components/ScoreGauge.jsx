@@ -1,31 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
+import { FEATURE_LABELS } from '../utils/format';
+import { useCountUp } from '../hooks/useCountUp';
 
-// Custom counting animation hook
-export function useCountUp(target, duration = 1500) {
-  const [count, setCount] = useState(0);
 
-  useEffect(() => {
-    let frameId;
-    const startTime = performance.now();
+// "Why this score?": the match score is a linear model, so it splits exactly
+// into a baseline plus one signed contribution per feature.
+function ScoreBreakdown({ breakdown }) {
+  const entries = Object.entries(breakdown || {}).filter(([key]) => key !== 'baseline');
+  if (entries.length === 0) return null;
 
-    const update = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Smooth ease-out cubic
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setCount(ease * target);
+  const baseline = breakdown.baseline ?? 0;
+  const maxAbs = Math.max(...entries.map(([, v]) => Math.abs(v)), 1);
 
-      if (progress < 1) {
-        frameId = requestAnimationFrame(update);
-      }
-    };
-
-    frameId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(frameId);
-  }, [target, duration]);
-
-  return count;
+  return (
+    <div style={{ marginTop: '1.5rem' }}>
+      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy-deep)', marginBottom: '0.35rem' }}>
+        Why this score?
+      </h3>
+      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.85rem', lineHeight: 1.5 }}>
+        Starts at {baseline.toFixed(0)} (a typical resume–job pair), then each factor adds or removes points.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {entries.map(([key, value]) => {
+          const positive = value >= 0;
+          return (
+            <div key={key}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '4px' }}>
+                <span style={{ color: 'var(--text-body)', fontWeight: 600 }}>{FEATURE_LABELS[key] || key}</span>
+                <span style={{ fontWeight: 800, color: positive ? 'var(--success-dark)' : 'var(--danger)' }}>
+                  {positive ? '+' : '−'}{Math.abs(value).toFixed(1)} pts
+                </span>
+              </div>
+              <div style={{ height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(Math.abs(value) / maxAbs) * 100}%` }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ height: '100%', borderRadius: '3px', background: positive ? 'var(--success)' : 'var(--danger)' }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function ScoreGauge({ result }) {
@@ -214,6 +234,8 @@ export default function ScoreGauge({ result }) {
             </span>
           </div>
         </div>
+
+        <ScoreBreakdown breakdown={result?.score_breakdown} />
       </div>
     </div>
   );

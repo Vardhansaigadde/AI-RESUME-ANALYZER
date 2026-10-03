@@ -339,7 +339,7 @@ def audit_excluded_tech_reentry(
 
 
 def main():
-    input_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv"
+    input_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz"
     output_path = REPO_ROOT / "app" / "data" / "skills_list.json"
     curated_path = REPO_ROOT / "app" / "data" / "curated_technical_skills.json"
 

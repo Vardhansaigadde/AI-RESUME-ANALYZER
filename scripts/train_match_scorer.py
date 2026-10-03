@@ -1,29 +1,35 @@
 """Model training pipeline for resume-job match scoring.
 
-Phase 3.2  –  Group-aware train / test split + model selection.
+The dataset contains 2,385 rows but only 23 unique job descriptions, so a
+plain random split would put the same job description in both train and test
+and inflate every metric. All evaluation here is grouped by job_text:
 
-The dataset contains ~2,385 rows spread across only ~23 unique job
-descriptions.  A plain random split would leak job-description text
-into both train and test sets, inflating every metric.  Instead we
-use GroupShuffleSplit keyed by job_text so that every resume evaluated
-against a particular job description lands entirely in either train or
-test – never both.
+1. cross_validate(): GroupKFold (k=5) over job descriptions for every
+   candidate regressor. RobustScaler is fitted inside each fold (Pipeline), so
+   no test-fold statistics leak into training. These are the numbers quoted
+   in README.md.
+2. mismatch_sanity_check(): the dataset only pairs resumes with jobs from
+   their own category, so it has no labels for clearly mismatched pairs. This
+   check scores resumes against jobs from OTHER categories and verifies the
+   model ranks them below same-category pairs. It measures behaviour; it does
+   not invent labels.
+3. train_full(): fits the production RobustScaler + Ridge on all rows.
 
-Trains three candidate regressors and picks the best by held-out RMSE:
-  1. GradientBoostingRegressor  (default / recommended)
-  2. RandomForestRegressor
-  3. Ridge regression (linear baseline)
+Run:
+    python -m app.ml.features          # regenerate data/processed/features.csv
+    python scripts/train_match_scorer.py
 
-Saves the winning model to models/match_scorer.joblib.
-Prints a full evaluation report (RMSE, MAE, R²) on the held-out group.
+Writes models/match_scorer.joblib, models/feature_scaler.joblib and
+reports/match_scorer_metrics.json.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -32,51 +38,49 @@ if str(REPO_ROOT) not in sys.path:
 import joblib
 import numpy as np
 import pandas as pd
+import sklearn
+from sklearn.base import clone
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import GroupShuffleSplit
+from sklearn.model_selection import GroupKFold
+from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
+
+from app.ml.features import FEATURE_COLUMNS, build_features
 
 logger = logging.getLogger(__name__)
 
 FEATURES_CSV = REPO_ROOT / "data" / "processed" / "features.csv"
-SOURCE_CSV = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv"
+SOURCE_CSV = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz"
 MODEL_OUT = REPO_ROOT / "models" / "match_scorer.joblib"
 SCALER_OUT = REPO_ROOT / "models" / "feature_scaler.joblib"
-
-FEATURE_COLUMNS = [
-    "tfidf_similarity",
-    "skill_overlap_ratio",
-    "resume_word_count",
-]
+METRICS_OUT = REPO_ROOT / "reports" / "match_scorer_metrics.json"
 
 TARGET_COLUMN = "ai_match_score"
+N_FOLDS = 5
+RANDOM_STATE = 42
 
 CANDIDATES: Dict[str, object] = {
+    "Ridge": Ridge(alpha=1.0),
     "GradientBoosting": GradientBoostingRegressor(
         n_estimators=300,
         max_depth=4,
         learning_rate=0.05,
         subsample=0.8,
-        random_state=42,
+        random_state=RANDOM_STATE,
     ),
     "RandomForest": RandomForestRegressor(
         n_estimators=300,
         max_depth=6,
         min_samples_leaf=4,
-        random_state=42,
+        random_state=RANDOM_STATE,
         n_jobs=-1,
     ),
-    "Ridge": Ridge(alpha=1.0),
 }
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _sep(char: str = "=", width: int = 65) -> str:
+def _sep(char: str = "=", width: int = 72) -> str:
     return char * width
 
 
@@ -84,299 +88,195 @@ def _rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.sqrt(mean_squared_error(y_true, y_pred)))
 
 
-def make_group_split(
-    X: pd.DataFrame,
-    y: pd.Series,
-    groups: pd.Series,
-    test_size: float = 0.20,
-    random_state: int = 42,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """Group-aware train/test split.
-
-    Ensures every resume evaluated against a given job description ends up
-    entirely in either train or test, not split across both.  This prevents
-    data leakage caused by the ~23 repeated job descriptions sharing vocabulary
-    with every associated resume.
-
-    Args:
-        X:            Feature DataFrame (rows = resume-job pairs).
-        y:            Target Series (ai_match_score).
-        groups:       Series of group labels (job_text or a job_id).
-        test_size:    Fraction of groups to hold out (default 20 %).
-        random_state: RNG seed for reproducibility.
-
-    Returns:
-        (X_train, X_test, y_train, y_test)
-    """
-    gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
-    train_idx, test_idx = next(gss.split(X, y, groups=groups))
-
-    train_groups = groups.iloc[train_idx].unique().tolist()
-    test_groups  = groups.iloc[test_idx].unique().tolist()
-
-    print(_sep())
-    print("GROUP-AWARE TRAIN / TEST SPLIT")
-    print(_sep())
-    print(f"  Total rows       : {len(X):,}")
-    print(f"  Total groups     : {groups.nunique():,}  (unique job descriptions)")
-    print(f"  Train rows       : {len(train_idx):,}  ({len(train_groups)} job groups)")
-    print(f"  Test  rows       : {len(test_idx):,}  ({len(test_groups)} job groups)")
-    print(f"  Test  fraction   : {len(test_idx)/len(X)*100:.1f}%")
-    print()
-    print("  Groups in TRAIN:")
-    for g in sorted(train_groups):
-        cnt = (groups == g).sum()
-        print(f"    [{cnt:>4} rows]  {str(g)[:80]}")
-    print()
-    print("  Groups in TEST:")
-    for g in sorted(test_groups):
-        cnt = (groups == g).sum()
-        print(f"    [{cnt:>4} rows]  {str(g)[:80]}")
-    print(_sep())
-
-    return (
-        X.iloc[train_idx].reset_index(drop=True),
-        X.iloc[test_idx].reset_index(drop=True),
-        y.iloc[train_idx].reset_index(drop=True),
-        y.iloc[test_idx].reset_index(drop=True),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Evaluation helper
-# ---------------------------------------------------------------------------
-
-def _evaluate(
-    name: str,
-    model: object,
-    X_train: pd.DataFrame,
-    y_train: pd.Series,
-    X_test: pd.DataFrame,
-    y_test: pd.Series,
-) -> Dict[str, float]:
-    """Fit model on train, evaluate on test, return metric dict."""
-    model.fit(X_train, y_train)  # type: ignore[union-attr]
-    y_pred = model.predict(X_test)  # type: ignore[union-attr]
-
-    metrics = {
-        "rmse": _rmse(y_test.values, y_pred),
-        "mae":  float(mean_absolute_error(y_test, y_pred)),
-        "r2":   float(r2_score(y_test, y_pred)),
-    }
-
-    # Also evaluate on train to check for over-fitting
-    y_train_pred = model.predict(X_train)  # type: ignore[union-attr]
-    train_rmse = _rmse(y_train.values, y_train_pred)
-
-    print(f"\n  {name}")
-    print(f"    Train RMSE : {train_rmse:.4f}   |  Test RMSE : {metrics['rmse']:.4f}")
-    print(f"    Test  MAE  : {metrics['mae']:.4f}  |  Test R2   : {metrics['r2']:.4f}")
-
-    return metrics
-
-
-# ---------------------------------------------------------------------------
-# Main training entry point
-# ---------------------------------------------------------------------------
-
-def train(
+def load_training_data(
     features_csv: Path = FEATURES_CSV,
     source_csv: Path = SOURCE_CSV,
-    model_out: Path = MODEL_OUT,
-    test_size: float = 0.20,
-    random_state: int = 42,
-) -> object:
-    """Run full training pipeline and persist the best model.
-
-    Args:
-        features_csv:  Pre-computed feature matrix (from features.py).
-        source_csv:    Original dataset (needed for job_text group labels).
-        model_out:     Destination path for the serialised model.
-        test_size:     Fraction of job groups to hold out.
-        random_state:  Global RNG seed.
-
-    Returns:
-        The fitted best-performing sklearn estimator.
-    """
-    # ------------------------------------------------------------------
-    # 1. Load features
-    # ------------------------------------------------------------------
-    print("\n" + _sep())
-    print("PHASE 3 -- MODEL TRAINING")
-    print(_sep())
-
+) -> Tuple[pd.DataFrame, pd.Series, pd.Series, pd.DataFrame]:
+    """Load the feature matrix, target, job-description groups and source rows."""
     if not features_csv.exists():
         raise FileNotFoundError(
-            f"Feature matrix not found at {features_csv}. "
-            "Run `python -m app.ml.features` first."
+            f"Feature matrix not found at {features_csv}. Run `python -m app.ml.features` first."
         )
-
-    feat_df = pd.read_csv(features_csv)
-    logger.info("Loaded feature matrix: %s", feat_df.shape)
-
-    X = feat_df[FEATURE_COLUMNS].copy()
-    y = feat_df[TARGET_COLUMN].astype(float)
-
-    print(f"\n  Feature matrix : {X.shape[0]:,} rows x {X.shape[1]} features")
-    print(f"  Target range   : [{y.min():.1f}, {y.max():.1f}]  mean={y.mean():.2f}")
-
-    # ------------------------------------------------------------------
-    # 2. Build group labels from source CSV  (job_text column)
-    # ------------------------------------------------------------------
     if not source_csv.exists():
         raise FileNotFoundError(f"Source CSV not found at {source_csv}")
 
+    feat_df = pd.read_csv(features_csv)
     src_df = pd.read_csv(source_csv)
     if len(src_df) != len(feat_df):
         raise ValueError(
-            f"Row count mismatch: features.csv has {len(feat_df)} rows "
+            f"Row count mismatch: {features_csv.name} has {len(feat_df)} rows "
             f"but {source_csv.name} has {len(src_df)} rows."
         )
 
+    X = feat_df[FEATURE_COLUMNS].copy()
+    y = feat_df[TARGET_COLUMN].astype(float)
     groups = src_df["job_text"].fillna("").astype(str)
+    return X, y, groups, src_df
 
-    print(f"\n  Unique job groups: {groups.nunique()}")
-    group_counts = groups.value_counts()
-    print("  Rows per group (top 5):")
-    for jt, cnt in group_counts.head(5).items():
-        print(f"    [{cnt:>4}]  {str(jt)[:75]}...")
 
-    # ------------------------------------------------------------------
-    # 3. Group-aware split
-    # ------------------------------------------------------------------
-    print()
-    X_train, X_test, y_train, y_test = make_group_split(
-        X, y, groups, test_size=test_size, random_state=random_state
-    )
+def cross_validate(
+    X: pd.DataFrame,
+    y: pd.Series,
+    groups: pd.Series,
+    n_folds: int = N_FOLDS,
+) -> Dict[str, Dict[str, float]]:
+    """GroupKFold cross-validation (grouped by job description) for every candidate.
 
-    # ------------------------------------------------------------------
-    # 4. Scale features & compare candidates
-    # ------------------------------------------------------------------
-    print("\n" + _sep())
-    print("MODEL COMPARISON (features scaled with RobustScaler; test set = held-out job groups)")
-    print(_sep())
-
-    scaler = RobustScaler()
-    X_train_scaled = pd.DataFrame(
-        scaler.fit_transform(X_train), columns=FEATURE_COLUMNS
-    )
-    X_test_scaled = pd.DataFrame(
-        scaler.transform(X_test), columns=FEATURE_COLUMNS
-    )
-
+    Returns:
+        {model_name: {"r2_mean", "r2_std", "rmse_mean", "rmse_std", "mae_mean", "mae_std"}}
+    """
+    gkf = GroupKFold(n_splits=n_folds)
     results: Dict[str, Dict[str, float]] = {}
-    fitted_models: Dict[str, object] = {}
 
-    for name, model in CANDIDATES.items():
-        metrics = _evaluate(name, model, X_train_scaled, y_train, X_test_scaled, y_test)
-        results[name] = metrics
-        fitted_models[name] = model
-
-    # ------------------------------------------------------------------
-    # 5. Select winner (lowest test RMSE)
-    # ------------------------------------------------------------------
-    best_name = min(results, key=lambda n: results[n]["rmse"])
-    best_model = fitted_models[best_name]
-    best_metrics = results[best_name]
-
-    print("\n" + _sep())
-    print(f"WINNER: {best_name}")
-    print(f"  Test RMSE : {best_metrics['rmse']:.4f}")
-    print(f"  Test MAE  : {best_metrics['mae']:.4f}")
-    print(f"  Test R2   : {best_metrics['r2']:.4f}")
+    print(_sep())
+    print(f"GROUPKFOLD CROSS-VALIDATION (k={n_folds}, grouped by job description)")
+    print(f"  rows={len(X):,}  job descriptions={groups.nunique()}")
     print(_sep())
 
-    # Feature importances (tree-based models only)
-    if hasattr(best_model, "feature_importances_"):
-        print("\nFeature importances:")
-        importances = best_model.feature_importances_
-        for feat, imp in sorted(
-            zip(FEATURE_COLUMNS, importances), key=lambda x: -x[1]
-        ):
-            bar = "X" * int(imp * 40)
-            print(f"  {feat:<30}  {imp:.4f}  {bar}")
+    for name, estimator in CANDIDATES.items():
+        r2s, rmses, maes = [], [], []
+        for train_idx, test_idx in gkf.split(X, y, groups=groups):
+            model = make_pipeline(RobustScaler(), clone(estimator))
+            model.fit(X.iloc[train_idx], y.iloc[train_idx])
+            pred = model.predict(X.iloc[test_idx])
+            y_true = y.iloc[test_idx].to_numpy()
+            r2s.append(r2_score(y_true, pred))
+            rmses.append(_rmse(y_true, pred))
+            maes.append(mean_absolute_error(y_true, pred))
 
-    # ------------------------------------------------------------------
-    # 6. Persist model & scaler
-    # ------------------------------------------------------------------
-    scaler_out = SCALER_OUT
-    scaler_out.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(scaler, scaler_out)
-    print(f"\nScaler saved to: {scaler_out}")
-
-    model_out.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(best_model, model_out)
-    print(f"Model saved to: {model_out}")
-
-    return best_model
+        results[name] = {
+            "r2_mean": float(np.mean(r2s)),
+            "r2_std": float(np.std(r2s)),
+            "rmse_mean": float(np.mean(rmses)),
+            "rmse_std": float(np.std(rmses)),
+            "mae_mean": float(np.mean(maes)),
+            "mae_std": float(np.std(maes)),
+        }
+        r = results[name]
+        print(
+            f"  {name:<18} R2 = {r['r2_mean']:.4f} +/- {r['r2_std']:.4f} | "
+            f"RMSE = {r['rmse_mean']:.2f} +/- {r['rmse_std']:.2f} | "
+            f"MAE = {r['mae_mean']:.2f} +/- {r['mae_std']:.2f}"
+        )
+    print(_sep())
+    return results
 
 
 def train_full(
-    features_csv: Path = FEATURES_CSV,
+    X: pd.DataFrame,
+    y: pd.Series,
     model_out: Path = MODEL_OUT,
     scaler_out: Path = SCALER_OUT,
     alpha: float = 1.0,
-) -> Tuple[Ridge, RobustScaler]:
-    """Train Ridge regression on the entire 2,385-row dataset with RobustScaler.
-
-    Fits RobustScaler on all training features, scales the feature matrix,
-    fits Ridge(alpha=alpha), and persists both artifacts:
-    - models/feature_scaler.joblib
-    - models/match_scorer.joblib
-    """
-    if not features_csv.exists():
-        raise FileNotFoundError(f"Feature matrix not found at {features_csv}")
-
-    feat_df = pd.read_csv(features_csv)
-    X = feat_df[FEATURE_COLUMNS]
-    y = feat_df[TARGET_COLUMN].astype(float)
-
-    print("\n" + _sep())
-    print("TRAINING FINAL RIDGE MODEL ON FULL DATASET (3 FEATURES) WITH ROBUSTSCALER")
-    print(_sep())
-    print(f"  Rows        : {len(X):,}")
-    print(f"  Features    : {list(X.columns)}")
-    print(f"  Target mean : {y.mean():.2f} (std={y.std():.2f})")
-
-    # Fit RobustScaler
+) -> Tuple[Ridge, RobustScaler, Dict[str, Any]]:
+    """Fit the production RobustScaler + Ridge on every row and persist both."""
     scaler = RobustScaler()
     X_scaled = scaler.fit_transform(X)
-
     model = Ridge(alpha=alpha)
     model.fit(X_scaled, y)
 
-    # In-sample metrics for reference
     y_pred = model.predict(X_scaled)
-    print(f"  In-sample RMSE : {_rmse(y.values, y_pred):.4f}")
-    print(f"  In-sample R2   : {r2_score(y, y_pred):.4f}")
+    info: Dict[str, Any] = {
+        "in_sample_r2": float(r2_score(y, y_pred)),
+        "in_sample_rmse": _rmse(y.to_numpy(), y_pred),
+        "intercept": float(model.intercept_),
+        "coefficients_scaled": dict(zip(FEATURE_COLUMNS, map(float, model.coef_))),
+        "points_per_unit": {
+            col: float(coef / scale)
+            for col, coef, scale in zip(FEATURE_COLUMNS, model.coef_, scaler.scale_)
+        },
+    }
 
-    print("\n  Coefficients (scaled):")
-    for col, coef, scale in zip(FEATURE_COLUMNS, model.coef_, scaler.scale_):
-        print(f"    {col:<25}: scaled = {coef:>10.4f}  (unscaled equivalent = {coef/scale:>10.4f})")
-    print(f"    {'intercept':<25}: {model.intercept_:>10.4f}")
+    print("\nPRODUCTION RIDGE (fit on all rows)")
+    print(f"  In-sample R2 = {info['in_sample_r2']:.4f}  (training fit, NOT generalization)")
+    for col in FEATURE_COLUMNS:
+        print(
+            f"  {col:<22} scaled coef = {info['coefficients_scaled'][col]:>8.3f}"
+            f"   points per raw unit = {info['points_per_unit'][col]:>10.4f}"
+        )
+    print(f"  intercept (median pair) = {info['intercept']:.2f}")
 
-    # Persist scaler and model
     scaler_out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(scaler, scaler_out)
-    print(f"\nSaved production RobustScaler to: {scaler_out}")
-
-    model_out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, model_out)
-    print(f"Saved production Ridge model to: {model_out}")
-    print(_sep() + "\n")
-    return model, scaler
+    print(f"\nSaved {scaler_out.relative_to(REPO_ROOT)} and {model_out.relative_to(REPO_ROOT)}")
+    return model, scaler, info
 
 
-# ---------------------------------------------------------------------------
-# CLI entry point
-# ---------------------------------------------------------------------------
+def mismatch_sanity_check(
+    model: Ridge,
+    scaler: RobustScaler,
+    src_df: pd.DataFrame,
+    n_pairs: int = 300,
+    random_state: int = RANDOM_STATE,
+) -> Dict[str, float]:
+    """Score resumes against jobs from other categories vs. their own category.
+
+    The training data never contains a cross-category pair, so this is the only
+    evidence of how the model treats an obvious mismatch (e.g. a nurse resume
+    against a software job).
+    """
+    rng = np.random.default_rng(random_state)
+    jobs_by_category = (
+        src_df.drop_duplicates("job_text").set_index("category")["job_text"].to_dict()
+    )
+    categories = list(jobs_by_category)
+    sample = src_df.sample(n=min(n_pairs, len(src_df)), random_state=random_state)
+
+    def score(resume: str, job: str) -> float:
+        feats = build_features(resume, job, as_dataframe=True)[FEATURE_COLUMNS]
+        return float(np.clip(model.predict(scaler.transform(feats))[0], 0.0, 100.0))
+
+    same, other = [], []
+    for _, row in sample.iterrows():
+        same.append(score(row["resume_text"], row["job_text"]))
+        other_cat = rng.choice([c for c in categories if c != row["category"]])
+        other.append(score(row["resume_text"], jobs_by_category[other_cat]))
+
+    same_arr, other_arr = np.array(same), np.array(other)
+    result = {
+        "pairs": int(len(sample)),
+        "same_category_mean_score": float(same_arr.mean()),
+        "other_category_mean_score": float(other_arr.mean()),
+        "other_category_p90_score": float(np.percentile(other_arr, 90)),
+        "share_same_category_scored_higher": float(np.mean(same_arr > other_arr)),
+    }
+    print("\nMISMATCHED-PAIR SANITY CHECK (resume vs. a job from another category)")
+    print(f"  pairs                      : {result['pairs']}")
+    print(f"  mean score, own category   : {result['same_category_mean_score']:.1f}")
+    print(f"  mean score, other category : {result['other_category_mean_score']:.1f}")
+    print(f"  90th pct, other category   : {result['other_category_p90_score']:.1f}")
+    print(f"  own-category pair ranked higher in {result['share_same_category_scored_higher']:.1%} of cases")
+    return result
+
+
+def main() -> None:
+    X, y, groups, src_df = load_training_data()
+    cv_results = cross_validate(X, y, groups)
+    model, scaler, info = train_full(X, y)
+    sanity = mismatch_sanity_check(model, scaler, src_df)
+
+    metrics = {
+        "dataset": {
+            "rows": int(len(X)),
+            "unique_job_descriptions": int(groups.nunique()),
+            "target": TARGET_COLUMN,
+            "features": FEATURE_COLUMNS,
+        },
+        "cross_validation": {
+            "method": f"GroupKFold(n_splits={N_FOLDS}) grouped by job_text; RobustScaler fitted per fold",
+            "results": cv_results,
+            "production_model": "Ridge",
+        },
+        "production_model": info,
+        "mismatched_pair_sanity_check": sanity,
+        "scikit_learn_version": sklearn.__version__,
+    }
+    METRICS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    METRICS_OUT.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    print(f"\nMetrics written to {METRICS_OUT.relative_to(REPO_ROOT)}")
+
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-    )
-    if "--split" in sys.argv:
-        train()
-    else:
-        train_full()
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s")
+    main()

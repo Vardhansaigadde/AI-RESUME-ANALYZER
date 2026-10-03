@@ -1,23 +1,33 @@
 """Training and evaluation pipeline for resume role classification.
 
-Trains and evaluates three candidate text classifiers on 24 resume categories:
-  1. LogisticRegression (multi-class multinomial)
-  2. LinearSVC
-  3. MultinomialNB
+1. Loads data/raw/Resume.csv.gz (2,484 resumes, 24 categories) and applies the
+   same clean_text() normalization used at inference.
+2. Stratified 80/20 split. Benchmarks LogisticRegression, LinearSVC and
+   MultinomialNB, selecting by macro F1 on test resumes WITH THEIR LEADING
+   TITLE REMOVED (strip_leading_title): most dataset resumes open with an
+   all-caps title that repeats the label ("SALES ASSOCIATE ..."), so accuracy
+   on the untouched text overstates real-world performance.
+3. Tunes the low-confidence fallback (probability threshold, minimum word
+   count, size-normalized vs. raw skill overlap) on out-of-fold predictions
+   from the TRAINING split only, using full resumes and short 60/120/250-word
+   snippets that mimic student resumes. The test split is used only to report
+   the chosen policy.
+4. Refits the production model on all rows and saves:
+     models/role_classifier.joblib, models/role_vectorizer.joblib,
+     reports/role_classifier_metrics.json
 
-Evaluates on Accuracy and Macro F1 (specifically inspecting the 3 smallest
-classes: AGRICULTURE, AUTOMOBILE, BPO). Selects the winning model, fits
-probability calibration (CalibratedClassifierCV) if LinearSVC wins or uses
-LogisticRegression directly if it wins/is competitive, and persists the
-production model and vectorizer to models/.
+Run:
+    python scripts/train_role_classifier.py
 """
 
 from __future__ import annotations
 
+import itertools
+import json
 import logging
 from pathlib import Path
 import sys
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -26,246 +36,351 @@ if str(REPO_ROOT) not in sys.path:
 import joblib
 import numpy as np
 import pandas as pd
+import sklearn
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    accuracy_score,
-    classification_report,
-    f1_score,
-    precision_score,
-    recall_score,
-)
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 
+from app.services.data_cleaning import clean_text, strip_leading_title
+from app.services.role_predictor import (
+    VERY_LOW_CONFIDENCE,
+    _load_role_profiles,
+    blend_with_skill_overlap,
+    is_low_confidence,
+)
+from app.services.skill_extractor import extract_skills
+
 logger = logging.getLogger(__name__)
 
-INPUT_CSV = REPO_ROOT / "data" / "processed" / "resume_clean.csv"
+INPUT_CSV = REPO_ROOT / "data" / "raw" / "Resume.csv.gz"
 MODEL_OUT = REPO_ROOT / "models" / "role_classifier.joblib"
 VECTORIZER_OUT = REPO_ROOT / "models" / "role_vectorizer.joblib"
+METRICS_OUT = REPO_ROOT / "reports" / "role_classifier_metrics.json"
 
+RANDOM_STATE = 42
 SMALLEST_CLASSES: List[str] = ["AGRICULTURE", "AUTOMOBILE", "BPO"]
+SNIPPET_LENGTHS: Tuple[int, ...] = (60, 120, 250)
+
+# Chosen by 5-fold CV on the training split (title-removed accuracy):
+# sublinear_tf and min_df=2 help short and title-less resumes; 5k vs 20k
+# features and C=1 vs 0.3 were within noise / worse.
+VECTORIZER_PARAMS: Dict[str, Any] = {
+    "max_features": 5000,
+    "stop_words": "english",
+    "ngram_range": (1, 2),
+    "sublinear_tf": True,
+    "min_df": 2,
+}
+
+# Fallback policy grid (production defaults in app/services/role_predictor.py)
+THRESHOLD_GRID = (0.25, 0.35, 0.45)
+MIN_WORDS_GRID = (100, 150, 200)
 
 
 def _sep(char: str = "=", width: int = 78) -> str:
     return char * width
 
 
-def train_and_evaluate_role_classifiers(
-    data_path: Path = INPUT_CSV,
-    model_output_path: Path = MODEL_OUT,
-    vectorizer_output_path: Path = VECTORIZER_OUT,
-    random_state: int = 42,
-) -> Tuple[object, TfidfVectorizer]:
-    """Train candidate role classifiers and persist the best model and vectorizer."""
-    print("\n" + _sep())
-    print("RESUME ROLE CLASSIFIER: MULTI-MODEL BENCHMARK & SELECTION")
-    print(_sep())
+def _snippet(text: str, n_words: int, rng: np.random.Generator) -> str:
+    """Contiguous random window of n_words from text (whole text if shorter)."""
+    words = text.split()
+    if len(words) <= n_words:
+        return text
+    start = int(rng.integers(0, len(words) - n_words))
+    return " ".join(words[start : start + n_words])
 
-    if not data_path.exists():
-        raise FileNotFoundError(f"Clean resume dataset not found at {data_path}")
 
-    df = pd.read_csv(data_path)
-    print(f"\n1. Loaded dataset: {len(df):,} rows from {data_path.name}")
-    print(f"   Unique categories ({df['Category'].nunique()}):")
+def _new_vectorizer() -> TfidfVectorizer:
+    return TfidfVectorizer(**VECTORIZER_PARAMS)
 
-    cat_counts = df["Category"].value_counts()
-    for cat, count in cat_counts.items():
-        tag = "  <-- small class" if cat in SMALLEST_CLASSES else ""
-        print(f"     - {cat:<24}: {count:>4} samples{tag}")
 
-    X_raw = df["Resume_str"].fillna("").astype(str)
-    y = df["Category"].astype(str)
-
-    # 2. Stratified 80/20 train/test split
-    X_train_raw, X_test_raw, y_train, y_test = train_test_split(
-        X_raw,
-        y,
-        test_size=0.20,
-        random_state=random_state,
-        stratify=y,
+def _new_calibrated_svc() -> CalibratedClassifierCV:
+    return CalibratedClassifierCV(
+        estimator=LinearSVC(random_state=RANDOM_STATE, max_iter=5000), cv=5
     )
-    print(f"\n2. Stratified split (80/20):")
-    print(f"   Train samples: {len(X_train_raw):,}")
-    print(f"   Test samples : {len(X_test_raw):,}")
 
-    # 3. TF-IDF vectorization (max_features=5000, English stopwords)
-    print(f"\n3. Fitting TF-IDF Vectorizer (max_features=5000, stop_words='english')...")
-    vectorizer = TfidfVectorizer(
-        max_features=5000,
-        stop_words="english",
-        ngram_range=(1, 2),
-    )
-    X_train = vectorizer.fit_transform(X_train_raw)
-    X_test = vectorizer.transform(X_test_raw)
-    print(f"   Vocabulary size: {len(vectorizer.vocabulary_):,} tokens")
-    print(f"   X_train shape  : {X_train.shape}")
-    print(f"   X_test shape   : {X_test.shape}")
 
-    # 4. Define candidates
-    candidates: Dict[str, object] = {
-        "LogisticRegression": LogisticRegression(
-            max_iter=1000,
-            random_state=random_state,
-        ),
-        "LinearSVC": LinearSVC(
-            random_state=random_state,
-            max_iter=2000,
-        ),
+def _topk_accuracy(proba: np.ndarray, classes: np.ndarray, y_true: Sequence[str], k: int) -> float:
+    top = np.argsort(proba, axis=1)[:, ::-1][:, :k]
+    return float(np.mean([y in classes[idx] for y, idx in zip(y_true, top)]))
+
+
+def load_dataset(path: Path = INPUT_CSV) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"Resume dataset not found at {path}")
+    df = pd.read_csv(path)
+    df["text"] = df["Resume_str"].map(clean_text)
+    df["text_no_title"] = df["Resume_str"].map(strip_leading_title).map(clean_text)
+    return df
+
+
+def benchmark_candidates(
+    train: pd.DataFrame, test: pd.DataFrame
+) -> Tuple[str, Dict[str, Dict[str, float]]]:
+    """Fit candidate classifiers and compare them on the held-out test split."""
+    vectorizer = _new_vectorizer()
+    X_train = vectorizer.fit_transform(train["text"])
+    X_test = vectorizer.transform(test["text"])
+    X_test_nt = vectorizer.transform(test["text_no_title"])
+
+    candidates = {
+        "LogisticRegression": LogisticRegression(max_iter=2000, random_state=RANDOM_STATE),
+        "LinearSVC": LinearSVC(random_state=RANDOM_STATE, max_iter=5000),
         "MultinomialNB": MultinomialNB(),
     }
-
-    results: Dict[str, Dict[str, object]] = {}
-    reports: Dict[str, Dict[str, Dict[str, float]]] = {}
-
-    print("\n" + _sep("-"))
-    print("4. Training and Evaluating Models...")
-    print(_sep("-"))
-
+    results: Dict[str, Dict[str, float]] = {}
+    print(_sep())
+    print("CANDIDATE BENCHMARK (stratified 80/20 test split)")
+    print(_sep())
+    print(f"{'Model':<20} | {'Acc':>6} | {'MacroF1':>7} | {'Acc no-title':>12} | {'F1 no-title':>11} | {'Small-class F1':>14}")
     for name, clf in candidates.items():
-        print(f"\n---> Training {name}...")
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict(X_test)
-
-        acc = float(accuracy_score(y_test, y_pred))
-        macro_f1 = float(f1_score(y_test, y_pred, average="macro"))
-        weighted_f1 = float(f1_score(y_test, y_pred, average="weighted"))
-
-        # Detailed per-class dictionary report
-        report_dict = classification_report(
-            y_test, y_pred, output_dict=True, zero_division=0
-        )
-        reports[name] = report_dict
-
-        # Small classes performance
-        small_f1s = {
-            cls: report_dict.get(cls, {}).get("f1-score", 0.0)
-            for cls in SMALLEST_CLASSES
-        }
-        small_macro_f1 = float(np.mean(list(small_f1s.values())))
-
+        clf.fit(X_train, train["Category"])
+        pred = clf.predict(X_test)
+        pred_nt = clf.predict(X_test_nt)
+        report = classification_report(test["Category"], pred_nt, output_dict=True, zero_division=0)
         results[name] = {
-            "model": clf,
-            "accuracy": acc,
-            "macro_f1": macro_f1,
-            "weighted_f1": weighted_f1,
-            "small_classes_f1": small_f1s,
-            "small_macro_f1": small_macro_f1,
-            "y_pred": y_pred,
+            "accuracy": float(accuracy_score(test["Category"], pred)),
+            "macro_f1": float(f1_score(test["Category"], pred, average="macro")),
+            "accuracy_no_title": float(accuracy_score(test["Category"], pred_nt)),
+            "macro_f1_no_title": float(f1_score(test["Category"], pred_nt, average="macro")),
+            "small_classes_f1_no_title": float(
+                np.mean([report.get(c, {}).get("f1-score", 0.0) for c in SMALLEST_CLASSES])
+            ),
+        }
+        r = results[name]
+        print(
+            f"{name:<20} | {r['accuracy']:>6.3f} | {r['macro_f1']:>7.3f} | "
+            f"{r['accuracy_no_title']:>12.3f} | {r['macro_f1_no_title']:>11.3f} | "
+            f"{r['small_classes_f1_no_title']:>14.3f}"
+        )
+    winner = max(results, key=lambda n: results[n]["macro_f1_no_title"])
+    print(f"\nWinner by title-removed macro F1: {winner}")
+    return winner, results
+
+
+def _make_estimator(winner: str):
+    if winner == "LinearSVC":
+        return _new_calibrated_svc()
+    if winner == "LogisticRegression":
+        return LogisticRegression(max_iter=2000, random_state=RANDOM_STATE)
+    return MultinomialNB()
+
+
+def _evaluation_texts(
+    df: pd.DataFrame, rng: np.random.Generator
+) -> Dict[str, Tuple[List[str], List[str]]]:
+    """Title-removed full resumes plus short snippets of each, with labels."""
+    sets = {"full_no_title": (df["text_no_title"].tolist(), df["Category"].tolist())}
+    for n in SNIPPET_LENGTHS:
+        sets[f"snippet_{n}"] = (
+            [_snippet(t, n, rng) for t in df["text_no_title"]],
+            df["Category"].tolist(),
+        )
+    return sets
+
+
+def _policy_accuracy(
+    proba: np.ndarray,
+    classes: np.ndarray,
+    texts: List[str],
+    skills: List[set],
+    y_true: List[str],
+    profiles: Dict[str, List[str]],
+    threshold: float,
+    min_words: int,
+    size_normalized: bool,
+) -> Tuple[float, float, float]:
+    """Top-1 accuracy, top-3 accuracy and low-confidence rate of a fallback policy."""
+    top1, top3, low = 0, 0, 0
+    for p, text, sk, y in zip(proba, texts, skills, y_true):
+        low_conf = is_low_confidence(p, threshold=threshold, word_count=len(text.split()), min_word_count=min_words)
+        eff = p
+        if low_conf:
+            low += 1
+            eff = blend_with_skill_overlap(
+                p, classes, sk, profiles, VERY_LOW_CONFIDENCE, size_normalized=size_normalized
+            )
+        order = np.argsort(eff)[::-1]
+        top1 += classes[order[0]] == y
+        top3 += y in classes[order[:3]]
+    n = len(y_true)
+    return top1 / n, top3 / n, low / n
+
+
+def tune_fallback_policy(
+    train: pd.DataFrame, winner: str, profiles: Dict[str, List[str]]
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """Grid-search the fallback policy on out-of-fold predictions of the training split."""
+    rng = np.random.default_rng(RANDOM_STATE)
+    eval_sets = _evaluation_texts(train, rng)
+    oof: Dict[str, np.ndarray] = {}
+    classes = None
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    for name in eval_sets:
+        oof[name] = np.zeros((len(train), train["Category"].nunique()))
+
+    for fit_idx, val_idx in skf.split(train, train["Category"]):
+        vec = _new_vectorizer()
+        model = _make_estimator(winner)
+        model.fit(vec.fit_transform(train["text"].iloc[fit_idx]), train["Category"].iloc[fit_idx])
+        classes = model.classes_
+        for name, (texts, _) in eval_sets.items():
+            oof[name][val_idx] = model.predict_proba(vec.transform([texts[i] for i in val_idx]))
+
+    skills = {name: [extract_skills(t) for t in texts] for name, (texts, _) in eval_sets.items()}
+
+    grid = []
+    for threshold, min_words, size_norm in itertools.product(THRESHOLD_GRID, MIN_WORDS_GRID, (True, False)):
+        per_set = {}
+        for name, (texts, y) in eval_sets.items():
+            per_set[name] = _policy_accuracy(
+                oof[name], classes, texts, skills[name], y, profiles, threshold, min_words, size_norm
+            )[0]
+        grid.append(
+            {
+                "threshold": threshold,
+                "min_words": min_words,
+                "size_normalized_overlap": size_norm,
+                "top1_by_set": per_set,
+                "mean_top1": float(np.mean(list(per_set.values()))),
+            }
+        )
+
+    # ML-only reference (fallback never engaged)
+    ml_only = {
+        name: float(np.mean(classes[np.argmax(oof[name], axis=1)] == np.array(y)))
+        for name, (_, y) in eval_sets.items()
+    }
+
+    print("\n" + _sep())
+    print("FALLBACK POLICY TUNING (out-of-fold, training split only; top-1 accuracy)")
+    print(_sep())
+    print("  ML only (no fallback): " + "  ".join(f"{k}={v:.3f}" for k, v in ml_only.items()))
+    for g in sorted(grid, key=lambda g: -g["mean_top1"])[:6]:
+        print(
+            f"  thr={g['threshold']:.2f} min_words={g['min_words']:>3} size_norm={str(g['size_normalized_overlap']):<5} "
+            f"mean={g['mean_top1']:.3f}  " + "  ".join(f"{k}={v:.3f}" for k, v in g["top1_by_set"].items())
+        )
+    best = max(grid, key=lambda g: g["mean_top1"])
+    best = {**best, "ml_only_top1_by_set": ml_only}
+    return best, grid
+
+
+def evaluate_on_test(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    winner: str,
+    policy: Dict[str, Any],
+    profiles: Dict[str, List[str]],
+) -> Dict[str, Any]:
+    """Report the chosen model + fallback policy on the untouched test split."""
+    vec = _new_vectorizer()
+    model = _make_estimator(winner)
+    model.fit(vec.fit_transform(train["text"]), train["Category"])
+    classes = model.classes_
+
+    proba_full = model.predict_proba(vec.transform(test["text"]))
+    rng = np.random.default_rng(RANDOM_STATE + 1)
+    eval_sets = _evaluation_texts(test, rng)
+
+    result: Dict[str, Any] = {
+        "test_resumes": int(len(test)),
+        "with_title": {
+            "top1_accuracy": float(np.mean(classes[np.argmax(proba_full, 1)] == test["Category"].to_numpy())),
+            "top3_accuracy": _topk_accuracy(proba_full, classes, test["Category"].tolist(), 3),
+            "macro_f1": float(f1_score(test["Category"], classes[np.argmax(proba_full, 1)], average="macro")),
+        },
+    }
+    for name, (texts, y) in eval_sets.items():
+        proba = model.predict_proba(vec.transform(texts))
+        pred = classes[np.argmax(proba, 1)]
+        skills = [extract_skills(t) for t in texts]
+        top1, top3, low_rate = _policy_accuracy(
+            proba, classes, texts, skills, y, profiles,
+            policy["threshold"], policy["min_words"], policy["size_normalized_overlap"],
+        )
+        result[name] = {
+            "ml_only_top1_accuracy": float(np.mean(pred == np.array(y))),
+            "ml_only_top3_accuracy": _topk_accuracy(proba, classes, y, 3),
+            "ml_only_macro_f1": float(f1_score(y, pred, average="macro")),
+            "with_fallback_top1_accuracy": float(top1),
+            "with_fallback_top3_accuracy": float(top3),
+            "low_confidence_rate": float(low_rate),
         }
 
-        print(f"     Accuracy    : {acc:.4f}")
-        print(f"     Macro F1    : {macro_f1:.4f}  (PRIMARY METRIC)")
-        print(f"     Weighted F1 : {weighted_f1:.4f}")
-
-    # 5. Summary benchmark table
     print("\n" + _sep())
-    print("OVERALL MODEL BENCHMARK SUMMARY")
+    print("HELD-OUT TEST SPLIT (chosen model + fallback policy)")
     print(_sep())
-    print(f"{'Model':<22} | {'Accuracy':>10} | {'Macro F1':>10} | {'Weighted F1':>12} | {'Small Classes F1':>16}")
-    print("-" * 78)
-    for name, res in sorted(results.items(), key=lambda x: -x[1]["macro_f1"]):
+    wt = result["with_title"]
+    print(f"  with title    : top1={wt['top1_accuracy']:.3f}  top3={wt['top3_accuracy']:.3f}  macroF1={wt['macro_f1']:.3f}  (optimistic)")
+    for name in eval_sets:
+        r = result[name]
         print(
-            f"{name:<22} | {res['accuracy']:>10.4f} | {res['macro_f1']:>10.4f} | "
-            f"{res['weighted_f1']:>12.4f} | {res['small_macro_f1']:>16.4f}"
+            f"  {name:<14}: ML top1={r['ml_only_top1_accuracy']:.3f} top3={r['ml_only_top3_accuracy']:.3f} | "
+            f"with fallback top1={r['with_fallback_top1_accuracy']:.3f} top3={r['with_fallback_top3_accuracy']:.3f} "
+            f"| low-confidence {r['low_confidence_rate']:.0%}"
         )
-    print(_sep())
+    return result
 
-    # 6. Performance breakdown on the 3 smallest classes
-    print("\n" + _sep())
-    print("DEEP DIVE: PERFORMANCE ON 3 SMALLEST CLASSES")
-    print(_sep())
-    print(f"{'Class (Total N)':<24} | {'Metric':<10} | {'LogisticRegression':>18} | {'LinearSVC':>12} | {'MultinomialNB':>14}")
-    print("-" * 88)
 
-    for cls in SMALLEST_CLASSES:
-        total_n = cat_counts[cls]
-        test_n = int(reports["LogisticRegression"][cls]["support"])
-        header_str = f"{cls} (n={total_n}, test={test_n})"
+def main() -> None:
+    df = load_dataset()
+    print(f"Loaded {len(df):,} resumes, {df['Category'].nunique()} categories")
+    train, test = train_test_split(
+        df, test_size=0.20, random_state=RANDOM_STATE, stratify=df["Category"]
+    )
+    train = train.reset_index(drop=True)
+    test = test.reset_index(drop=True)
+    profiles = _load_role_profiles()
 
-        lr_rep = reports["LogisticRegression"][cls]
-        svc_rep = reports["LinearSVC"][cls]
-        nb_rep = reports["MultinomialNB"][cls]
+    winner, benchmark = benchmark_candidates(train, test)
+    policy, grid = tune_fallback_policy(train, winner, profiles)
+    print(
+        f"\nChosen policy: threshold={policy['threshold']}, min_words={policy['min_words']}, "
+        f"size_normalized_overlap={policy['size_normalized_overlap']}"
+    )
+    test_metrics = evaluate_on_test(train, test, winner, policy, profiles)
 
-        print(f"{header_str:<24} | Precision  | {lr_rep['precision']:>18.4f} | {svc_rep['precision']:>12.4f} | {nb_rep['precision']:>14.4f}")
-        print(f"{'':<24} | Recall     | {lr_rep['recall']:>18.4f} | {svc_rep['recall']:>12.4f} | {nb_rep['recall']:>14.4f}")
-        print(f"{'':<24} | F1-Score   | {lr_rep['f1-score']:>18.4f} | {svc_rep['f1-score']:>12.4f} | {nb_rep['f1-score']:>14.4f}")
-        print("-" * 88)
+    # Production artifact: refit on every row
+    vectorizer = _new_vectorizer()
+    final_model = _make_estimator(winner)
+    final_model.fit(vectorizer.fit_transform(df["text"]), df["Category"])
+    MODEL_OUT.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(final_model, MODEL_OUT)
+    joblib.dump(vectorizer, VECTORIZER_OUT)
+    print(f"\nSaved {MODEL_OUT.relative_to(REPO_ROOT)} and {VECTORIZER_OUT.relative_to(REPO_ROOT)}")
 
-    # 7. Print Full Classification Reports
-    for name in ["LogisticRegression", "LinearSVC", "MultinomialNB"]:
-        print("\n" + _sep())
-        print(f"FULL CLASSIFICATION REPORT: {name}")
-        print(_sep())
-        y_pred = results[name]["y_pred"]
-        print(classification_report(y_test, y_pred, digits=4, zero_division=0))
-
-    # 8. Winner selection & Calibration logic
-    best_overall = max(results, key=lambda n: results[n]["macro_f1"])
-    best_small = max(results, key=lambda n: results[n]["small_macro_f1"])
-
-    lr_f1 = results["LogisticRegression"]["macro_f1"]
-    svc_f1 = results["LinearSVC"]["macro_f1"]
-
-    print("\n" + _sep())
-    print("MODEL SELECTION ANALYSIS & CONCLUSION")
-    print(_sep())
-    print(f"  Best overall model by Macro F1 : {best_overall} (Macro F1 = {results[best_overall]['macro_f1']:.4f})")
-    print(f"  Best model on 3 smallest classes: {best_small} (Small Classes Macro F1 = {results[best_small]['small_macro_f1']:.4f})")
-
-    diff = svc_f1 - lr_f1
-    print(f"  LinearSVC vs LogisticRegression Macro F1 Delta: {diff:+.4f}")
-
-    final_model: object
-    # If LinearSVC wins by a non-negligible margin (> 0.005), wrap with CalibratedClassifierCV
-    if best_overall == "LinearSVC" and diff > 0.005:
-        print("\n  LinearSVC won by meaningful margin. Applying CalibratedClassifierCV (cv=5)")
-        print("  to provide calibrated predict_proba() probabilities for role matching percentages...")
-        base_svc = LinearSVC(random_state=random_state, max_iter=2000)
-        calibrated_svc = CalibratedClassifierCV(estimator=base_svc, cv=5)
-        calibrated_svc.fit(X_train, y_train)
-
-        # Test calibrated model
-        cal_pred = calibrated_svc.predict(X_test)
-        cal_acc = accuracy_score(y_test, cal_pred)
-        cal_macro = f1_score(y_test, cal_pred, average="macro")
-        print(f"  Calibrated LinearSVC test accuracy: {cal_acc:.4f}, Macro F1: {cal_macro:.4f}")
-        final_model = calibrated_svc
-        winner_name = "Calibrated LinearSVC (5-fold)"
-    else:
-        # LogisticRegression won or is virtually identical
-        if lr_f1 >= svc_f1:
-            print("\n  LogisticRegression won on Macro F1 and supports native predict_proba().")
-            winner_name = "LogisticRegression"
-            final_model = results["LogisticRegression"]["model"]
-        else:
-            print(f"\n  LogisticRegression is very close behind LinearSVC (delta={diff:.4f} <= 0.005).")
-            print("  Using LogisticRegression directly as requested (native calibrated probabilities).")
-            winner_name = "LogisticRegression"
-            final_model = results["LogisticRegression"]["model"]
-
-    # 9. Retrain final selected model on ALL data (train + test) for production artifact
-    print(f"\nRetraining winning model ({winner_name}) on full 2,484 rows...")
-    X_full = vectorizer.fit_transform(X_raw)
-    final_model.fit(X_full, y)
-
-    # 10. Persist artifacts
-    model_output_path.parent.mkdir(parents=True, exist_ok=True)
-    vectorizer_output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    joblib.dump(final_model, model_output_path)
-    joblib.dump(vectorizer, vectorizer_output_path)
-
-    print(f"\nSaved production artifacts:")
-    print(f"  1. Model     -> {model_output_path}")
-    print(f"  2. Vectorizer -> {vectorizer_output_path} ({len(vectorizer.vocabulary_):,} features)")
-    print(_sep() + "\n")
-
-    return final_model, vectorizer
+    metrics = {
+        "dataset": {
+            "rows": int(len(df)),
+            "categories": int(df["Category"].nunique()),
+            "class_counts": {k: int(v) for k, v in df["Category"].value_counts().items()},
+        },
+        "vectorizer_params": {k: (list(v) if isinstance(v, tuple) else v) for k, v in VECTORIZER_PARAMS.items()},
+        "benchmark": benchmark,
+        "production_model": "CalibratedClassifierCV(LinearSVC, cv=5)" if winner == "LinearSVC" else winner,
+        "fallback_policy": {
+            "threshold": policy["threshold"],
+            "min_words": policy["min_words"],
+            "size_normalized_overlap": policy["size_normalized_overlap"],
+            "very_low_confidence": VERY_LOW_CONFIDENCE,
+            "tuned_on": "5-fold out-of-fold predictions on the training split",
+            "oof_top1_by_set": policy["top1_by_set"],
+            "oof_ml_only_top1_by_set": policy["ml_only_top1_by_set"],
+        },
+        "fallback_policy_grid": grid,
+        "test": test_metrics,
+        "scikit_learn_version": sklearn.__version__,
+    }
+    METRICS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    METRICS_OUT.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    print(f"Metrics written to {METRICS_OUT.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    train_and_evaluate_role_classifiers()
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s")
+    main()

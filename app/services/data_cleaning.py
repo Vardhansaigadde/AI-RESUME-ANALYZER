@@ -17,11 +17,6 @@ from typing import Any, List, Optional, Tuple
 import pandas as pd
 
 logger = logging.getLogger(__name__)
-if not logger.handlers:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
 
 
 def clean_text(text: Any) -> str:
@@ -68,6 +63,32 @@ def clean_text(text: Any) -> str:
     text = re.sub(r"\s+", " ", text).strip()
 
     return text
+
+
+def strip_leading_title(text: Any, max_tokens: int = 12) -> str:
+    """Remove a resume's leading ALL-CAPS headline (e.g. "SALES ASSOCIATE Summary ...").
+
+    Most resumes in data/raw/Resume.csv open with an upper-case job title that
+    often repeats the category label verbatim ("CONSULTANT", "SALES"), which
+    lets a classifier read the answer instead of the content. Real user resumes
+    usually open with a name instead, so evaluation uses this to measure
+    accuracy without that shortcut. Operates on raw (not lower-cased) text.
+
+    Args:
+        text: Raw resume text with original casing.
+        max_tokens: Maximum number of leading tokens to drop.
+
+    Returns:
+        The text with the leading run of tokens that contain no lowercase
+        letters removed (whitespace normalized).
+    """
+    if text is None or (not isinstance(text, str) and pd.isna(text)):
+        return ""
+    tokens = str(text).split()
+    i = 0
+    while i < len(tokens) and i < max_tokens and not re.search(r"[a-z]", tokens[i]):
+        i += 1
+    return " ".join(tokens[i:])
 
 
 def safe_parse_skills(val: Any) -> Optional[List[str]]:

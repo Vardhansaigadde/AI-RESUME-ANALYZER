@@ -286,5 +286,81 @@ class TestAnalyzeEndpoint(unittest.TestCase):
         self.assertIn("resume file is required", response.json()["detail"].lower())
 
 
+class TestRequestHardening(unittest.TestCase):
+    """Body-size limit, input validation, CORS and response-shape guarantees."""
+
+    def test_request_body_over_limit_returns_413(self):
+        """Bodies above the global cap are rejected before the endpoint runs."""
+        huge = b"%PDF-" + b"0" * (7 * 1024 * 1024)
+        response = client.post(
+            "/api/analyze",
+            files={"resume_file": ("big.pdf", huge, "application/pdf")},
+            data={"job_description": "Python developer"},
+        )
+        self.assertEqual(response.status_code, 413)
+        self.assertIn("5mb", response.json()["detail"].lower())
+
+    def test_json_body_must_be_object(self):
+        response = client.post("/api/analyze", json=["not", "an", "object"])
+        self.assertEqual(response.status_code, 422)
+
+    def test_json_fields_must_be_strings(self):
+        response = client.post("/api/analyze", json={"resume_text": 123, "job_text": "python"})
+        self.assertEqual(response.status_code, 422)
+
+    def test_top_n_validation(self):
+        for bad in ["abc", 0, 25, -1]:
+            response = client.post(
+                "/api/suggest-roles", json={"resume_text": "Python developer", "top_n": bad}
+            )
+            self.assertEqual(response.status_code, 422, bad)
+        ok = client.post("/api/suggest-roles", json={"resume_text": "Python developer", "top_n": 5})
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(len(ok.json()["suggested_roles"]), 5)
+
+    def test_skills_sorted_and_breakdown_sums_to_score(self):
+        response = client.post(
+            "/api/analyze",
+            json={
+                "resume_text": (
+                    "Backend engineer: Python, SQL, Docker, AWS, REST APIs, PostgreSQL. "
+                    "Built data pipelines and CI/CD automation for 4 years."
+                ),
+                "job_text": "Hiring a Python engineer with SQL, Docker, Kubernetes, AWS and Terraform.",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["matched_skills"], sorted(payload["matched_skills"]))
+        self.assertEqual(payload["missing_skills"], sorted(payload["missing_skills"]))
+
+        breakdown = payload["score_breakdown"]
+        self.assertEqual(
+            set(breakdown),
+            {"baseline", "tfidf_similarity", "skill_overlap_ratio", "resume_word_count"},
+        )
+        unclipped = sum(breakdown.values())
+        expected = min(max(unclipped, 0.0), 100.0)
+        self.assertAlmostEqual(payload["match_score"], expected, delta=0.05)
+
+    def test_cors_does_not_allow_credentials(self):
+        response = client.options(
+            "/api/analyze",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertEqual(response.headers.get("access-control-allow-origin"), "http://localhost:5173")
+        self.assertNotEqual(response.headers.get("access-control-allow-credentials"), "true")
+
+    def test_unknown_origin_not_allowed(self):
+        response = client.options(
+            "/api/analyze",
+            headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"},
+        )
+        self.assertIsNone(response.headers.get("access-control-allow-origin"))
+
+
 if __name__ == "__main__":
     unittest.main()

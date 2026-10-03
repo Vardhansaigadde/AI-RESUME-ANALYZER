@@ -24,18 +24,30 @@ const PIPELINE_STEPS = [
   },
 ];
 
+// The API answers in a single response, so the steps below describe what the
+// server does rather than report live progress: they advance once and then
+// hold on the last step until the result arrives.
+const STEP_INTERVAL_MS = 1250;
+// Render's free tier sleeps when idle; after this long, explain the wait.
+const SLOW_NOTICE_MS = 8000;
+
 export default function AnalyzingView() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   useEffect(() => {
+    const start = Date.now();
     const interval = setInterval(() => {
-      setCurrentStepIndex((prev) => (prev + 1) % PIPELINE_STEPS.length);
-    }, 1250);
+      const elapsed = Date.now() - start;
+      setElapsedMs(elapsed);
+      setCurrentStepIndex(Math.min(Math.floor(elapsed / STEP_INTERVAL_MS), PIPELINE_STEPS.length - 1));
+    }, 250);
 
     return () => clearInterval(interval);
   }, []);
 
   const currentStep = PIPELINE_STEPS[currentStepIndex];
+  const isSlow = elapsedMs >= SLOW_NOTICE_MS;
 
   return (
     <motion.div
@@ -198,8 +210,14 @@ export default function AnalyzingView() {
         })}
       </div>
 
-      <div style={{ marginTop: '1.75rem', fontSize: '0.78rem', color: 'var(--text-light-muted)' }}>
-        Step {currentStepIndex + 1} of {PIPELINE_STEPS.length} • Running live ML pipeline
+      <div
+        role="status"
+        aria-live="polite"
+        style={{ marginTop: '1.75rem', fontSize: '0.78rem', color: 'var(--text-light-muted)', maxWidth: '420px', lineHeight: 1.5 }}
+      >
+        {isSlow
+          ? `Still working (${Math.round(elapsedMs / 1000)}s). The server sleeps when idle, so the first analysis can take up to a minute.`
+          : 'Analyzing your resume…'}
       </div>
     </motion.div>
   );
