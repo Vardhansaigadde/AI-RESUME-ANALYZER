@@ -141,9 +141,9 @@ class BodySizeLimitMiddleware:
         await response(scope, receive, send)
 
 
-# CORS: the production frontend calls the API through Vercel's same-origin
-# /api rewrite, so CORS only matters for direct cross-origin callers. No
-# cookies or auth headers are used, so credentials are never allowed.
+# CORS: the production frontend (resumefitlens.vercel.app) calls this API
+# directly via VITE_API_BASE_URL, so its origin must be listed in CORS_ORIGINS.
+# No cookies or auth headers are used, so credentials are never allowed.
 default_dev_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",

@@ -27,13 +27,13 @@ Other scripts: `npm run build` (production bundle in `dist/`), `npm run preview`
 ## How it talks to the API
 
 `src/App.jsx` posts `multipart/form-data` (`resume_file`, `job_description`) to
-`${VITE_API_BASE_URL}/api/analyze`. `VITE_API_BASE_URL` is normally left
-unset, so requests go to the same origin and are forwarded:
+`${VITE_API_BASE_URL}/api/analyze`:
 
-| Environment | `/api/*` goes to |
-| --- | --- |
-| `npm run dev` | Vite proxy → `http://127.0.0.1:8000` |
-| Vercel | `vercel.json` rewrite → `https://resume-analyzer-backend.onrender.com` |
+| Environment | `VITE_API_BASE_URL` | Requests go to |
+| --- | --- | --- |
+| `npm run dev` | unset | `/api/*` → Vite proxy → `http://127.0.0.1:8000` |
+| Vercel (production) | `https://ai-resume-analyzer-xb45.onrender.com` (Vercel env var) | the Render backend directly; it allows this origin via `CORS_ORIGINS` |
+| Vercel without the env var | unset | `/api/*` → `vercel.json` rewrite → the same Render backend |
 
 Requests time out after 120 s, because the free Render instance can take
 close to a minute to wake up.

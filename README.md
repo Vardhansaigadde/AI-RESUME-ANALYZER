@@ -159,13 +159,15 @@ scikit-learn, rerun the steps above before deploying.
 
 ## Deployment
 
-**Backend (Render).** `render.yaml` deploys the `Dockerfile` (Python 3.14-slim, non-root user,
-only `app/` and `models/` copied). The container listens on `$PORT`, which Render sets.
-Environment variables:
+**Backend (Render).** The service `AI-RESUME-ANALYZER` (<https://ai-resume-analyzer-xb45.onrender.com>,
+region Virginia) builds the `Dockerfile` (Python 3.14-slim, non-root user, only `app/` and
+`models/` copied) and redeploys on every push to `main`. The container listens on `$PORT`, which
+Render sets. The service was created in the dashboard, so its settings live there; `render.yaml`
+mirrors them for recreating it as a Blueprint. Environment variables (set in the dashboard):
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `CORS_ORIGINS` | localhost dev origins | comma-separated origins allowed to call the API directly |
+| `CORS_ORIGINS` | localhost dev origins | comma-separated origins allowed to call the API; must include `https://resumefitlens.vercel.app` |
 | `ENABLE_DOCS` | `false` | expose `/docs` and `/openapi.json` |
 | `LOG_LEVEL` | `INFO` | log level |
 
@@ -174,9 +176,11 @@ minute. Models are loaded at startup, and the frontend shows a "waking up" notic
 120 s.
 
 **Frontend (Vercel).** The Vercel project's Root Directory is `frontend`, so `frontend/vercel.json`
-is the active config: Vite build to `dist/`, `/api/*` rewritten to the Render backend, and SPA
-fallback to `index.html`. Because the API is called through that same-origin rewrite, no
-`VITE_API_BASE_URL` is needed.
+is the active config: Vite build to `dist/` and SPA fallback to `index.html`. The Vercel
+environment variable `VITE_API_BASE_URL=https://ai-resume-analyzer-xb45.onrender.com` makes the
+browser call the backend directly (hence `CORS_ORIGINS` above). If that variable is removed,
+requests go to `/api/*` on the Vercel domain and the rewrite in `vercel.json` forwards them to the
+same backend.
 
 ## Project structure
 
