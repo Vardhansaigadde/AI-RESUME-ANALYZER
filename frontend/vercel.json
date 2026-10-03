@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://resume-analyzer-backend.onrender.com/api/$1"
+      "destination": "https://ai-resume-analyzer-xb45.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",

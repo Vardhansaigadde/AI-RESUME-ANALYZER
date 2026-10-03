@@ -1,7 +1,7 @@
 """Tests for app/services/matcher.py.
 
 Verifies:
-1. match_resume_to_job() produces expected score and keys using 4 leakage-free features.
+1. match_resume_to_job() produces expected score and keys using 3 leakage-free features.
 2. Skill extraction, matched skills, and missing skills are correctly reported.
 3. Fallback heuristic works properly when model artifact is unavailable.
 """
@@ -82,6 +82,36 @@ class TestMatcherService(unittest.TestCase):
         if scaler is not None:
             self.assertEqual(len(scaler.center_), 3)
             self.assertEqual(len(scaler.scale_), 3)
+
+
+    def test_raw_and_cleaned_input_give_same_result(self):
+        """Inference normalizes text exactly like training, so pre-cleaning changes nothing."""
+        from app.services.data_cleaning import clean_text
+
+        resume = "• Built REST APIs in Python & FastAPI!\n• Deployed with Docker/Kubernetes on AWS."
+        job = "<p>Seeking a <b>Python</b> engineer (Docker, AWS, Terraform).</p>"
+        raw = match_resume_to_job(resume, job)
+        pre_cleaned = match_resume_to_job(clean_text(resume), clean_text(job))
+        self.assertEqual(raw["match_score"], pre_cleaned["match_score"])
+        self.assertEqual(raw["matched_skills"], pre_cleaned["matched_skills"])
+
+    def test_mismatched_domain_scores_lower(self):
+        """A nursing resume scores well below a software resume for a software job."""
+        job = (
+            "Senior Python developer to build REST APIs and data pipelines. Requires Python, SQL, "
+            "Docker, Kubernetes, AWS, CI/CD and experience with microservices and PostgreSQL."
+        )
+        software = (
+            "Software engineer with 5 years building REST APIs and data pipelines in Python and SQL. "
+            "Containerized services with Docker and Kubernetes on AWS, set up CI/CD, used PostgreSQL."
+        )
+        nurse = (
+            "Registered nurse with 6 years in the emergency department: triage, vital signs monitoring, "
+            "medication administration, wound care and patient education."
+        )
+        software_score = match_resume_to_job(software, job)["match_score"]
+        nurse_score = match_resume_to_job(nurse, job)["match_score"]
+        self.assertGreater(software_score, nurse_score + 20)
 
 
 if __name__ == "__main__":

@@ -1,16 +1,21 @@
+# Blueprint for the FastAPI backend.
+#
+# The live service (AI-RESUME-ANALYZER, https://ai-resume-analyzer-xb45.onrender.com)
+# was created manually in the Render dashboard, not from this blueprint, so edits
+# here do not change it: set environment variables in the dashboard instead.
+# This file mirrors that service so it can be recreated with New + > Blueprint.
 services:
-  # FastAPI Machine Learning Backend Service
   - type: web
-    name: resume-analyzer-backend
-    env: docker
+    name: AI-RESUME-ANALYZER
+    runtime: docker
     plan: free
-    region: oregon
+    region: virginia
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /
     autoDeploy: true
     envVars:
-      - key: PORT
-        value: 8000
+      # The Vercel frontend calls this API directly (VITE_API_BASE_URL), so its
+      # origin must be allowed here.
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://resumefitlens.vercel.app"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useCountUp } from './ScoreGauge';
+import { useCountUp } from '../hooks/useCountUp';
+import { formatRole } from '../utils/format';
 
 // Subcomponent for individual animated role progress bar
 function RoleBarItem({ role, percent, rank }) {
@@ -29,7 +30,7 @@ function RoleBarItem({ role, percent, rank }) {
             #{rank}
           </span>
           <span style={{ fontWeight: 700, fontSize: '0.94rem', color: 'var(--navy-deep)' }}>
-            {role}
+            {formatRole(role)}
           </span>
         </div>
         <span style={{ fontWeight: 800, fontSize: '0.94rem', color: rank === 1 ? 'var(--brand-teal)' : 'var(--text-body)' }}>
@@ -94,7 +95,7 @@ export default function RoleBarChart({ suggestedRoles = [], confidence = 'high' 
       </div>
 
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-        Other roles that could be a good fit for you.
+        Job categories your resume most resembles, based on 2,484 example resumes.
       </p>
 
       {confidence === 'low' && (

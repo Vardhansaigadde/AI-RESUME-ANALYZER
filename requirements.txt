@@ -1,12 +1,15 @@
-fastapi
-uvicorn
-python-multipart
-pdfplumber
-python-docx
-scikit-learn
-pandas
-numpy
-joblib
-pydantic
-httpx
-pytest
+# Production dependencies, pinned to the versions the models were trained and
+# tested with. scikit-learn MUST match the version that pickled models/*.joblib;
+# after upgrading it, retrain (see README "Retraining the models").
+fastapi==0.141.1
+starlette==1.7.0
+uvicorn==0.53.0
+python-multipart==0.0.32
+pydantic==2.13.5
+pdfplumber==0.11.10
+python-docx==1.2.0
+scikit-learn==1.9.1
+scipy==1.18.1
+numpy==2.5.3
+pandas==3.0.6
+joblib==1.6.0

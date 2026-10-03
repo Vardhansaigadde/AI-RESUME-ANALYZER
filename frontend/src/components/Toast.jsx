@@ -14,15 +14,16 @@ export default function Toast({ message, onClose }) {
     <AnimatePresence>
       {message && (
         <motion.div
-          initial={{ y: -80, opacity: 0, scale: 0.95 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: -60, opacity: 0, scale: 0.9 }}
+          // x: '-50%' (not a CSS transform) so Framer Motion composes it with
+          // the animated y/scale instead of overwriting the centering offset.
+          initial={{ x: '-50%', y: -80, opacity: 0, scale: 0.95 }}
+          animate={{ x: '-50%', y: 0, opacity: 1, scale: 1 }}
+          exit={{ x: '-50%', y: -60, opacity: 0, scale: 0.9 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
           style={{
             position: 'fixed',
             top: '24px',
             left: '50%',
-            transform: 'translateX(-50%)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',

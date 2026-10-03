@@ -7,7 +7,10 @@ Experience with cloud platforms (AWS or GCP), microservices architecture, and mo
 Key responsibilities include collaborating with product managers, leading technical architecture discussions, 
 and mentoring junior engineers. Strong problem solving and communication skills required.`;
 
-export default function UploadView({ file, setFile, jobText, setJobText, onAnalyze }) {
+// Matches MAX_FILE_SIZE in app/services/pipeline.py
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+export default function UploadView({ file, setFile, jobText, setJobText, onAnalyze, onError }) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -46,11 +49,20 @@ export default function UploadView({ file, setFile, jobText, setJobText, onAnaly
   };
 
   const validateAndSetFile = (f) => {
-    const ext = f.name.toLowerCase();
-    if (!ext.endsWith('.pdf') && !ext.endsWith('.docx')) {
-      alert('Please upload a PDF (.pdf) or Word document (.docx).');
+    const name = f.name.toLowerCase();
+    if (!name.endsWith('.pdf') && !name.endsWith('.docx')) {
+      onError?.('Please upload a PDF (.pdf) or Word document (.docx).');
       return;
     }
+    if (f.size > MAX_FILE_BYTES) {
+      onError?.(`That file is ${(f.size / (1024 * 1024)).toFixed(1)} MB. Resumes must be 5 MB or smaller.`);
+      return;
+    }
+    if (f.size === 0) {
+      onError?.('That file is empty. Please choose another file.');
+      return;
+    }
+    onError?.(null);
     setFile(f);
   };
 

@@ -42,11 +42,11 @@ def main():
     processed_dir = REPO_ROOT / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
 
-    resume_raw_path = raw_dir / "Resume.csv"
-    job_fit_raw_path = raw_dir / "job_resume_fit.csv"
+    resume_raw_path = raw_dir / "Resume.csv.gz"
+    job_fit_raw_path = raw_dir / "job_resume_fit.csv.gz"
 
-    resume_clean_path = processed_dir / "resume_clean.csv"
-    job_fit_clean_path = processed_dir / "job_resume_fit_clean.csv"
+    resume_clean_path = processed_dir / "resume_clean.csv.gz"
+    job_fit_clean_path = processed_dir / "job_resume_fit_clean.csv.gz"
 
     logger.info("==================================================")
     logger.info("Starting Processed Data Pipeline")

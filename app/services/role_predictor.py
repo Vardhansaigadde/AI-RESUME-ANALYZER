@@ -13,7 +13,7 @@ import json
 import logging
 from pathlib import Path
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -22,11 +22,22 @@ if str(REPO_ROOT) not in sys.path:
 import joblib
 import numpy as np
 
+from app.services.data_cleaning import clean_text
+from app.services.skill_extractor import extract_skills
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_CLASSIFIER_PATH = REPO_ROOT / "models" / "role_classifier.joblib"
 DEFAULT_VECTORIZER_PATH = REPO_ROOT / "models" / "role_vectorizer.joblib"
 DEFAULT_ROLE_PROFILES_PATH = REPO_ROOT / "app" / "data" / "role_profiles.json"
+
+# Low-confidence fallback policy, tuned by scripts/train_role_classifier.py on
+# out-of-fold training predictions (see reports/role_classifier_metrics.json).
+DEFAULT_CONFIDENCE_THRESHOLD = 0.25
+DEFAULT_MIN_WORD_COUNT = 100
+# Raw overlap counts beat size-normalized (cosine) overlap both on dataset
+# snippets and on short synthetic resumes, so normalization is off by default.
+DEFAULT_SIZE_NORMALIZED_OVERLAP = False
 
 _CACHED_CLASSIFIER: Optional[object] = None
 _CACHED_VECTORIZER: Optional[object] = None
@@ -35,24 +46,25 @@ _CACHED_ROLE_PROFILES: Optional[Dict[str, List[str]]] = None
 
 def is_low_confidence(
     probabilities: object,
-    threshold: float = 0.35,
+    threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
     word_count: Optional[int] = None,
-    min_word_count: int = 150,
+    min_word_count: int = DEFAULT_MIN_WORD_COUNT,
 ) -> bool:
     """Return True if top-1 predicted probability is below threshold OR word count is below min_word_count.
 
-    Validated confident predictions on full-length resumes are typically 65-82%,
-    whereas sparse or short resumes yield diffuse probabilities across classes (e.g. 14-26%).
-    Furthermore, any resume under ~150 words has an intrinsically sparse TF-IDF vector
-    that cannot be reliably trusted on ML unigrams/bigrams alone.
+    Full-length resumes usually get a decisive top probability, whereas short or
+    sparse resumes produce diffuse probabilities spread across many classes, and
+    very short texts have too few TF-IDF features to trust on their own. The
+    defaults (DEFAULT_CONFIDENCE_THRESHOLD, DEFAULT_MIN_WORD_COUNT) were tuned by
+    scripts/train_role_classifier.py.
 
     Args:
         probabilities: Array, sequence, or dict of predicted probabilities.
         threshold: Probability cutoff below which predictions are considered
-            low confidence (default 0.35, i.e. 35%).
+            low confidence (default DEFAULT_CONFIDENCE_THRESHOLD).
         word_count: Total word count of the resume text, if available.
         min_word_count: Minimum resume word length required to trust raw ML
-            probabilities (default 150 words).
+            probabilities (default DEFAULT_MIN_WORD_COUNT).
 
     Returns:
         True if word_count < min_word_count OR maximum probability is strictly
@@ -79,6 +91,71 @@ def is_low_confidence(
         return float(max(prob_list)) < threshold
     except (TypeError, ValueError):
         return True
+
+
+VERY_LOW_CONFIDENCE = 0.15
+
+
+def skill_overlap_distribution(
+    classes: Sequence[str],
+    resume_skills: Set[str],
+    profiles: Dict[str, List[str]],
+    size_normalized: bool = DEFAULT_SIZE_NORMALIZED_OVERLAP,
+) -> Optional[np.ndarray]:
+    """Distribution over roles from resume-skill overlap with each role profile.
+
+    By default each role's score is the number of resume skills found in its
+    profile. Larger profiles (e.g. INFORMATION-TECHNOLOGY) can collect more
+    overlap; size_normalized=True divides by sqrt(|profile|) (cosine similarity)
+    to remove that, but in evaluation it was less accurate (it sends short
+    frontend-developer resumes to the 13-skill DESIGNER profile), so it is only
+    kept to let scripts/train_role_classifier.py compare the two variants.
+
+    Returns None when there is no overlap with any profile.
+    """
+    if not resume_skills or not profiles:
+        return None
+    scores = np.array(
+        [
+            len(resume_skills & set(profiles.get(role, [])))
+            / (np.sqrt(max(len(profiles.get(role, [])), 1)) if size_normalized else 1.0)
+            for role in classes
+        ],
+        dtype=float,
+    )
+    total = scores.sum()
+    if total <= 0:
+        return None
+    return scores / total
+
+
+def blend_with_skill_overlap(
+    ml_proba: np.ndarray,
+    classes: Sequence[str],
+    resume_skills: Set[str],
+    profiles: Dict[str, List[str]],
+    very_low_threshold: float = VERY_LOW_CONFIDENCE,
+    size_normalized: bool = DEFAULT_SIZE_NORMALIZED_OVERLAP,
+) -> np.ndarray:
+    """Combine low-confidence ML probabilities with role-profile skill overlap.
+
+    - top-1 ML probability < very_low_threshold: use skill overlap alone.
+    - otherwise: 50/50 average of ML probabilities and skill overlap.
+    - no skill overlap at all: keep the ML probabilities unchanged.
+    """
+    skill_proba = skill_overlap_distribution(
+        classes, set(resume_skills), profiles, size_normalized=size_normalized
+    )
+    if skill_proba is None:
+        return ml_proba
+    top_1_ml = float(np.max(ml_proba))
+    if top_1_ml < very_low_threshold:
+        logger.info(
+            "predict_roles: very low ML confidence (%.1f%%); using skill overlap.", top_1_ml * 100
+        )
+        return skill_proba
+    logger.info("predict_roles: low confidence; blending ML 50/50 with skill overlap.")
+    return 0.5 * np.asarray(ml_proba) + 0.5 * skill_proba
 
 
 def _load_classifier(path: Path = DEFAULT_CLASSIFIER_PATH) -> Optional[object]:
@@ -142,22 +219,21 @@ def predict_roles(
     vectorizer_path: Path = DEFAULT_VECTORIZER_PATH,
     role_profiles_path: Path = DEFAULT_ROLE_PROFILES_PATH,
     return_confidence: bool = False,
-    confidence_threshold: float = 0.35,
-    min_word_count: int = 150,
+    confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
+    min_word_count: int = DEFAULT_MIN_WORD_COUNT,
 ) -> Union[List[Dict[str, Any]], Tuple[List[Dict[str, Any]], str]]:
     """Predict the top-N most likely job role categories for a resume.
 
     Uses the production CalibratedClassifierCV model trained on 2,484 resumes
-    across 24 job categories. When top-1 probability is below confidence_threshold (default 35%)
-    OR resume word count is below min_word_count (default 150 words), engages a
-    confidence-aware fallback:
-    - Extracts canonical skills from the resume via skill_extractor.py
-    - Computes skill overlap against role profiles from role_profiles.json
-    - If ML confidence is very low (< 15%), ranks roles directly by skill overlap.
-    - If ML confidence is moderately low (15% to 35%) or resume is short (< 150 words),
-      blends ML probabilities and skill-overlap scores via a 50/50 weighted average.
-    - If ML confidence is high (>= 35%) and resume is >= 150 words, relies purely
-      on the ML classifier.
+    across 24 job categories. When the top-1 probability is below
+    confidence_threshold OR the resume is shorter than min_word_count words, the
+    result is marked "low" confidence and blended with role-profile skill overlap
+    (see blend_with_skill_overlap): skill overlap alone below VERY_LOW_CONFIDENCE,
+    otherwise a 50/50 average. Confident predictions use the classifier directly.
+
+    On dataset resumes the blend costs 1-2 points of accuracy, but on short,
+    skill-list style resumes (students, freshers) it fixes most of the raw
+    model's errors, which is why it is kept.
 
     Args:
         resume_text: Raw or cleaned resume text string.
@@ -168,9 +244,9 @@ def predict_roles(
         return_confidence: If True, returns a tuple (roles, confidence_str)
             where confidence_str is "high" or "low". Default is False.
         confidence_threshold: Cutoff below which ML predictions are deemed low
-            confidence (default 0.35, i.e. 35%).
+            confidence (default DEFAULT_CONFIDENCE_THRESHOLD).
         min_word_count: Resume word count below which ML TF-IDF features are deemed
-            too sparse to trust alone (default 150 words).
+            too sparse to trust alone (default DEFAULT_MIN_WORD_COUNT).
 
     Returns:
         List of dicts sorted by descending match_percent, each with:
@@ -179,7 +255,8 @@ def predict_roles(
         If return_confidence is True, returns (results, "high" | "low").
         Returns empty list (or ([], "low")) if models are unavailable or text is empty.
     """
-    text = str(resume_text or "").strip()
+    # Same normalization as data/processed/resume_clean.csv.gz used for training
+    text = clean_text(resume_text)
     if not text:
         logger.warning("predict_roles called with empty resume text")
         return ([], "low") if return_confidence else []
@@ -202,7 +279,6 @@ def predict_roles(
         classes = clf.classes_
 
         # Determine confidence level based on raw ML top-1 probability and word count
-        top_1_ml = float(np.max(ml_proba))
         low_conf = is_low_confidence(
             ml_proba,
             threshold=confidence_threshold,
@@ -212,43 +288,13 @@ def predict_roles(
         confidence_str = "low" if low_conf else "high"
 
         effective_proba = ml_proba
-
-        # If low confidence or sparse/short resume, engage skill-overlap fallback
         if low_conf:
-            from app.services.skill_extractor import extract_skills
-
-            resume_skills = set(extract_skills(text))
-            profiles = _load_role_profiles(role_profiles_path)
-
-            if resume_skills and profiles:
-                overlap_counts = {
-                    role: len(resume_skills & set(profiles.get(role, [])))
-                    for role in classes
-                }
-                total_overlap = sum(overlap_counts.values())
-
-                if total_overlap > 0:
-                    skill_proba = np.array(
-                        [overlap_counts[role] / total_overlap for role in classes]
-                    )
-
-                    if top_1_ml < 0.15:
-                        # Very low ML confidence (< 15%): rely directly on skill overlap
-                        effective_proba = skill_proba
-                        logger.info(
-                            "predict_roles: Very low ML confidence (%.1f%% < 15%%); using direct skill overlap fallback.",
-                            top_1_ml * 100,
-                        )
-                    else:
-                        # Moderately low ML confidence or short resume: 50/50 blend
-                        effective_proba = 0.5 * ml_proba + 0.5 * skill_proba
-                        logger.info(
-                            "predict_roles: Low confidence or short resume (%.1f%% < %.0f%% or %d < %d words); using 50/50 ML + skill overlap blend.",
-                            top_1_ml * 100,
-                            confidence_threshold * 100,
-                            word_count,
-                            min_word_count,
-                        )
+            effective_proba = blend_with_skill_overlap(
+                ml_proba,
+                classes,
+                extract_skills(text),
+                _load_role_profiles(role_profiles_path),
+            )
 
         # Sort by descending effective probability and take top_n
         top_indices = np.argsort(effective_proba)[::-1][:top_n]
@@ -275,8 +321,8 @@ def predict_roles_with_confidence(
     classifier_path: Path = DEFAULT_CLASSIFIER_PATH,
     vectorizer_path: Path = DEFAULT_VECTORIZER_PATH,
     role_profiles_path: Path = DEFAULT_ROLE_PROFILES_PATH,
-    confidence_threshold: float = 0.35,
-    min_word_count: int = 150,
+    confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
+    min_word_count: int = DEFAULT_MIN_WORD_COUNT,
 ) -> Tuple[List[Dict[str, Any]], str]:
     """Predict top-N roles and return (results, confidence), where confidence is 'high' or 'low'."""
     return predict_roles(

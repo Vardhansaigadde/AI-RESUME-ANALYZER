@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { formatSkill } from '../utils/format';
+
+// Suggestions quote canonical lowercase skills ('ci/cd'); show them the same
+// way the skill chips do ('CI/CD').
+const formatSuggestion = (text) => text.replace(/'([^']+)'/g, (_, skill) => `'${formatSkill(skill)}'`);
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -20,13 +25,13 @@ const slideInLeftVariant = {
   },
 };
 
-export default function SuggestionsSection({ suggestions = [], onReset }) {
+export default function SuggestionsSection({ suggestions = [] }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
     if (!suggestions || suggestions.length === 0) return;
     const textToCopy = suggestions
-      .map((item, idx) => `${idx + 1}. ${item}`)
+      .map((item, idx) => `${idx + 1}. ${formatSuggestion(item)}`)
       .join('\n\n');
     navigator.clipboard?.writeText(textToCopy);
     setCopied(true);
@@ -149,7 +154,7 @@ export default function SuggestionsSection({ suggestions = [], onReset }) {
               {idx + 1}
             </span>
             <p style={{ fontSize: '0.91rem', color: 'var(--text-body)', lineHeight: 1.55 }}>
-              {item}
+              {formatSuggestion(item)}
             </p>
           </motion.div>
         ))}

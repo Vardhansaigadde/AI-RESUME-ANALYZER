@@ -25,7 +25,12 @@ if str(REPO_ROOT) not in sys.path:
 
 import pandas as pd
 
-from app.services.skill_extractor import compare_skills, extract_skills
+from app.services.skill_extractor import (
+    SKILL_ALIASES,
+    _load_skill_patterns,
+    compare_skills,
+    extract_skills,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +49,7 @@ def jaccard(a: Set[str], b: Set[str]) -> float:
 
 def _load_row(index: int) -> dict:
     """Load a single row from the processed job-resume CSV."""
-    csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv"
+    csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz"
     df = pd.read_csv(csv_path)
     row = df.iloc[index]
     return {
@@ -292,7 +297,7 @@ class TestExtractSkillsIntegration(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv"
+        csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz"
         if not csv_path.exists():
             raise unittest.SkipTest(
                 f"Processed CSV not found at {csv_path}. "
@@ -446,6 +451,64 @@ class TestCompareSkills(unittest.TestCase):
             self.assertIn(skill, matched, f"'{skill}' should be in matched")
         # aws is not in the resume text, so it should be missing
         self.assertIn("aws", missing)
+
+
+class TestBoundariesAndAliases(unittest.TestCase):
+    """Regression tests for punctuation boundaries, context checks and aliases."""
+
+    def test_sentence_final_period(self):
+        """A skill at the end of a sentence still matches ("Python.")."""
+        self.assertIn("python", extract_skills("I mostly write Python."))
+        self.assertIn("sql", extract_skills("Strong in SQL. Also Excel."))
+
+    def test_slash_separated_skills(self):
+        """Slash-joined skills match individually ("HTML/CSS", "Python/Django")."""
+        skills = extract_skills("Front end: HTML/CSS. Back end: Python/Django.")
+        self.assertTrue({"html", "css", "python", "django"} <= skills, skills)
+
+    def test_slash_skills_keep_their_own_identity(self):
+        """Skills that contain a slash are still matched whole."""
+        skills = extract_skills("Built CI/CD pipelines and wrote PL/SQL procedures; ran A/B testing.")
+        self.assertTrue({"ci/cd", "pl/sql", "a/b testing"} <= skills, skills)
+        self.assertNotIn("sql", skills)
+
+    def test_dotted_skills_not_split(self):
+        """'.net' and 'node.js' match literally; 'node.js' does not yield 'js' artifacts."""
+        skills = extract_skills("Services in .NET and Node.js.")
+        self.assertIn(".net", skills)
+        self.assertIn("node.js", skills)
+
+    def test_context_keyword_must_be_whole_token(self):
+        """'ui' inside 'quickly' must not count as React context."""
+        self.assertNotIn("react", extract_skills("Go to the store and react quickly in spring."))
+
+    def test_aliases_map_to_canonical(self):
+        skills = extract_skills(
+            "Deployed on K8s with Postgres, built ReactJS + HTML5 UIs, used sklearn and Golang microservices."
+        )
+        self.assertTrue(
+            {"kubernetes", "postgresql", "react", "html", "scikit-learn", "go"} <= skills, skills
+        )
+
+    def test_ml_alias_needs_context(self):
+        """'ML' counts as machine learning near AI/data words, but not as millilitres."""
+        self.assertIn("machine learning", extract_skills("Built ML models in Python."))
+        self.assertNotIn("machine learning", extract_skills("Administered 10 ml of saline every hour."))
+
+    def test_core_student_skills_present(self):
+        skills = extract_skills(
+            "Coursework in machine learning, deep learning, data structures and algorithms; "
+            "object-oriented programming in Java; Agile/Scrum team projects."
+        )
+        for skill in ["machine learning", "deep learning", "data structures", "algorithms",
+                      "object-oriented programming", "agile", "scrum"]:
+            self.assertIn(skill, skills)
+
+    def test_every_alias_targets_a_taxonomy_skill(self):
+        """Aliases must point at canonical skills that exist in skills_list.json."""
+        canonical = {c for _, c, _ in _load_skill_patterns()}
+        for alias, target in SKILL_ALIASES.items():
+            self.assertIn(target, canonical, f"alias {alias!r} -> {target!r} not in taxonomy")
 
 
 if __name__ == "__main__":

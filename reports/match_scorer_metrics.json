@@ -1,0 +1,65 @@
+{
+  "dataset": {
+    "rows": 2385,
+    "unique_job_descriptions": 23,
+    "target": "ai_match_score",
+    "features": [
+      "tfidf_similarity",
+      "skill_overlap_ratio",
+      "resume_word_count"
+    ]
+  },
+  "cross_validation": {
+    "method": "GroupKFold(n_splits=5) grouped by job_text; RobustScaler fitted per fold",
+    "results": {
+      "Ridge": {
+        "r2_mean": 0.3601919391578897,
+        "r2_std": 0.17523437441191825,
+        "rmse_mean": 17.934914312657774,
+        "rmse_std": 2.3017884609327326,
+        "mae_mean": 14.648865860053807,
+        "mae_std": 2.2708171230427245
+      },
+      "GradientBoosting": {
+        "r2_mean": 0.24641879834544636,
+        "r2_std": 0.2619641176525347,
+        "rmse_mean": 19.32973082610326,
+        "rmse_std": 2.7786034866635245,
+        "mae_mean": 15.67433460974171,
+        "mae_std": 2.9774989132035734
+      },
+      "RandomForest": {
+        "r2_mean": 0.35181161748512324,
+        "r2_std": 0.1978517630413203,
+        "rmse_mean": 18.019373386208972,
+        "rmse_std": 2.5433767152867257,
+        "mae_mean": 14.546892808308836,
+        "mae_std": 2.7729593695869443
+      }
+    },
+    "production_model": "Ridge"
+  },
+  "production_model": {
+    "in_sample_r2": 0.5108898947513025,
+    "in_sample_rmse": 17.220711131435323,
+    "intercept": 39.32670788455433,
+    "coefficients_scaled": {
+      "tfidf_similarity": 19.158472169167847,
+      "skill_overlap_ratio": 6.479686161307537,
+      "resume_word_count": 1.8744646153182634
+    },
+    "points_per_unit": {
+      "tfidf_similarity": 131.33972427642215,
+      "skill_overlap_ratio": 47.89333249662094,
+      "resume_word_count": 0.006742678472367854
+    }
+  },
+  "mismatched_pair_sanity_check": {
+    "pairs": 300,
+    "same_category_mean_score": 45.23309423515777,
+    "other_category_mean_score": 28.231891162235655,
+    "other_category_p90_score": 40.07015533856285,
+    "share_same_category_scored_higher": 0.8633333333333333
+  },
+  "scikit_learn_version": "1.9.1"
+}

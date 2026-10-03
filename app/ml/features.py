@@ -14,7 +14,9 @@ Provides:
 - build_features(): Reusable single-pair feature builder for API inference.
 - build_feature_matrix_from_csv(): Batch pipeline for training dataset generation
   with progress logging and correlation analysis.
-- make_group_split(): Group-aware train/test split keyed by job_text.
+
+All inputs pass through app.services.data_cleaning.clean_text() so inference
+sees the same normalization the training CSVs were built with.
 """
 
 import json
@@ -35,6 +37,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from app.services.data_cleaning import clean_text
 from app.services.skill_extractor import compare_skills, extract_skills
 
 logger = logging.getLogger(__name__)
@@ -120,7 +123,7 @@ def build_features(
     vectorizer: Optional[TfidfVectorizer] = None,
     as_dataframe: bool = True,
 ) -> Union[pd.DataFrame, Dict[str, float]]:
-    """Build feature vector for a single resume-job pair using 4 leakage-free features.
+    """Build feature vector for a single resume-job pair using 3 leakage-free features.
 
     Designed for real-time inference in FastAPI endpoints as well as offline
     batch evaluation.
@@ -135,8 +138,9 @@ def build_features(
     Returns:
         pd.DataFrame (1, num_features) or Dict[str, float].
     """
-    res_clean = str(resume_text or "")
-    job_clean = str(job_text or "")
+    # Same normalization as data/processed/*.csv.gz used for training
+    res_clean = clean_text(resume_text)
+    job_clean = clean_text(job_text)
 
     # 1. TF-IDF Cosine Similarity
     tfidf_sim = calculate_tfidf_similarity(res_clean, job_clean, vectorizer=vectorizer)
@@ -164,7 +168,7 @@ def build_features(
 
 
 def build_feature_matrix_from_csv(
-    input_csv: Path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv",
+    input_csv: Path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz",
     output_csv: Path = REPO_ROOT / "data" / "processed" / "features.csv",
     vectorizer_path: Path = DEFAULT_VECTORIZER_PATH,
     print_every: int = 200,
@@ -222,9 +226,8 @@ def build_feature_matrix_from_csv(
     vec_job = vectorizer.transform(job_texts)
     tfidf_sims = np.asarray(vec_res.multiply(vec_job).sum(axis=1)).ravel()
 
-    # 2. Word Counts
+    # 2. Resume word counts
     resume_word_counts = [len(t.split()) for t in res_texts]
-    job_word_counts = [len(t.split()) for t in job_texts]
 
     # 3. Cache Job Skills Extraction (few unique job descriptions)
     unique_job_texts = list(set(job_texts))
@@ -236,7 +239,6 @@ def build_feature_matrix_from_csv(
     print(f"STEP 2: Extracting skills across {total_rows:,} rows (progress every {print_every})...")
     print("=" * 65)
 
-    import time
     t0 = time.time()
     skill_overlap_ratios = []
     resume_skills_cache: Dict[str, List[str]] = {}

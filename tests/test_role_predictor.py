@@ -16,7 +16,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from app.services.data_cleaning import clean_text
 from app.services.role_predictor import (
+    DEFAULT_CONFIDENCE_THRESHOLD,
+    DEFAULT_MIN_WORD_COUNT,
     clear_role_predictor_cache,
     is_low_confidence,
     predict_roles,
@@ -54,13 +57,13 @@ class TestRolePredictor(unittest.TestCase):
             "employee relations performance appraisal HR policies"
         )
         self.sparse_student_resume = (
-            "GADDE VARDHAN SAI\n"
+            "ALEX SAMPLE\n"
             "Second-year B.Tech student specializing in Artificial Intelligence & Machine Learning "
             "with strong foundations in C/C++, Data Structures, and Algorithms. Active competitive "
             "programmer with 500+ coding problems solved across coding platforms. Experienced in "
             "building logic-driven applications and web-based systems. Interested in AI/ML, "
             "algorithms, and data-driven software development.\n"
-            "EDUCATION: Bachelor of Technology - Computer Science (AI & ML), Aditya University, 2024-2028\n"
+            "EDUCATION: Bachelor of Technology - Computer Science (AI & ML), State University, 2024-2028\n"
             "TECHNICAL SKILLS: Programming Languages: C, C++ (Proficient), Python, Java (Familiar). "
             "Core CS: Data Structures & Algorithms, OOPS, Dynamic Programming, File Handling. "
             "Web Development: HTML, CSS, JavaScript. Database: SQL (Basic).\n"
@@ -73,27 +76,33 @@ class TestRolePredictor(unittest.TestCase):
         clear_role_predictor_cache()
 
     def test_is_low_confidence(self):
-        """is_low_confidence correctly identifies high vs low probability predictions and word count triggers."""
-        # High confidence (top >= 0.35, word_count >= 150)
-        self.assertFalse(is_low_confidence([0.80, 0.10, 0.05, 0.05], word_count=200))
-        self.assertFalse(is_low_confidence([0.35, 0.20, 0.15], word_count=200))
+        """is_low_confidence flags low top probability or short resumes."""
+        thr, min_words = DEFAULT_CONFIDENCE_THRESHOLD, DEFAULT_MIN_WORD_COUNT
+        long_enough = min_words + 50
 
-        # Low confidence due to probability (top < 0.35)
+        # High confidence: top >= threshold and long enough
+        self.assertFalse(is_low_confidence([0.80, 0.10, 0.05, 0.05], word_count=long_enough))
+        self.assertFalse(is_low_confidence([thr, 0.20, 0.15], word_count=long_enough))
+
+        # Low confidence due to probability
         self.assertTrue(is_low_confidence([0.14, 0.12, 0.10, 0.08]))
-        self.assertTrue(is_low_confidence([0.249, 0.10]))
-        self.assertTrue(is_low_confidence([0.349, 0.20, 0.15]))
+        self.assertTrue(is_low_confidence([thr - 0.001, 0.10], word_count=long_enough))
 
-        # Low confidence due to word count (< 150 words) even with high raw probability
+        # Low confidence due to word count even with high raw probability
         self.assertTrue(is_low_confidence([0.80, 0.10, 0.05, 0.05], word_count=50))
-        self.assertTrue(is_low_confidence([0.90, 0.05], word_count=149))
+        self.assertTrue(is_low_confidence([0.90, 0.05], word_count=min_words - 1))
+        self.assertFalse(is_low_confidence([0.90, 0.05], word_count=min_words))
+
+        # Explicit thresholds still work
+        self.assertTrue(is_low_confidence([0.30, 0.20], threshold=0.35))
 
         # Empty / None / edge cases
         self.assertTrue(is_low_confidence([]))
         self.assertTrue(is_low_confidence(None))
 
     def test_senior_full_stack_software_engineer_deployment_resume(self):
-        """26-word Senior Full Stack Software Engineer resume triggers fallback
-        and correctly predicts INFORMATION-TECHNOLOGY (not AVIATION) with confidence='low'."""
+        """26-word Senior Full Stack Software Engineer resume triggers the fallback
+        and predicts INFORMATION-TECHNOLOGY with confidence='low'."""
         resume = (
             "Senior Full Stack Software Engineer with 6 years experience in Python, "
             "FastAPI, React, PostgreSQL, Docker, and AWS cloud infrastructure. "
@@ -103,74 +112,39 @@ class TestRolePredictor(unittest.TestCase):
         self.assertEqual(confidence, "low")
         self.assertGreaterEqual(len(roles), 3)
         self.assertEqual(roles[0]["role"], "INFORMATION-TECHNOLOGY")
-        self.assertNotEqual(roles[0]["role"], "AVIATION")
-        self.assertEqual(roles[0]["match_percent"], 42.5)
+        self.assertGreater(roles[0]["match_percent"], roles[1]["match_percent"])
 
     def test_hybrid_fallback_on_sparse_student_resume(self):
-        """Sparse student resume triggers hybrid fallback, changing top role from raw ML AVIATION
-        to sensible tech roles (INFORMATION-TECHNOLOGY or ENGINEERING) with confidence='low'."""
-        import joblib
-        import numpy as np
-        from app.services.role_predictor import (
-            DEFAULT_CLASSIFIER_PATH,
-            DEFAULT_VECTORIZER_PATH,
-        )
-
-        # 1. Confirm raw ML classifier alone produces low confidence and spurious AVIATION
-        clf = joblib.load(DEFAULT_CLASSIFIER_PATH)
-        vec = joblib.load(DEFAULT_VECTORIZER_PATH)
-        raw_proba = clf.predict_proba(vec.transform([self.sparse_student_resume]))[0]
-        raw_top_idx = int(np.argmax(raw_proba))
-        raw_top_category = str(clf.classes_[raw_top_idx])
-        raw_top_prob = float(raw_proba[raw_top_idx])
-
-        self.assertTrue(is_low_confidence(raw_proba, threshold=0.35))
-        self.assertLess(raw_top_prob, 0.35)
-        self.assertEqual(raw_top_category, "AVIATION")
-
-        # 2. Confirm service with hybrid fallback engages and produces sensible tech roles
+        """Short student resume is low-confidence and lands on a technical category."""
         roles, confidence = predict_roles_with_confidence(self.sparse_student_resume, top_n=3)
         self.assertEqual(confidence, "low")
-        self.assertGreater(len(roles), 0)
+        self.assertIn(roles[0]["role"], ["INFORMATION-TECHNOLOGY", "ENGINEERING"])
+        self.assertNotIn("AVIATION", [r["role"] for r in roles[:2]])
 
-        # Top role should now be INFORMATION-TECHNOLOGY (or ENGINEERING), not AVIATION
-        top_role = roles[0]["role"]
-        self.assertIn(top_role, ["INFORMATION-TECHNOLOGY", "ENGINEERING"])
-        self.assertNotEqual(top_role, "AVIATION")
-
-        # Second role should also be a relevant technical category
-        second_role = roles[1]["role"]
-        self.assertIn(second_role, ["INFORMATION-TECHNOLOGY", "ENGINEERING", "DESIGNER"])
-
-    def test_50_50_blend_in_15_to_25_percent_range(self):
-        """Test case specifically in the 15-25% ML confidence range to confirm 50/50 blend."""
+    def test_short_resume_uses_blend_not_pure_overlap(self):
+        """A short resume with a non-trivial ML probability is blended 50/50 with skill overlap."""
         import joblib
         import numpy as np
         from app.services.role_predictor import (
             DEFAULT_CLASSIFIER_PATH,
             DEFAULT_VECTORIZER_PATH,
+            VERY_LOW_CONFIDENCE,
         )
 
         test_resume = (
             "Junior Software Engineer with Python and SQL experience. "
             "Built simple database applications, REST API, Git, Docker, and Linux."
         )
+        self.assertLess(len(test_resume.split()), DEFAULT_MIN_WORD_COUNT)
 
-        # 1. Verify raw ML lands in [0.15, 0.25)
         clf = joblib.load(DEFAULT_CLASSIFIER_PATH)
         vec = joblib.load(DEFAULT_VECTORIZER_PATH)
-        raw_proba = clf.predict_proba(vec.transform([test_resume]))[0]
-        top_prob = float(np.max(raw_proba))
-        self.assertGreaterEqual(top_prob, 0.15)
-        self.assertLess(top_prob, 0.25)
+        raw_proba = clf.predict_proba(vec.transform([clean_text(test_resume)]))[0]
+        # Above the very-low cutoff, so the blend (not pure skill overlap) applies
+        self.assertGreaterEqual(float(np.max(raw_proba)), VERY_LOW_CONFIDENCE)
 
-        # 2. Run service prediction
         roles, confidence = predict_roles_with_confidence(test_resume, top_n=5)
         self.assertEqual(confidence, "low")
-        self.assertGreaterEqual(len(roles), 3)
-
-        # Check rankings: IT is #1 due to strong skill overlap (python, sql, database, rest api, docker, git),
-        # ENGINEERING is #2, and probabilities are distinct (no tie bug)
         self.assertEqual(roles[0]["role"], "INFORMATION-TECHNOLOGY")
         self.assertEqual(roles[1]["role"], "ENGINEERING")
         self.assertGreater(roles[0]["match_percent"], roles[1]["match_percent"])
@@ -239,7 +213,7 @@ class TestRolePredictor(unittest.TestCase):
 
         clf = joblib.load(DEFAULT_CLASSIFIER_PATH)
         vec = joblib.load(DEFAULT_VECTORIZER_PATH)
-        raw_proba = clf.predict_proba(vec.transform([self.it_resume]))[0]
+        raw_proba = clf.predict_proba(vec.transform([clean_text(self.it_resume)]))[0]
         top_idx = int(np.argmax(raw_proba))
         raw_top_category = str(clf.classes_[top_idx])
         raw_top_prob_percent = float(raw_proba[top_idx]) * 100
@@ -254,8 +228,8 @@ class TestRolePredictor(unittest.TestCase):
         )
 
     def test_synthetic_short_resumes_across_professions(self):
-        """Synthetic short resumes (20-40 words) across clear professions (software engineer,
-        accountant, nurse, teacher, chef) engage fallback and return accurate categories with confidence='low'."""
+        """Synthetic short resumes (20-40 words) across clear professions are low-confidence
+        (shorter than DEFAULT_MIN_WORD_COUNT) and return the right category."""
         benchmarks = [
             (
                 "Frontend Web Developer experienced in building responsive modern web applications with TypeScript, React, Next.js, Redux, HTML5, CSS3, Tailwind CSS, and RESTful API integration.",
@@ -303,12 +277,13 @@ class TestRolePredictor(unittest.TestCase):
                 f"Expected one of {acceptable} for resume, got '{top_role}'. Text: {text}",
             )
 
-    def test_206_word_bedside_nurse_inherent_limitation_regression(self):
-        """Pin the 206-word realistic bedside nurse resume to its documented behavior.
+    def test_206_word_bedside_nurse_regression(self):
+        """206-word bedside nurse resume (a documented failure of the original model).
 
-        This serves as a regression anchor for the known limitation documented in README.md:
-        on full-length resumes (>= 150 words) with high raw model probability (>= 35%),
-        both safety filters are bypassed, predicting ADVOCATE with confidence='high' (~48.7%).
+        The first model predicted ADVOCATE at ~48.7% with confidence='high', because the
+        dataset's ADVOCATE category contains many patient-advocate resumes. Retraining with
+        sublinear TF plus consistent text cleaning moved it to HEALTHCARE, but ADVOCATE stays
+        a close second, so this pins the ranking rather than claiming the overlap is solved.
         """
         text = (
             "Staff Registered Nurse (RN) with 6 years of intensive bedside clinical nursing experience in a busy hospital "
@@ -330,10 +305,16 @@ class TestRolePredictor(unittest.TestCase):
 
         roles, confidence = predict_roles_with_confidence(text, top_n=3)
         self.assertEqual(confidence, "high")
-        self.assertEqual(roles[0]["role"], "ADVOCATE")
-        self.assertAlmostEqual(roles[0]["match_percent"], 48.7, delta=1.0)
-        self.assertEqual(roles[1]["role"], "HEALTHCARE")
-        self.assertAlmostEqual(roles[1]["match_percent"], 18.2, delta=1.0)
+        self.assertEqual(roles[0]["role"], "HEALTHCARE")
+        self.assertEqual(roles[1]["role"], "ADVOCATE")
+
+    def test_all_synthetic_short_resumes_top1(self):
+        """Every hand-written short resume in scripts/synthetic_resumes.py gets the right top-1 role."""
+        from scripts.synthetic_resumes import SYNTHETIC_SHORT_RESUMES
+
+        for item in SYNTHETIC_SHORT_RESUMES:
+            roles, _ = predict_roles_with_confidence(item["text"], top_n=3)
+            self.assertEqual(roles[0]["role"], item["true_role"], item["name"])
 
     def test_predict_roles_empty_string(self):
         """Empty or whitespace-only inputs return empty list."""
