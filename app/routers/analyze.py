@@ -4,6 +4,8 @@ Provides:
   POST /api/analyze       -- Full resume-job match scoring, skill breakdown,
                              actionable suggestions, and top-3 role suggestions
                              from an uploaded PDF/DOCX resume file + job description.
+  POST /api/recheck       -- Re-analyze an edited, structured resume.
+  POST /api/resume/docx   -- Download a structured resume as an ATS-friendly .docx.
   POST /api/suggest-roles -- Standalone top-N role predictions from an uploaded
                              resume file or resume text.
 """
@@ -12,20 +14,24 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import logging
+import re
 from typing import Any
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from app.schemas import AnalyzeResponse, SuggestRolesResponse
+from app.schemas.resume import RecheckRequest, StructuredResume
 from app.services.pipeline import (
     MAX_FILE_SIZE,
     REQUIRED_ANALYZE_MODELS,
     REQUIRED_ROLE_MODELS,
     PipelineError,
     run_full_analysis,
+    run_recheck,
     run_role_suggestion,
 )
+from app.services.resume_docx import build_resume_docx
 
 logger = logging.getLogger(__name__)
 
@@ -171,4 +177,26 @@ async def suggest_roles(
         top_n=_validate_top_n(top_n),
         is_json=False,
         required_models=REQUIRED_ROLE_MODELS,
+    )
+
+
+@router.post("/recheck", response_model=AnalyzeResponse)
+async def recheck(payload: RecheckRequest) -> dict[str, Any]:
+    """Re-analyze an edited, structured resume against the job description.
+
+    The resume is analyzed as plain text rendered from its sections, i.e. as it
+    would read in the downloaded ATS-friendly .docx.
+    """
+    return await _run_pipeline(run_recheck, resume=payload.resume, job_description=payload.job_description)
+
+
+@router.post("/resume/docx")
+async def resume_docx(resume: StructuredResume) -> Response:
+    """Return the structured resume as an ATS-friendly .docx file."""
+    content = await run_in_threadpool(build_resume_docx, resume)
+    stem = re.sub(r"[^A-Za-z0-9]+", "_", resume.name).strip("_") or "resume"
+    return Response(
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{stem}_resume.docx"'},
     )

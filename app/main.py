@@ -31,8 +31,8 @@ docs_enabled = os.getenv("ENABLE_DOCS", "false").lower() in ("true", "1", "yes")
 # multipart overhead. Larger bodies are rejected before they are buffered.
 MAX_REQUEST_BODY_BYTES = MAX_FILE_SIZE + 1024 * 1024
 
-# Analyses allowed per client IP per minute (0 disables the limit)
-RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "10"))
+# POST requests (analyze, re-check, download) per client IP per minute; 0 disables
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "20"))
 
 
 def _warm_up_models() -> None:
@@ -171,6 +171,8 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
+    # Lets the browser read the .docx filename on cross-origin downloads
+    expose_headers=["Content-Disposition"],
 )
 
 

@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.resume import AtsReport, StructuredResume
+
 
 class RolePrediction(BaseModel):
     role: str
@@ -34,6 +36,11 @@ class AnalyzeResponse(BaseModel):
     suggested_roles: list[RolePrediction]
     suggestions: list[str]
     confidence: Literal["high", "low"] = "high"
+    resume: StructuredResume = Field(
+        default_factory=StructuredResume,
+        description="The resume split into editable sections (best-effort parse).",
+    )
+    ats: AtsReport | None = Field(None, description="Rule-based ATS-friendliness estimate.")
 
 
 class SuggestRolesResponse(BaseModel):

@@ -1,0 +1,98 @@
+// Demo payloads for /?demo=high and /?demo=low. They have the same shape as a
+// real /api/analyze response, so the demo exercises the same UI code paths.
+
+const RESUME = {
+  name: 'Alex Sample',
+  headline: 'Computer Science (AI & ML) student | Aspiring software engineer',
+  email: 'alex.sample@example.com',
+  phone: '+91 98765 43210',
+  location: '',
+  links: ['linkedin.com/in/alexsample', 'github.com/alexsample'],
+  summary: 'Third-year B.Tech student who enjoys building web apps and machine learning projects.',
+  skills: ['Python', 'SQL', 'Git', 'Machine Learning', 'Docker', 'REST API'],
+  experience: [
+    {
+      title: 'Software Engineering Intern, Acme Labs',
+      subtitle: 'May 2025 – Jul 2025',
+      bullets: ['Built 6 REST API endpoints in FastAPI used by 3 internal teams.', 'Cut report generation time by 40% with SQL query tuning.'],
+    },
+  ],
+  projects: [
+    {
+      title: 'Event Registration Portal',
+      subtitle: 'React, FastAPI · 2025',
+      bullets: ['Built a portal used by 300+ students for college fest registrations.'],
+    },
+  ],
+  education: [{ title: 'B.Tech in Computer Science (AI & ML)', subtitle: 'State University · 2023 – 2027 · CGPA 8.6', bullets: [] }],
+  certifications: ['Python for Everybody (Coursera)'],
+  achievements: [],
+  additional: [],
+};
+
+const check = (id, category, title, status, detail, tip = '') => ({ id, category, title, status, detail, tip });
+
+export const DEMO_HIGH_RESULT = {
+  match_score: 82.86,
+  matched_skills: ['docker', 'git', 'machine learning', 'python', 'rest api', 'sql'],
+  missing_skills: ['aws', 'ci/cd', 'kubernetes'],
+  features: { tfidf_similarity: 0.2851, skill_overlap_ratio: 0.6667, resume_word_count: 612 },
+  score_breakdown: { baseline: 39.33, tfidf_similarity: 20.04, skill_overlap_ratio: 24.38, resume_word_count: -0.89 },
+  score_warnings: [],
+  resume_skills_count: 14,
+  required_skills_count: 9,
+  suggested_roles: [
+    { role: 'INFORMATION-TECHNOLOGY', match_percent: 71.2 },
+    { role: 'ENGINEERING', match_percent: 12.4 },
+    { role: 'CONSULTANT', match_percent: 4.1 },
+  ],
+  suggestions: [
+    "'aws': This is a commonly required skill across job postings — strongly consider adding it.",
+    "Consider adding 'ci/cd' to better match the job requirements.",
+    "Consider adding 'kubernetes' to better match the job requirements.",
+  ],
+  confidence: 'high',
+  resume: RESUME,
+  ats: {
+    score: 86.4,
+    verdict: 'ATS-friendly',
+    checks: [
+      check('readable_text', 'format', 'Text can be read', 'pass', 'All text was extracted cleanly.'),
+      check('no_tables', 'format', 'No tables', 'pass', 'No tables found.'),
+      check('single_column', 'format', 'Single-column layout', 'pass', 'Text flows in a single column.'),
+      check('no_images', 'format', 'No images or icons', 'pass', 'No images found.'),
+      check('email', 'content', 'Email address', 'pass', 'Email address found.'),
+      check('standard_sections', 'content', 'Standard section headings', 'pass', 'Found Experience/Projects, Education and Skills sections.'),
+      check('quantified', 'content', 'Measurable results', 'pass', '3 bullet points include numbers.'),
+      check('length', 'content', 'Resume length', 'warn', '232 words; 250–1,000 is typical.', 'Add detail to projects and experience.'),
+      check('keywords', 'keywords', 'Job keywords', 'pass', 'Your resume mentions 67% of the job’s skills.', 'Add the skills you genuinely have from the posting: aws, ci/cd, kubernetes.'),
+    ],
+  },
+};
+
+export const DEMO_LOW_RESULT = {
+  ...DEMO_HIGH_RESULT,
+  match_score: 30.49,
+  matched_skills: ['git', 'python'],
+  missing_skills: ['aws', 'ci/cd', 'docker', 'kubernetes', 'rest api', 'sql', 'terraform'],
+  features: { tfidf_similarity: 0.0712, skill_overlap_ratio: 0.2222, resume_word_count: 168 },
+  score_breakdown: { baseline: 39.33, tfidf_similarity: -8.05, skill_overlap_ratio: 3.08, resume_word_count: -3.87 },
+  suggested_roles: [
+    { role: 'INFORMATION-TECHNOLOGY', match_percent: 38.5 },
+    { role: 'ENGINEERING', match_percent: 17.9 },
+    { role: 'DESIGNER', match_percent: 9.3 },
+  ],
+  confidence: 'low',
+  resume: { ...RESUME, skills: ['Python', 'Git'], experience: [] },
+  ats: {
+    score: 52.6,
+    verdict: 'Needs work',
+    checks: [
+      check('no_tables', 'format', 'No tables', 'warn', 'Found 1 table(s). Many ATS read tables cell by cell and scramble the order.', 'Replace tables with plain lines.'),
+      check('single_column', 'format', 'Single-column layout', 'warn', 'The page looks like it has two columns.', 'Use a single-column layout.'),
+      check('email', 'content', 'Email address', 'pass', 'Email address found.'),
+      check('quantified', 'content', 'Measurable results', 'fail', '0 bullet point(s) include numbers.', 'Show impact with numbers: users, %, time saved.'),
+      check('keywords', 'keywords', 'Job keywords', 'fail', 'Your resume mentions only 22% of the job’s skills.', 'Add the skills you genuinely have from the posting: aws, docker, sql.'),
+    ],
+  },
+};

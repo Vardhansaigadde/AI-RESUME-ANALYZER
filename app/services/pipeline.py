@@ -13,9 +13,12 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 from app.ml.features import DEFAULT_VECTORIZER_PATH as TFIDF_VECTORIZER_PATH
+from app.schemas.resume import StructuredResume
+from app.services.ats_checker import check_ats
 from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
 from app.services.matcher import match_resume_to_job
-from app.services.parser import extract_text_from_file
+from app.services.parser import LayoutInfo, extract_text_from_file, inspect_layout
+from app.services.resume_sections import parse_resume, render_resume_text
 from app.services.role_predictor import (
     DEFAULT_CLASSIFIER_PATH as ROLE_CLASSIFIER_PATH,
 )
@@ -174,6 +177,7 @@ def run_full_analysis(
         Complete dictionary matching the AnalyzeResponse schema.
     """
     # 1. Validate & extract resume text
+    layout: LayoutInfo | None = None
     if is_json:
         if not resume_text or not str(resume_text).strip():
             raise PipelineError("resume_text must not be empty.", status_code=422)
@@ -188,6 +192,7 @@ def run_full_analysis(
                 status_code=400,
             )
         resume_content_text = validate_and_extract_file(resume_bytes, filename)
+        layout = inspect_layout(resume_bytes, filename)
 
         if job_description is None or not str(job_description).strip():
             raise PipelineError(
@@ -200,6 +205,28 @@ def run_full_analysis(
     models_to_check = required_models if required_models is not None else REQUIRED_ANALYZE_MODELS
     verify_models_present(models_to_check)
 
+    return _analyze_text(resume_content_text, job_content_text, parse_resume(resume_content_text), layout)
+
+
+def run_recheck(resume: StructuredResume, job_description: str) -> dict[str, Any]:
+    """Analyze an edited, structured resume (as it would appear in the downloaded .docx)."""
+    job_content_text = str(job_description or "").strip()
+    if not job_content_text:
+        raise PipelineError("job_description must not be empty.", status_code=422)
+    resume_content_text = render_resume_text(resume)
+    if not resume_content_text.strip():
+        raise PipelineError("The resume is empty.", status_code=422)
+    verify_models_present(REQUIRED_ANALYZE_MODELS)
+    return _analyze_text(resume_content_text, job_content_text, resume, layout=None)
+
+
+def _analyze_text(
+    resume_content_text: str,
+    job_content_text: str,
+    resume: StructuredResume,
+    layout: LayoutInfo | None,
+) -> dict[str, Any]:
+    """Match score, suggestions, roles and ATS report for resume text vs a job."""
     # 3. Compute match score & skill breakdown
     match_result = match_resume_to_job(
         resume_text=resume_content_text,
@@ -218,8 +245,19 @@ def run_full_analysis(
         top_n=3,
     )
 
+    # 6. ATS-friendliness report
+    ats = check_ats(
+        resume_content_text,
+        resume,
+        layout=layout,
+        job_skill_overlap=match_result["features"].get("skill_overlap_ratio"),
+        missing_skills=match_result["missing_skills"],
+    )
+
     return {
         **match_result,
+        "resume": resume,
+        "ats": ats,
         "suggested_roles": roles,
         "suggestions": suggestions,
         "confidence": confidence,

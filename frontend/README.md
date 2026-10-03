@@ -1,11 +1,22 @@
 # FitLens frontend
 
-React 19 + Vite single-page app for the Resume Analyzer. It uploads a resume
-(PDF/DOCX) and a job description to the FastAPI backend and shows the match
-score, a per-factor score breakdown, matched and missing skills, suggestions
-and the closest job categories.
+React 19 + Vite + Tailwind CSS 4 single-page app for the Resume Analyzer. Upload a resume
+(PDF/DOCX) and a job description to get a match score with a per-factor breakdown, an ATS check,
+and an editor to fix the resume, re-check it and download an ATS-friendly `.docx`.
 
 Live: <https://resumefitlens.vercel.app>
+
+## Design
+
+A "paper & highlighter" theme: warm paper surfaces, ink text, one ink-blue accent, highlighter
+yellow for matches and a red pen for gaps. Fraunces for headings, Inter for text, JetBrains Mono
+for numbers. Light and dark themes follow the system setting until the user picks one (saved in
+`localStorage`).
+
+Motion (Framer Motion) is small and purposeful: matched skills get a highlighter swipe, missing
+ones a hand-drawn red underline, the ATS score lands like a rubber stamp, the active tab is a
+highlighter stroke that springs between tabs, and scores count up. Everything respects the OS
+"reduce motion" setting (`MotionConfig reducedMotion="user"`).
 
 ## Run locally
 
@@ -14,20 +25,26 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-The dev server proxies `/api/*` to `http://127.0.0.1:8000` (see
-`vite.config.js`), so start the backend from the repository root first:
+The dev server proxies `/api/*` to `http://127.0.0.1:8000` (see `vite.config.js`), so start the
+backend from the repository root first:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Other scripts: `npm run build` (production bundle in `dist/`), `npm run preview`
-(serve the build), `npm run lint` (oxlint).
+Other scripts: `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build),
+`npm run lint` (oxlint).
 
 ## How it talks to the API
 
-`src/App.jsx` posts `multipart/form-data` (`resume_file`, `job_description`) to
-`${VITE_API_BASE_URL}/api/analyze`:
+`src/lib/api.js` calls `${VITE_API_BASE_URL}/api/...` with a 120 s timeout (the free Render
+instance can take close to a minute to wake up):
+
+| Call | Endpoint |
+| --- | --- |
+| Analyze an upload | `POST /api/analyze` (multipart `resume_file`, `job_description`) |
+| Re-check the edited resume | `POST /api/recheck` (JSON) |
+| Download the edited resume | `POST /api/resume/docx` (JSON → `.docx`) |
 
 | Environment | `VITE_API_BASE_URL` | Requests go to |
 | --- | --- | --- |
@@ -35,37 +52,41 @@ Other scripts: `npm run build` (production bundle in `dist/`), `npm run preview`
 | Vercel (production) | `https://ai-resume-analyzer-xb45.onrender.com` (Vercel env var) | the Render backend directly; it allows this origin via `CORS_ORIGINS` |
 | Vercel without the env var | unset | `/api/*` → `vercel.json` rewrite → the same Render backend |
 
-Requests time out after 120 s, because the free Render instance can take
-close to a minute to wake up.
-
 ## Demo mode
 
-Open `/?demo=high` or `/?demo=low` to render the results page with sample
-data that has the same shape as a real `/api/analyze` response, so you can
-work on the UI without running the backend.
+Open `/?demo=high` or `/?demo=low` to see the results page with sample data (same shape as a real
+`/api/analyze` response, defined in `src/lib/demo.js`) without running the backend.
 
 ## Structure
 
 ```text
 src/
-├── App.jsx                  view switching, routing (/, /privacy, /terms), API call
-├── components/
-│   ├── UploadView.jsx       file drop zone (type/size checks) + job description
-│   ├── AnalyzingView.jsx    loading state with a cold-start notice
-│   ├── ResultsView.jsx      results layout
-│   ├── ScoreGauge.jsx       score gauge, quick metrics, short-input warnings, "Why this score?"
-│   ├── SkillChips.jsx       matched / missing skills
-│   ├── SuggestionsSection.jsx
-│   ├── RoleBarChart.jsx     top job categories + low-confidence notice
-│   ├── Toast.jsx            error toast
-│   ├── ErrorBoundary.jsx
-│   └── NotFoundView.jsx, PrivacyPolicyView.jsx, TermsOfUseView.jsx
-├── hooks/useCountUp.js      number count-up animation
-└── utils/format.js          display labels for skills, roles and score factors
+├── App.jsx                      routing (/, /privacy, /terms), upload → analyzing → results flow
+├── main.jsx, index.css          entry point; Tailwind theme tokens (light + dark) and base styles
+├── lib/
+│   ├── api.js                   fetch wrappers, timeouts, error messages, .docx download
+│   ├── demo.js                  demo payloads
+│   └── resume.js                editor draft helpers, score colours
+├── hooks/                       useCountUp (number animation), useTheme (light/dark)
+├── utils/format.js              display labels for skills, roles and score factors
+└── components/
+    ├── layout/                  Header (logo, theme toggle), Footer
+    ├── ui/                      Button, Tabs (animated), Toast
+    ├── upload/UploadView.jsx    hero, resume drop zone, job description
+    ├── AnalyzingView.jsx        loading state with a cold-start notice
+    ├── results/
+    │   ├── ResultsView.jsx      summary + tabs, re-check/download actions
+    │   ├── SummaryCards.jsx     match dial, ATS stamp, closest job category
+    │   ├── MatchTab.jsx         score breakdown, skills, suggestions, job categories
+    │   ├── AtsTab.jsx           ATS checklist with fixes
+    │   ├── EditTab.jsx          section-by-section resume editor
+    │   └── edit/fields.jsx      text fields, skill tag input, list and entry editors
+    ├── pages/LegalPages.jsx     Privacy, Terms, 404
+    └── ErrorBoundary.jsx
 ```
 
 ## Deployment (Vercel)
 
-The Vercel project's **Root Directory is `frontend`**, so `frontend/vercel.json`
-is the active config: Vite build to `dist/`, `/api/*` rewritten to the Render
-backend, and every other path served `index.html` for client-side routing.
+The Vercel project's **Root Directory is `frontend`**, so `frontend/vercel.json` is the active
+config: Vite build to `dist/`, `/api/*` rewritten to the Render backend, and every other path
+served `index.html` for client-side routing.

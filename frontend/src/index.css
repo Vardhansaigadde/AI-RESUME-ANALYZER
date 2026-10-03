@@ -1,273 +1,130 @@
-/* ==========================================================================
-   FitLens Design System & Global Styles
-   Colors: Navy #1B2340, Brand Teal #0D9488, Success Green #10B981,
-   Warning #F59E0B, Danger #EF4444, Background #F8FAFC
-   ========================================================================== */
+@import 'tailwindcss';
 
-:root {
-  /* Navy Brand Dark Palette */
-  --navy-deep: #12182b;
-  --navy: #1b2340;
-  --navy-medium: #242e54;
-  --navy-light: #2f3c6d;
-  --navy-card: rgba(27, 35, 64, 0.82);
-  --navy-border: rgba(13, 148, 136, 0.22);
-  
-  /* Brand Teal (#0D9488) - Buttons, links, logo, progress fills, brand chrome ONLY */
-  --brand-teal: #0d9488;
-  --brand-teal-dark: #0f766e;
-  --brand-teal-light: #14b8a6;
-  --brand-teal-glow: rgba(13, 148, 136, 0.35);
-  --brand-teal-bg: rgba(13, 148, 136, 0.12);
-  --brand-teal-border: rgba(13, 148, 136, 0.3);
-  --teal: #0d9488;
-  --teal-light: #14b8a6;
-  
-  /* Success Green (#10B981) - Score >70, matched skills, verified status ONLY */
-  --success: #10b981;
-  --success-dark: #059669;
-  --success-light: #34d399;
-  --success-glow: rgba(16, 185, 129, 0.35);
-  --success-bg: rgba(16, 185, 129, 0.12);
-  --success-border: rgba(16, 185, 129, 0.3);
+/* Dark mode follows the `dark` class on <html> (set from the saved or system theme) */
+@custom-variant dark (&:where(.dark, .dark *));
 
-  /* Warning Amber (#F59E0B) - Score 40-70, caution warnings */
-  --warning: #f59e0b;
-  --warning-dark: #d97706;
-  --warning-bg: rgba(245, 158, 11, 0.12);
-  --warning-border: rgba(245, 158, 11, 0.3);
-  --amber: #f59e0b;
-  
-  /* Danger Red (#EF4444) - Score <40, missing skills, errors */
-  --danger: #ef4444;
-  --danger-dark: #dc2626;
-  --danger-bg: rgba(239, 68, 68, 0.12);
-  --danger-border: rgba(239, 68, 68, 0.3);
-  --coral: #ef4444;
-  --coral-dark: #dc2626;
-  --coral-bg: rgba(239, 68, 68, 0.12);
-  --coral-border: rgba(239, 68, 68, 0.3);
-  
-  /* Neutrals */
-  --off-white: #f8fafc;
-  --card-white: #ffffff;
-  --border-light: #e2e8f0;
-  
-  /* Typography */
-  --text-dark: #0f172a;
-  --text-body: #334155;
-  --text-muted: #64748b;
-  --text-light: #f8fafc;
-  --text-light-muted: #94a3b8;
+/*
+ * "Paper & highlighter" theme: warm paper surfaces, ink text, one ink-blue
+ * accent, a highlighter yellow for matches and a red pen for gaps.
+ */
+@theme {
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --color-paper: #f7f3ea;
+  --color-card: #fffdf8;
+  --color-sunken: #efe9dc;
+  --color-line: #e3dccb;
+  --color-ink: #1d1c19;
+  --color-muted: #6c665b;
+  --color-accent: #3451f0;
+  --color-accent-soft: #e3e8ff;
+  --color-highlight: #ffe36e;
+  --color-pen: #d9443f;
+  --color-pen-soft: #fbe3e1;
+  --color-ok: #23875a;
+  --color-ok-soft: #dcf2e6;
+  --color-warn: #b7700c;
+  --color-warn-soft: #fbecd2;
 
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-full: 9999px;
-  
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 30px var(--brand-teal-glow);
+  --shadow-paper: 0 1px 0 rgb(29 28 25 / 0.04), 0 8px 24px -12px rgb(29 28 25 / 0.18);
+  --shadow-lift: 0 2px 0 rgb(29 28 25 / 0.05), 0 18px 40px -16px rgb(29 28 25 / 0.28);
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  width: 100%;
-  min-height: 100%;
-  font-family: var(--font-body);
-  background-color: var(--navy-deep);
-  color: var(--text-light);
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ==========================================================================
-   Background Floating Orbs (Upload & Analyzing views)
-   Pure CSS, low opacity, subtle drifting animation
-   ========================================================================== */
-
-.ambient-background {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 0%, #242e54 0%, #1b2340 60%, #12182b 100%);
-}
-
-.ambient-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.18;
-  mix-blend-mode: screen;
-  will-change: transform;
-}
-
-.orb-1 {
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, #0d9488 0%, rgba(13, 148, 136, 0) 70%);
-  top: -100px;
-  left: -100px;
-  animation: floatOrb1 24s ease-in-out infinite alternate;
-}
-
-.orb-2 {
-  width: 650px;
-  height: 650px;
-  background: radial-gradient(circle, #0f766e 0%, rgba(15, 118, 110, 0) 70%);
-  bottom: -150px;
-  right: -100px;
-  animation: floatOrb2 28s ease-in-out infinite alternate;
-}
-
-.orb-3 {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, #242e54 0%, rgba(36, 46, 84, 0) 70%);
-  top: 40%;
-  left: 60%;
-  opacity: 0.2;
-  animation: floatOrb3 32s ease-in-out infinite alternate;
-}
-
-@keyframes floatOrb1 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(80px, 100px) scale(1.1); }
-  100% { transform: translate(40px, 40px) scale(0.95); }
-}
-
-@keyframes floatOrb2 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-100px, -80px) scale(1.15); }
-  100% { transform: translate(-40px, -40px) scale(0.9); }
-}
-
-@keyframes floatOrb3 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-60px, 80px) scale(1.05); }
-  100% { transform: translate(30px, -50px) scale(0.95); }
-}
-
-/* ==========================================================================
-   Navigation Header
-   ========================================================================== */
-
-.app-navbar {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 2rem;
-  max-width: 1240px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.brand-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  color: var(--text-light);
-}
-
-.brand-logo-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--brand-teal-light), var(--brand-teal));
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px var(--brand-teal-glow);
-}
-
-.brand-title {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 1.4rem;
-  letter-spacing: -0.02em;
-}
-
-.brand-title span {
-  color: var(--brand-teal-light);
-}
-
-.badge-tag {
-  background: var(--brand-teal-bg);
-  color: var(--brand-teal-light);
-  border: 1px solid var(--brand-teal-border);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.65rem;
-  border-radius: var(--radius-full);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* ==========================================================================
-   Button Pulsing Glow when Enabled
-   ========================================================================== */
-
-.analyze-button-enabled {
-  animation: pulseGlow 2.5s infinite;
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 4px 20px rgba(13, 148, 136, 0.4), 0 0 0 0 rgba(13, 148, 136, 0.4);
+@layer base {
+  .dark {
+    --color-paper: #161512;
+    --color-card: #1f1e1a;
+    --color-sunken: #282620;
+    --color-line: #36342d;
+    --color-ink: #f1ece2;
+    --color-muted: #a39d90;
+    --color-accent: #8b9cff;
+    --color-accent-soft: #262b4a;
+    --color-highlight: #8a7420;
+    --color-pen: #ff7a73;
+    --color-pen-soft: #3d2423;
+    --color-ok: #5fd39a;
+    --color-ok-soft: #1d3428;
+    --color-warn: #f2b45a;
+    --color-warn-soft: #3a2d17;
+    --shadow-paper: 0 1px 0 rgb(0 0 0 / 0.3), 0 10px 28px -14px rgb(0 0 0 / 0.7);
+    --shadow-lift: 0 2px 0 rgb(0 0 0 / 0.35), 0 20px 44px -18px rgb(0 0 0 / 0.8);
   }
-  50% {
-    box-shadow: 0 6px 30px rgba(13, 148, 136, 0.6), 0 0 0 8px rgba(13, 148, 136, 0);
+
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    /* Faint ruled-paper texture */
+    background-image: radial-gradient(rgb(29 28 25 / 0.045) 1px, transparent 1px);
+    background-size: 22px 22px;
+    min-height: 100vh;
+  }
+  .dark body {
+    background-image: radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  ::selection {
+    background: var(--color-highlight);
+    color: var(--color-ink);
   }
 }
 
-/* ==========================================================================
-   Hover-Lift for Cards
-   ========================================================================== */
-
-.hover-lift {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-card shadow-[var(--shadow-paper)];
+  }
+  .field {
+    @apply w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/70 transition focus:border-accent focus:ring-4 focus:ring-accent/15 focus:outline-none;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold tracking-wide text-muted uppercase;
+  }
+  .prose-legal h2 {
+    @apply mt-10 mb-3 font-display text-2xl font-semibold;
+  }
+  .prose-legal p,
+  .prose-legal li {
+    @apply leading-relaxed text-muted;
+  }
+  .prose-legal ul {
+    @apply mt-3 list-disc space-y-2 pl-5;
+  }
+  .prose-legal strong {
+    @apply text-ink;
+  }
 }
 
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+/* Marker highlight behind text (used for matched skills and the hero) */
+.marker {
+  background-image: linear-gradient(
+    100deg,
+    transparent 0.4em,
+    var(--color-highlight) 0.5em,
+    var(--color-highlight) calc(100% - 0.4em),
+    transparent calc(100% - 0.3em)
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 62%;
+  background-position: 0 85%;
 }
-
-/* ==========================================================================
-   Prefers Reduced Motion
-   ========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .ambient-orb {
-    display: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
   }
 }

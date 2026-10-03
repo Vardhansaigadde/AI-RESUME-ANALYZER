@@ -5,8 +5,10 @@
 Upload a resume (PDF or DOCX) and paste a job description. FitLens returns:
 
 - a **match score (0–100)** with a breakdown of what raised or lowered it,
-- the job's skills you **have** and are **missing**,
-- up to five **suggestions** (missing skills first, plus structural fixes),
+- the job's skills you **have** and are **missing**, plus up to five **suggestions**,
+- an **ATS check**: a 0–100 estimate of how well applicant tracking systems can read it, with fixes,
+- an **editor**: your resume split into sections you can edit, re-check and download as an
+  ATS-friendly `.docx`,
 - the three **job categories** your resume most resembles, with a high/low confidence flag.
 
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
@@ -18,15 +20,18 @@ Browser (React, Vercel)
   │  POST {VITE_API_BASE_URL}/api/analyze   multipart: resume_file + job_description
   ▼
 FastAPI on Render (Docker)
-  app/main.py                 CORS, 6 MB body limit, 10 req/min per-IP rate limit
-  app/routers/analyze.py      validation, threadpool execution
+  app/main.py                 CORS, 6 MB body limit, 20 req/min per-IP rate limit
+  app/routers/analyze.py      /analyze, /recheck, /resume/docx, /suggest-roles
   app/services/pipeline.py    file checks (type, 5 MB, magic bytes) → orchestration
-    ├─ parser.py              pdfplumber / python-docx → text
+    ├─ parser.py              pdfplumber / python-docx → text, plus layout facts (tables, columns, images…)
     ├─ data_cleaning.py       same normalization used to build the training data
     ├─ skill_extractor.py     regex over a 423-skill taxonomy + aliases (k8s → kubernetes)
-    ├─ matcher.py             3 features → RobustScaler → Ridge → score + breakdown
+    ├─ matcher.py             3 features → RobustScaler → Ridge → soft-capped score + breakdown
     ├─ suggestions.py         rule-based, max 5 (2 slots reserved for structural issues)
-    └─ role_predictor.py      TF-IDF → calibrated LinearSVC (24 categories) + skill-overlap fallback
+    ├─ role_predictor.py      TF-IDF → calibrated LinearSVC (24 categories) + skill-overlap fallback
+    ├─ resume_sections.py     resume text ↔ editable sections (contact, skills, experience…)
+    ├─ ats_checker.py         rule-based ATS-friendliness report
+    └─ resume_docx.py         sections → ATS-friendly .docx
 ```
 
 ### Match score
@@ -57,6 +62,29 @@ probability is low or the resume is short, predictions are blended with skill ov
 hand-curated role profiles (`app/data/role_profiles.json`). The response says `"confidence": "low"`
 when the final top probability is below 50 %: on held-out resumes those predictions were right
 ~34 % of the time, versus ~70 % above it.
+
+### ATS check
+
+`app/services/ats_checker.py` checks the things that most often break applicant tracking systems
+and weights them into a 0–100 estimate (pass = full weight, warn = half, fail = 0):
+
+| Area | Checks |
+| --- | --- |
+| Format & layout (uploaded file) | text extracts cleanly, no tables, single column (PDF column detection), no images, no text boxes, contact details not only in the page header/footer, ≤ 2 pages |
+| Content | email, phone, LinkedIn/portfolio link, standard section headings, 250–1,000 words, bullet points, bullets with numbers, bullets starting with action verbs, no emoji/icon characters |
+| Keywords | share of the job's skills found in the resume |
+
+It is a transparent heuristic, not the output of a real ATS. Edited or pasted resumes are exported
+through the plain single-column `.docx` template, so their layout checks count as passes.
+
+### Edit & re-check
+
+`resume_sections.py` splits the extracted text into contact details, summary, skills, experience,
+projects, education, certifications and other sections (headings, bullets, wrapped lines and date
+lines are recognised; all 2,484 dataset resumes parse without errors). The UI shows them as an
+editable form; **Re-check** analyzes the edited version (`POST /api/recheck`) and **Download**
+builds an ATS-friendly `.docx` (`POST /api/resume/docx`: one column, standard headings, real Word
+bullet lists, no tables, images or headers).
 
 ## Data
 
@@ -162,14 +190,19 @@ cd frontend && npm run lint && npm run build
 `POST /api/analyze` — multipart `resume_file` (PDF/DOCX, ≤ 5 MB) + `job_description`, or JSON
 `{"resume_text": "...", "job_text": "..."}`. Returns `match_score`, `score_breakdown`, `features`,
 `matched_skills`, `missing_skills` (sorted), `score_warnings`, `suggestions`, `suggested_roles`,
-`confidence`.
+`confidence`, `resume` (editable sections) and `ats` (score, verdict, checks).
+
+`POST /api/recheck` — JSON `{"resume": {...sections}, "job_description": "..."}`. Same response as
+`/api/analyze`, for the edited resume.
+
+`POST /api/resume/docx` — JSON resume sections; returns an ATS-friendly `.docx` download.
 
 `POST /api/suggest-roles` — a resume file or `resume_text`, optional `top_n` (1–24).
 
 `GET /` (or `HEAD /`) — health check.
 
 Errors are JSON `{"detail": "..."}`: 400 invalid file or input, 413 body over 6 MB, 422 validation,
-429 more than 10 analyses per minute from one IP (with `Retry-After`), 503 model files missing.
+429 more than 20 requests per minute from one IP (with `Retry-After`), 503 model files missing.
 
 ## Retraining the models
 
@@ -197,7 +230,7 @@ mirrors them for recreating it as a Blueprint. Environment variables (set in the
 | --- | --- | --- |
 | `CORS_ORIGINS` | localhost dev origins | comma-separated origins allowed to call the API; must include `https://resumefitlens.vercel.app` |
 | `ENABLE_DOCS` | `false` | expose `/docs` and `/openapi.json` |
-| `RATE_LIMIT_PER_MINUTE` | `10` | analyses per client IP per minute (`0` disables) |
+| `RATE_LIMIT_PER_MINUTE` | `20` | POST requests (analyze, re-check, download) per client IP per minute (`0` disables) |
 | `LOG_LEVEL` | `INFO` | log level |
 
 On the free plan the service sleeps after ~15 minutes idle. The `Keep backend awake` GitHub Actions
@@ -217,7 +250,7 @@ same backend.
 ## Project structure
 
 ```text
-app/                FastAPI app (main.py, rate_limit.py), routers, schemas, services, ml/features.py, data/*.json
+app/                FastAPI app (main.py, rate_limit.py), routers, schemas (analysis, resume), services, ml/, data/*.json
 data/raw/           source datasets (.csv.gz)
 data/processed/     cleaned datasets and features.csv (generated)
 models/             serialized models (~5.2 MB total)
