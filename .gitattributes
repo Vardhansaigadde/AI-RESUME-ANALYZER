@@ -1,0 +1,8 @@
+# Normalize line endings: LF in the repository and on checkout
+* text=auto eol=lf
+
+# Binary artifacts
+*.joblib binary
+*.gz binary
+*.png binary
+*.svg text
