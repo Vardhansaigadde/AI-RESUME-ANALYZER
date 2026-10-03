@@ -85,4 +85,5 @@ export const FEATURE_LABELS = {
   tfidf_similarity: 'Wording similarity to the job',
   skill_overlap_ratio: 'Required skills you have',
   resume_word_count: 'Resume length',
+  range_adjustment: 'Kept within the 0–100 scale',
 };

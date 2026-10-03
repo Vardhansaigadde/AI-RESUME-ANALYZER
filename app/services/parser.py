@@ -9,7 +9,7 @@ from __future__ import annotations
 import io
 import logging
 from pathlib import Path
-from typing import BinaryIO, Union
+from typing import BinaryIO
 
 import docx
 import pdfplumber
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
 
 
-def extract_text_from_pdf(source: Union[bytes, BinaryIO, Path, str]) -> str:
+def extract_text_from_pdf(source: bytes | BinaryIO | Path | str) -> str:
     """Extract all text content across pages from a PDF document.
 
     Args:
@@ -35,7 +35,7 @@ def extract_text_from_pdf(source: Union[bytes, BinaryIO, Path, str]) -> str:
         stream = io.BytesIO(source) if isinstance(source, bytes) else source
         text_parts: list[str] = []
         with pdfplumber.open(stream) as pdf:
-            for page_idx, page in enumerate(pdf.pages):
+            for page in pdf.pages:
                 page_text = page.extract_text()
                 if page_text:
                     text_parts.append(page_text.strip())
@@ -45,7 +45,7 @@ def extract_text_from_pdf(source: Union[bytes, BinaryIO, Path, str]) -> str:
         raise ValueError(f"Failed to extract text from PDF: {exc}") from exc
 
 
-def extract_text_from_docx(source: Union[bytes, BinaryIO, Path, str]) -> str:
+def extract_text_from_docx(source: bytes | BinaryIO | Path | str) -> str:
     """Extract all text content from paragraphs and tables in a DOCX document.
 
     Args:
@@ -100,6 +100,4 @@ def extract_text_from_file(file_content: bytes, filename: str) -> str:
     elif ext == ".docx":
         return extract_text_from_docx(file_content)
     else:
-        raise ValueError(
-            f"Unsupported file format '{ext}'. Only PDF (.pdf) and DOCX (.docx) files are supported."
-        )
+        raise ValueError(f"Unsupported file format '{ext}'. Only PDF (.pdf) and DOCX (.docx) files are supported.")

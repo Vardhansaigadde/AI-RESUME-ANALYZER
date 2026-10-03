@@ -27,6 +27,7 @@ const DEMO_HIGH_RESULT = {
     skill_overlap_ratio: 24.38,
     resume_word_count: -0.89,
   },
+  score_warnings: [],
   resume_skills_count: 14,
   required_skills_count: 9,
   suggested_roles: [
@@ -57,6 +58,7 @@ const DEMO_LOW_RESULT = {
     skill_overlap_ratio: 3.08,
     resume_word_count: -3.87,
   },
+  score_warnings: [],
   resume_skills_count: 5,
   required_skills_count: 9,
   suggested_roles: [

@@ -20,8 +20,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from app.services.data_cleaning import safe_parse_skills
 import pandas as pd
+
+from app.services.data_cleaning import safe_parse_skills
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("classify_skills")
@@ -29,23 +30,69 @@ logger = logging.getLogger("classify_skills")
 # Known exact technical names, software, languages, and tools
 EXACT_TECH_KEYWORDS = {
     # Office & productivity suites
-    "excel", "microsoft excel", "powerpoint", "microsoft powerpoint",
-    "word", "microsoft word", "outlook", "microsoft office",
-    "microsoft office suite", "ms office", "microsoft project",
+    "excel",
+    "microsoft excel",
+    "powerpoint",
+    "microsoft powerpoint",
+    "word",
+    "microsoft word",
+    "outlook",
+    "microsoft office",
+    "microsoft office suite",
+    "ms office",
+    "microsoft project",
     # Programming & Web technologies
-    "html", "css", "javascript", "python", "java", "c++", "c#", "c",
-    "php", "sql", "mysql", "r", "ruby", "matlab",
+    "html",
+    "css",
+    "javascript",
+    "python",
+    "java",
+    "c++",
+    "c#",
+    "c",
+    "php",
+    "sql",
+    "mysql",
+    "r",
+    "ruby",
+    "matlab",
     # Design, CAD & Creative tools
-    "autocad", "cad", "adobe creative suite", "photoshop", "illustrator",
-    "indesign", "figma", "sketch", "revit", "solidworks", "visio",
+    "autocad",
+    "cad",
+    "adobe creative suite",
+    "photoshop",
+    "illustrator",
+    "indesign",
+    "figma",
+    "sketch",
+    "revit",
+    "solidworks",
+    "visio",
     # Enterprise & Cloud software
-    "sap", "oracle", "salesforce", "crm (salesforce)", "quickbooks",
-    "sharepoint", "google analytics", "hris", "erp", "crm",
+    "sap",
+    "oracle",
+    "salesforce",
+    "crm (salesforce)",
+    "quickbooks",
+    "sharepoint",
+    "google analytics",
+    "hris",
+    "erp",
+    "crm",
     # Infrastructure, OS, Tech concepts
-    "linux", "unix", "seo", "a/b testing", "cybersecurity", "video editing",
-    "network architecture", "it infrastructure management",
-    "server management", "infrastructure automation", "automation",
-    "hardware", "programming",
+    "linux",
+    "unix",
+    "seo",
+    "a/b testing",
+    "cybersecurity",
+    "video editing",
+    "network architecture",
+    "it infrastructure management",
+    "server management",
+    "infrastructure automation",
+    "automation",
+    "hardware",
+    "programming",
 }
 
 # Regex pattern for technical suffixes indicating software, tools, platforms, or systems
@@ -94,7 +141,7 @@ def main():
     # -------------------------------------------------------------------------
     # 1. Classify the 300 exported skills
     # -------------------------------------------------------------------------
-    with open(skills_json_path, "r", encoding="utf-8") as f:
+    with open(skills_json_path, encoding="utf-8") as f:
         skills_300 = json.load(f)
 
     technical_skills = []
@@ -110,8 +157,9 @@ def main():
     print("PART 1: CLASSIFICATION OF TOP 300 EXPORTED SKILLS")
     print("=" * 70)
     print(f"Total Skills Evaluated : {len(skills_300)}")
-    print(f"Technical Skills       : {len(technical_skills)} ({len(technical_skills)/len(skills_300)*100:.1f}%)")
-    print(f"Soft / Business Skills : {len(soft_business_skills)} ({len(soft_business_skills)/len(skills_300)*100:.1f}%)")
+    print(f"Technical Skills       : {len(technical_skills)} ({len(technical_skills) / len(skills_300) * 100:.1f}%)")
+    soft_pct = len(soft_business_skills) / len(skills_300) * 100
+    print(f"Soft / Business Skills : {len(soft_business_skills)} ({soft_pct:.1f}%)")
     print("-" * 70)
     print(f"FULL LIST OF TECHNICAL SKILLS FOUND ({len(technical_skills)} total):")
     print("-" * 70)

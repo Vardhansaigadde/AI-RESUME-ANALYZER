@@ -10,18 +10,14 @@ Provides:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import logging
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
 
-from app.schemas import (
-    AnalyzeResponse,
-    RolePrediction,
-    RolesOnlyResponse,
-    SuggestRolesResponse,
-)
+from app.schemas import AnalyzeResponse, SuggestRolesResponse
 from app.services.pipeline import (
     MAX_FILE_SIZE,
     REQUIRED_ANALYZE_MODELS,
@@ -38,18 +34,18 @@ router = APIRouter(prefix="/api", tags=["analysis"])
 MAX_TOP_N = 24  # number of role categories the classifier knows
 
 
-async def _read_json_object(request: Request) -> Dict[str, Any]:
+async def _read_json_object(request: Request) -> dict[str, Any]:
     """Parse the request body as a JSON object or raise a clean 400/422."""
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+        raise HTTPException(status_code=400, detail="Invalid JSON body.") from None
     if not isinstance(body, dict):
         raise HTTPException(status_code=422, detail="JSON body must be an object.")
     return body
 
 
-def _as_optional_text(value: Any, field: str) -> Optional[str]:
+def _as_optional_text(value: Any, field: str) -> str | None:
     """Validate that a JSON field is a string (or missing)."""
     if value is None:
         return None
@@ -62,16 +58,14 @@ def _validate_top_n(value: Any) -> int:
     """Coerce top_n to an int in [1, MAX_TOP_N] or raise a clean 422."""
     try:
         top_n = int(value)
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=422, detail="top_n must be an integer.")
+    except TypeError, ValueError:
+        raise HTTPException(status_code=422, detail="top_n must be an integer.") from None
     if not 1 <= top_n <= MAX_TOP_N:
-        raise HTTPException(
-            status_code=422, detail=f"top_n must be between 1 and {MAX_TOP_N}."
-        )
+        raise HTTPException(status_code=422, detail=f"top_n must be between 1 and {MAX_TOP_N}.")
     return top_n
 
 
-async def _read_upload(uploaded_file: Optional[UploadFile]) -> Tuple[Optional[bytes], Optional[str]]:
+async def _read_upload(uploaded_file: UploadFile | None) -> tuple[bytes | None, str | None]:
     """Read an uploaded file, stopping as soon as it exceeds the size limit.
 
     The request body itself is already capped by BodySizeLimitMiddleware in
@@ -84,7 +78,7 @@ async def _read_upload(uploaded_file: Optional[UploadFile]) -> Tuple[Optional[by
     return content, uploaded_file.filename
 
 
-async def _run_pipeline(func: Callable[..., Dict[str, Any]], **kwargs: Any) -> Dict[str, Any]:
+async def _run_pipeline(func: Callable[..., dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
     """Run a CPU-bound pipeline function in the threadpool.
 
     Parsing, regex skill extraction and model inference are synchronous and
@@ -94,17 +88,17 @@ async def _run_pipeline(func: Callable[..., Dict[str, Any]], **kwargs: Any) -> D
     try:
         return await run_in_threadpool(func, **kwargs)
     except PipelineError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(
     request: Request,
-    resume_file: Optional[UploadFile] = File(None),
-    file: Optional[UploadFile] = File(None),
-    job_description: Optional[str] = Form(None),
-    job_text: Optional[str] = Form(None),
-) -> Dict[str, Any]:
+    resume_file: UploadFile | None = File(None),
+    file: UploadFile | None = File(None),
+    job_description: str | None = Form(None),
+    job_text: str | None = Form(None),
+) -> dict[str, Any]:
     """Compute match score between a resume and a job description.
 
     Accepts a resume file (PDF or DOCX) along with job_description text.
@@ -117,9 +111,7 @@ async def analyze(
     if "application/json" in content_type:
         body = await _read_json_object(request)
         raw_resume = _as_optional_text(body.get("resume_text"), "resume_text")
-        raw_job = _as_optional_text(
-            body.get("job_description") or body.get("job_text"), "job_text"
-        )
+        raw_job = _as_optional_text(body.get("job_description") or body.get("job_text"), "job_text")
         return await _run_pipeline(
             run_full_analysis,
             resume_text=raw_resume,
@@ -145,11 +137,11 @@ async def analyze(
 @router.post("/suggest-roles", response_model=SuggestRolesResponse)
 async def suggest_roles(
     request: Request,
-    resume_file: Optional[UploadFile] = File(None),
-    file: Optional[UploadFile] = File(None),
-    resume_text: Optional[str] = Form(None),
+    resume_file: UploadFile | None = File(None),
+    file: UploadFile | None = File(None),
+    resume_text: str | None = Form(None),
     top_n: str = Form("3"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Predict the top-N most likely job role categories for a resume.
 
     Works standalone with an uploaded resume file (PDF or DOCX), or with
@@ -180,16 +172,3 @@ async def suggest_roles(
         is_json=False,
         required_models=REQUIRED_ROLE_MODELS,
     )
-
-
-__all__ = [
-    "AnalyzeResponse",
-    "REQUIRED_ANALYZE_MODELS",
-    "REQUIRED_ROLE_MODELS",
-    "RolePrediction",
-    "RolesOnlyResponse",
-    "SuggestRolesResponse",
-    "analyze",
-    "router",
-    "suggest_roles",
-]

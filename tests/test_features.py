@@ -17,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
+
 from app.ml.features import (
     FEATURE_COLUMNS,
     build_features,

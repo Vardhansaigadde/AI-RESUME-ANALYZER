@@ -75,7 +75,7 @@ export default function SkillChips({ matchedSkills = [], missingSkills = [] }) {
               borderRadius: '999px',
             }}
           >
-            {matchedSkills.length} Verified
+            {matchedSkills.length} Found
           </span>
         </div>
 
@@ -159,7 +159,7 @@ export default function SkillChips({ matchedSkills = [], missingSkills = [] }) {
               borderRadius: '999px',
             }}
           >
-            {missingSkills.length} Opportunity Gaps
+            {missingSkills.length} {missingSkills.length === 1 ? 'Gap' : 'Gaps'}
           </span>
         </div>
 

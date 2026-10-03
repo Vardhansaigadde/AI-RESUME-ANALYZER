@@ -4,6 +4,33 @@ import { FEATURE_LABELS } from '../utils/format';
 import { useCountUp } from '../hooks/useCountUp';
 
 
+// Shown when the resume or job description is too short for a reliable score
+function ScoreWarnings({ warnings }) {
+  if (!warnings || warnings.length === 0) return null;
+  return (
+    <div
+      role="note"
+      style={{
+        marginTop: '1.25rem',
+        background: 'rgba(245, 158, 11, 0.10)',
+        border: '1px solid rgba(245, 158, 11, 0.35)',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+      }}
+    >
+      {warnings.map((warning) => (
+        <div key={warning} style={{ display: 'flex', gap: '8px', fontSize: '0.84rem', color: '#b45309', lineHeight: 1.5 }}>
+          <span aria-hidden="true">⚠️</span>
+          <span>{warning}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // "Why this score?": the match score is a linear model, so it splits exactly
 // into a baseline plus one signed contribution per feature.
 function ScoreBreakdown({ breakdown }) {
@@ -235,6 +262,7 @@ export default function ScoreGauge({ result }) {
           </div>
         </div>
 
+        <ScoreWarnings warnings={result?.score_warnings} />
         <ScoreBreakdown breakdown={result?.score_breakdown} />
       </div>
     </div>

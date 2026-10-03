@@ -29,11 +29,7 @@ def build_sample_pdf(text_lines: list[str]) -> bytes:
     """Generate a clean, valid PDF 1.4 byte payload containing the specified text lines."""
     stream_lines = ["BT", "/F1 10 Tf", "14 TL", "50 750 Td"]
     for line in text_lines:
-        safe_line = (
-            line.replace("\\", "\\\\")
-            .replace("(", "\\(")
-            .replace(")", "\\)")
-        )
+        safe_line = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
         stream_lines.append(f"({safe_line}) '")
     stream_lines.append("ET")
     content = "\n".join(stream_lines).encode("latin-1", "replace")
@@ -54,7 +50,7 @@ endobj
 stream
 """.encode("latin-1")
         + content
-        + f"""\nendstream
+        + """\nendstream
 endobj
 5 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
@@ -106,9 +102,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
 
     def test_valid_pdf_request(self):
         """POST /api/analyze with valid PDF and job description returns full 200 AnalyzeResponse."""
-        files = {
-            "resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")
-        }
+        files = {"resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")}
         data = {"job_description": self.sample_job_desc}
 
         response = client.post("/api/analyze", files=files, data=data)
@@ -162,9 +156,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
 
     def test_wrong_file_type(self):
         """POST /api/analyze with non-PDF/DOCX file returns 400 error."""
-        files = {
-            "resume_file": ("resume.txt", b"Plain text resume content", "text/plain")
-        }
+        files = {"resume_file": ("resume.txt", b"Plain text resume content", "text/plain")}
         data = {"job_description": self.sample_job_desc}
 
         response = client.post("/api/analyze", files=files, data=data)
@@ -175,9 +167,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
 
     def test_empty_job_description(self):
         """POST /api/analyze with empty job_description text returns 400 error."""
-        files = {
-            "resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")
-        }
+        files = {"resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")}
         data = {"job_description": "   "}
 
         response = client.post("/api/analyze", files=files, data=data)
@@ -188,9 +178,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
         """POST /api/analyze with file exceeding 5MB returns 400 error."""
         # 5MB + 1024 bytes
         oversized_bytes = b"0" * (5 * 1024 * 1024 + 1024)
-        files = {
-            "resume_file": ("oversized.pdf", oversized_bytes, "application/pdf")
-        }
+        files = {"resume_file": ("oversized.pdf", oversized_bytes, "application/pdf")}
         data = {"job_description": self.sample_job_desc}
 
         response = client.post("/api/analyze", files=files, data=data)
@@ -199,9 +187,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
 
     def test_invalid_pdf_magic_bytes(self):
         """POST /api/analyze with non-PDF bytes in a .pdf file fails magic-byte check with 400."""
-        files = {
-            "resume_file": ("malicious.pdf", b"MZ\x90\x00\x03\x00\x00\x00DOS_HEADER", "application/pdf")
-        }
+        files = {"resume_file": ("malicious.pdf", b"MZ\x90\x00\x03\x00\x00\x00DOS_HEADER", "application/pdf")}
         data = {"job_description": self.sample_job_desc}
         response = client.post("/api/analyze", files=files, data=data)
         self.assertEqual(response.status_code, 400)
@@ -210,7 +196,11 @@ class TestAnalyzeEndpoint(unittest.TestCase):
     def test_invalid_docx_magic_bytes(self):
         """POST /api/analyze with non-DOCX bytes in a .docx file fails magic-byte check with 400."""
         files = {
-            "resume_file": ("malicious.docx", b"<script>alert(1)</script>", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            "resume_file": (
+                "malicious.docx",
+                b"<script>alert(1)</script>",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
         }
         data = {"job_description": self.sample_job_desc}
         response = client.post("/api/analyze", files=files, data=data)
@@ -221,9 +211,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
         """POST /api/analyze with corrupted file returns a clean 400 without leaking raw trace."""
         # Starts with %PDF- but is completely truncated/corrupted
         corrupted_pdf = b"%PDF-1.4\n%%EOF_CORRUPTED_STREAM_DATA"
-        files = {
-            "resume_file": ("corrupted.pdf", corrupted_pdf, "application/pdf")
-        }
+        files = {"resume_file": ("corrupted.pdf", corrupted_pdf, "application/pdf")}
         data = {"job_description": self.sample_job_desc}
         response = client.post("/api/analyze", files=files, data=data)
         self.assertEqual(response.status_code, 400)
@@ -233,9 +221,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
 
     def test_missing_model_file(self):
         """POST /api/analyze returns 503 clear error message when a model file is missing."""
-        files = {
-            "resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")
-        }
+        files = {"resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")}
         data = {"job_description": self.sample_job_desc}
 
         with patch(
@@ -249,9 +235,7 @@ class TestAnalyzeEndpoint(unittest.TestCase):
 
     def test_suggest_roles_standalone_pdf(self):
         """POST /api/suggest-roles works standalone with just a PDF resume file."""
-        files = {
-            "resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")
-        }
+        files = {"resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")}
         response = client.post("/api/suggest-roles", files=files)
         self.assertEqual(response.status_code, 200)
 
@@ -300,6 +284,28 @@ class TestRequestHardening(unittest.TestCase):
         self.assertEqual(response.status_code, 413)
         self.assertIn("5mb", response.json()["detail"].lower())
 
+    def test_rejections_keep_cors_headers(self):
+        """413s are produced inside CORS, so browsers can read the error message."""
+        response = client.post(
+            "/api/analyze",
+            files={"resume_file": ("big.pdf", b"%PDF-" + b"0" * (7 * 1024 * 1024), "application/pdf")},
+            data={"job_description": "Python developer"},
+            headers={"Origin": "http://localhost:5173"},
+        )
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(response.headers.get("access-control-allow-origin"), "http://localhost:5173")
+
+    def test_scanned_pdf_gets_helpful_message(self):
+        """A PDF with no text layer (like a scan) explains what to upload instead."""
+        image_only_pdf = build_sample_pdf([])
+        response = client.post(
+            "/api/analyze",
+            files={"resume_file": ("scan.pdf", image_only_pdf, "application/pdf")},
+            data={"job_description": "Python developer with SQL and Docker experience."},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("scanned image", response.json()["detail"])
+
     def test_json_body_must_be_object(self):
         response = client.post("/api/analyze", json=["not", "an", "object"])
         self.assertEqual(response.status_code, 422)
@@ -310,9 +316,7 @@ class TestRequestHardening(unittest.TestCase):
 
     def test_top_n_validation(self):
         for bad in ["abc", 0, 25, -1]:
-            response = client.post(
-                "/api/suggest-roles", json={"resume_text": "Python developer", "top_n": bad}
-            )
+            response = client.post("/api/suggest-roles", json={"resume_text": "Python developer", "top_n": bad})
             self.assertEqual(response.status_code, 422, bad)
         ok = client.post("/api/suggest-roles", json={"resume_text": "Python developer", "top_n": 5})
         self.assertEqual(ok.status_code, 200)
@@ -335,13 +339,40 @@ class TestRequestHardening(unittest.TestCase):
         self.assertEqual(payload["missing_skills"], sorted(payload["missing_skills"]))
 
         breakdown = payload["score_breakdown"]
-        self.assertEqual(
-            set(breakdown),
-            {"baseline", "tfidf_similarity", "skill_overlap_ratio", "resume_word_count"},
+        self.assertTrue({"baseline", "tfidf_similarity", "skill_overlap_ratio", "resume_word_count"} <= set(breakdown))
+        self.assertTrue(
+            set(breakdown)
+            <= {
+                "baseline",
+                "tfidf_similarity",
+                "skill_overlap_ratio",
+                "resume_word_count",
+                "range_adjustment",
+            }
         )
-        unclipped = sum(breakdown.values())
-        expected = min(max(unclipped, 0.0), 100.0)
-        self.assertAlmostEqual(payload["match_score"], expected, delta=0.05)
+        # The breakdown (including any soft-cap adjustment) sums exactly to the score
+        self.assertAlmostEqual(sum(breakdown.values()), payload["match_score"], delta=0.011)
+
+    def test_short_inputs_never_score_flat_100_and_are_flagged(self):
+        """A tiny resume that repeats the job ad is soft-capped below 100 and warned about."""
+        response = client.post(
+            "/api/analyze",
+            json={
+                "resume_text": "Python developer with SQL, Docker and AWS building REST APIs for 3 years.",
+                "job_text": "Backend engineer: Python, SQL, Docker, Kubernetes, AWS.",
+            },
+        )
+        payload = response.json()
+        self.assertLess(payload["match_score"], 100.0)
+        self.assertGreater(payload["match_score"], 85.0)
+        self.assertIn("range_adjustment", payload["score_breakdown"])
+        self.assertEqual(len(payload["score_warnings"]), 2)
+
+    def test_full_length_inputs_have_no_warnings(self):
+        resume = " ".join(["Experienced Python and SQL engineer building data pipelines."] * 30)
+        job = " ".join(["We need a Python engineer with SQL, Docker and AWS skills."] * 8)
+        payload = client.post("/api/analyze", json={"resume_text": resume, "job_text": job}).json()
+        self.assertEqual(payload["score_warnings"], [])
 
     def test_cors_does_not_allow_credentials(self):
         response = client.options(

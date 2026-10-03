@@ -1,0 +1,30 @@
+[project]
+name = "resume-analyzer"
+version = "0.2.0"
+description = "FitLens: resume vs. job description matching with FastAPI and scikit-learn"
+requires-python = ">=3.14"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E402",  # scripts put the repo root on sys.path before importing app modules
+    "B008",  # FastAPI dependency defaults (File(None), Form(None)) are idiomatic
+]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["app", "scripts", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]  # long sample-resume string literals
+"tests/test_analyze_endpoint.py" = ["W291"]
+"scripts/evaluate_pipeline.py" = ["E501"]  # Markdown table rows in the report template  # trailing spaces are part of the hand-built PDF xref table

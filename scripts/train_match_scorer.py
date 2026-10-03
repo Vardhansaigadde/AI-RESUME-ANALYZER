@@ -27,9 +27,9 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+import sys
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -48,6 +48,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 
 from app.ml.features import FEATURE_COLUMNS, build_features
+from app.services.matcher import soft_cap_score
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ TARGET_COLUMN = "ai_match_score"
 N_FOLDS = 5
 RANDOM_STATE = 42
 
-CANDIDATES: Dict[str, object] = {
+CANDIDATES: dict[str, object] = {
     "Ridge": Ridge(alpha=1.0),
     "GradientBoosting": GradientBoostingRegressor(
         n_estimators=300,
@@ -91,12 +92,10 @@ def _rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 def load_training_data(
     features_csv: Path = FEATURES_CSV,
     source_csv: Path = SOURCE_CSV,
-) -> Tuple[pd.DataFrame, pd.Series, pd.Series, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.Series, pd.Series, pd.DataFrame]:
     """Load the feature matrix, target, job-description groups and source rows."""
     if not features_csv.exists():
-        raise FileNotFoundError(
-            f"Feature matrix not found at {features_csv}. Run `python -m app.ml.features` first."
-        )
+        raise FileNotFoundError(f"Feature matrix not found at {features_csv}. Run `python -m app.ml.features` first.")
     if not source_csv.exists():
         raise FileNotFoundError(f"Source CSV not found at {source_csv}")
 
@@ -119,14 +118,14 @@ def cross_validate(
     y: pd.Series,
     groups: pd.Series,
     n_folds: int = N_FOLDS,
-) -> Dict[str, Dict[str, float]]:
+) -> dict[str, dict[str, float]]:
     """GroupKFold cross-validation (grouped by job description) for every candidate.
 
     Returns:
         {model_name: {"r2_mean", "r2_std", "rmse_mean", "rmse_std", "mae_mean", "mae_std"}}
     """
     gkf = GroupKFold(n_splits=n_folds)
-    results: Dict[str, Dict[str, float]] = {}
+    results: dict[str, dict[str, float]] = {}
 
     print(_sep())
     print(f"GROUPKFOLD CROSS-VALIDATION (k={n_folds}, grouped by job description)")
@@ -138,7 +137,8 @@ def cross_validate(
         for train_idx, test_idx in gkf.split(X, y, groups=groups):
             model = make_pipeline(RobustScaler(), clone(estimator))
             model.fit(X.iloc[train_idx], y.iloc[train_idx])
-            pred = model.predict(X.iloc[test_idx])
+            # Same post-processing as production (app.services.matcher)
+            pred = np.array([soft_cap_score(p) for p in model.predict(X.iloc[test_idx])])
             y_true = y.iloc[test_idx].to_numpy()
             r2s.append(r2_score(y_true, pred))
             rmses.append(_rmse(y_true, pred))
@@ -168,7 +168,7 @@ def train_full(
     model_out: Path = MODEL_OUT,
     scaler_out: Path = SCALER_OUT,
     alpha: float = 1.0,
-) -> Tuple[Ridge, RobustScaler, Dict[str, Any]]:
+) -> tuple[Ridge, RobustScaler, dict[str, Any]]:
     """Fit the production RobustScaler + Ridge on every row and persist both."""
     scaler = RobustScaler()
     X_scaled = scaler.fit_transform(X)
@@ -176,14 +176,14 @@ def train_full(
     model.fit(X_scaled, y)
 
     y_pred = model.predict(X_scaled)
-    info: Dict[str, Any] = {
+    info: dict[str, Any] = {
         "in_sample_r2": float(r2_score(y, y_pred)),
         "in_sample_rmse": _rmse(y.to_numpy(), y_pred),
         "intercept": float(model.intercept_),
-        "coefficients_scaled": dict(zip(FEATURE_COLUMNS, map(float, model.coef_))),
+        "coefficients_scaled": dict(zip(FEATURE_COLUMNS, map(float, model.coef_), strict=True)),
         "points_per_unit": {
             col: float(coef / scale)
-            for col, coef, scale in zip(FEATURE_COLUMNS, model.coef_, scaler.scale_)
+            for col, coef, scale in zip(FEATURE_COLUMNS, model.coef_, scaler.scale_, strict=True)
         },
     }
 
@@ -209,7 +209,7 @@ def mismatch_sanity_check(
     src_df: pd.DataFrame,
     n_pairs: int = 300,
     random_state: int = RANDOM_STATE,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Score resumes against jobs from other categories vs. their own category.
 
     The training data never contains a cross-category pair, so this is the only
@@ -217,15 +217,13 @@ def mismatch_sanity_check(
     against a software job).
     """
     rng = np.random.default_rng(random_state)
-    jobs_by_category = (
-        src_df.drop_duplicates("job_text").set_index("category")["job_text"].to_dict()
-    )
+    jobs_by_category = src_df.drop_duplicates("job_text").set_index("category")["job_text"].to_dict()
     categories = list(jobs_by_category)
     sample = src_df.sample(n=min(n_pairs, len(src_df)), random_state=random_state)
 
     def score(resume: str, job: str) -> float:
         feats = build_features(resume, job, as_dataframe=True)[FEATURE_COLUMNS]
-        return float(np.clip(model.predict(scaler.transform(feats))[0], 0.0, 100.0))
+        return soft_cap_score(float(model.predict(scaler.transform(feats))[0]))
 
     same, other = [], []
     for _, row in sample.iterrows():
@@ -264,7 +262,10 @@ def main() -> None:
             "features": FEATURE_COLUMNS,
         },
         "cross_validation": {
-            "method": f"GroupKFold(n_splits={N_FOLDS}) grouped by job_text; RobustScaler fitted per fold",
+            "method": (
+                f"GroupKFold(n_splits={N_FOLDS}) grouped by job_text; RobustScaler fitted per fold; "
+                "predictions soft-capped as in production"
+            ),
             "results": cv_results,
             "production_model": "Ridge",
         },

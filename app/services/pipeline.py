@@ -8,19 +8,21 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from app.ml.features import DEFAULT_VECTORIZER_PATH as TFIDF_VECTORIZER_PATH
-from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH, match_resume_to_job
+from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
+from app.services.matcher import match_resume_to_job
 from app.services.parser import extract_text_from_file
 from app.services.role_predictor import (
     DEFAULT_CLASSIFIER_PATH as ROLE_CLASSIFIER_PATH,
+)
+from app.services.role_predictor import (
     DEFAULT_VECTORIZER_PATH as ROLE_VECTORIZER_PATH,
+)
+from app.services.role_predictor import (
     predict_roles_with_confidence,
 )
 from app.services.suggestions import generate_suggestions
@@ -30,14 +32,14 @@ logger = logging.getLogger(__name__)
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 Megabytes
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 
-REQUIRED_ANALYZE_MODELS: List[Tuple[str, Path]] = [
+REQUIRED_ANALYZE_MODELS: list[tuple[str, Path]] = [
     ("match_scorer.joblib", MATCH_SCORER_PATH),
     ("tfidf_vectorizer.joblib", TFIDF_VECTORIZER_PATH),
     ("role_classifier.joblib", ROLE_CLASSIFIER_PATH),
     ("role_vectorizer.joblib", ROLE_VECTORIZER_PATH),
 ]
 
-REQUIRED_ROLE_MODELS: List[Tuple[str, Path]] = [
+REQUIRED_ROLE_MODELS: list[tuple[str, Path]] = [
     ("role_classifier.joblib", ROLE_CLASSIFIER_PATH),
     ("role_vectorizer.joblib", ROLE_VECTORIZER_PATH),
 ]
@@ -52,7 +54,7 @@ class PipelineError(Exception):
         self.status_code = status_code
 
 
-def verify_models_present(models: List[Tuple[str, Path]]) -> None:
+def verify_models_present(models: list[tuple[str, Path]]) -> None:
     """Ensure all required trained model artifacts exist on disk before inference.
 
     Raises:
@@ -63,14 +65,15 @@ def verify_models_present(models: List[Tuple[str, Path]]) -> None:
         missing_str = ", ".join(missing)
         logger.error("Missing required model artifacts in models/: %s", missing_str)
         raise PipelineError(
-            f"Required model artifact(s) missing from models/: {missing_str}. Please run model training before calling this endpoint.",
+            f"Required model artifact(s) missing from models/: {missing_str}. "
+            "Please run model training before calling this endpoint.",
             status_code=503,
         )
 
 
 def validate_and_extract_file(
-    content: Optional[bytes],
-    filename: Optional[str],
+    content: bytes | None,
+    filename: str | None,
 ) -> str:
     """Validate uploaded resume file size, extension, and extract clean text.
 
@@ -126,10 +129,18 @@ def validate_and_extract_file(
         raise PipelineError(
             f"Failed to extract text from '{filename}': The file could not be read or is corrupted.",
             status_code=400,
-        )
+        ) from exc
 
     cleaned_text = text.strip()
     if not cleaned_text:
+        if ext == ".pdf":
+            # pdfplumber only reads embedded text; a scanned or image-only PDF has none
+            raise PipelineError(
+                f"'{filename}' has no selectable text; it looks like a scanned image. "
+                "Please upload a text-based PDF (e.g. exported from Word or Google Docs) "
+                "or a DOCX file.",
+                status_code=400,
+            )
         raise PipelineError(
             f"Uploaded file '{filename}' contains no readable text.",
             status_code=400,
@@ -139,13 +150,13 @@ def validate_and_extract_file(
 
 
 def run_full_analysis(
-    resume_bytes: Optional[bytes] = None,
-    filename: Optional[str] = None,
-    resume_text: Optional[str] = None,
-    job_description: Optional[str] = None,
+    resume_bytes: bytes | None = None,
+    filename: str | None = None,
+    resume_text: str | None = None,
+    job_description: str | None = None,
     is_json: bool = False,
-    required_models: Optional[List[Tuple[str, Path]]] = None,
-) -> Dict[str, Any]:
+    required_models: list[tuple[str, Path]] | None = None,
+) -> dict[str, Any]:
     """Execute end-to-end resume-to-job match analysis.
 
     Validates inputs, extracts document text, verifies model presence, computes
@@ -216,13 +227,13 @@ def run_full_analysis(
 
 
 def run_role_suggestion(
-    resume_bytes: Optional[bytes] = None,
-    filename: Optional[str] = None,
-    resume_text: Optional[str] = None,
+    resume_bytes: bytes | None = None,
+    filename: str | None = None,
+    resume_text: str | None = None,
     top_n: int = 3,
     is_json: bool = False,
-    required_models: Optional[List[Tuple[str, Path]]] = None,
-) -> Dict[str, Any]:
+    required_models: list[tuple[str, Path]] | None = None,
+) -> dict[str, Any]:
     """Predict job roles from an uploaded resume file or raw text.
 
     Args:

@@ -24,7 +24,7 @@ import json
 import logging
 from pathlib import Path
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 import docx
 
@@ -42,6 +42,7 @@ from app.services.parser import extract_text_from_file
 from app.services.role_predictor import (
     DEFAULT_CONFIDENCE_THRESHOLD,
     DEFAULT_MIN_WORD_COUNT,
+    REPORTED_CONFIDENCE_THRESHOLD,
     _load_classifier,
     _load_vectorizer,
     clear_role_predictor_cache,
@@ -57,7 +58,8 @@ MATCH_METRICS_JSON = REPO_ROOT / "reports" / "match_scorer_metrics.json"
 ROLE_METRICS_JSON = REPO_ROOT / "reports" / "role_classifier_metrics.json"
 REPORT_MD = REPO_ROOT / "reports" / "evaluation_summary.md"
 
-def _load_json(path: Path) -> Dict[str, Any]:
+
+def _load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"{path} not found. Run the training scripts first (see README).")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -99,7 +101,7 @@ def run_sample_evaluation(n_samples: int = 50, random_state: int = 42) -> pd.Dat
     return pd.DataFrame(rows)
 
 
-def run_sparse_cohort() -> List[Dict[str, Any]]:
+def run_sparse_cohort() -> list[dict[str, Any]]:
     """Compare raw ML predictions with the fallback on short student-style resumes."""
     clf, vec = _load_classifier(), _load_vectorizer()
     records = []
@@ -122,7 +124,7 @@ def run_sparse_cohort() -> List[Dict[str, Any]]:
     return records
 
 
-def build_report(sample: pd.DataFrame, sparse: List[Dict[str, Any]]) -> str:
+def build_report(sample: pd.DataFrame, sparse: list[dict[str, Any]]) -> str:
     match_metrics = _load_json(MATCH_METRICS_JSON)
     role_metrics = _load_json(ROLE_METRICS_JSON)
     cv = match_metrics["cross_validation"]["results"]["Ridge"]
@@ -152,29 +154,29 @@ This report has two parts:
 
 ### Match scorer (Ridge on 3 features)
 
-GroupKFold, k = 5, grouped by job description ({match_metrics['dataset']['unique_job_descriptions']} unique jobs,
-{match_metrics['dataset']['rows']:,} pairs):
+GroupKFold, k = 5, grouped by job description ({match_metrics["dataset"]["unique_job_descriptions"]} unique jobs,
+{match_metrics["dataset"]["rows"]:,} pairs):
 
 | Metric | Value |
 | --- | --- |
-| R² | {cv['r2_mean']:.3f} ± {cv['r2_std']:.3f} |
-| RMSE (0–100 scale) | {cv['rmse_mean']:.2f} ± {cv['rmse_std']:.2f} |
-| MAE | {cv['mae_mean']:.2f} ± {cv['mae_std']:.2f} |
+| R² | {cv["r2_mean"]:.3f} ± {cv["r2_std"]:.3f} |
+| RMSE (0–100 scale) | {cv["rmse_mean"]:.2f} ± {cv["rmse_std"]:.2f} |
+| MAE | {cv["mae_mean"]:.2f} ± {cv["mae_std"]:.2f} |
 
 Mismatched-pair check: the dataset only pairs resumes with jobs from their own category, so
-{sanity['pairs']} resumes were also scored against a job from another category. Mean score is
-{sanity['same_category_mean_score']:.1f} for own-category pairs vs {sanity['other_category_mean_score']:.1f} for
+{sanity["pairs"]} resumes were also scored against a job from another category. Mean score is
+{sanity["same_category_mean_score"]:.1f} for own-category pairs vs {sanity["other_category_mean_score"]:.1f} for
 other-category pairs, and the own-category pair scores higher in
-{sanity['share_same_category_scored_higher']:.0%} of cases.
+{sanity["share_same_category_scored_higher"]:.0%} of cases.
 
-### Role classifier ({role_metrics['production_model']})
+### Role classifier ({role_metrics["production_model"]})
 
-Stratified 80/20 split, {test['test_resumes']} test resumes. Most dataset resumes open with an
+Stratified 80/20 split, {test["test_resumes"]} test resumes. Most dataset resumes open with an
 ALL-CAPS title that repeats the label, so accuracy is shown with and without that line:
 
 | Test set | Top-1 (ML only) | Top-3 (ML only) | Top-1 with fallback | Low-confidence rate |
 | --- | --- | --- | --- | --- |
-| Full resume, title kept (optimistic) | {test['with_title']['top1_accuracy']:.1%} | {test['with_title']['top3_accuracy']:.1%} | – | – |
+| Full resume, title kept (optimistic) | {test["with_title"]["top1_accuracy"]:.1%} | {test["with_title"]["top3_accuracy"]:.1%} | – | – |
 """
     for key, label in [
         ("full_no_title", "Full resume, title removed"),
@@ -192,10 +194,12 @@ ALL-CAPS title that repeats the label, so accuracy is shown with and without tha
 The "with fallback" column is slightly lower than ML-only on these dataset resumes; see the
 short synthetic resumes in section 2 for why the fallback is still used.
 
-Fallback policy (tuned on out-of-fold training predictions): a prediction is low-confidence when
-the top probability is below {DEFAULT_CONFIDENCE_THRESHOLD:.0%} or the resume has fewer than
-{DEFAULT_MIN_WORD_COUNT} words. Low-confidence predictions are blended 50/50 with role-profile skill
-overlap (or replaced by it when the top probability is below {policy['very_low_confidence']:.0%}).
+Fallback policy (tuned on out-of-fold training predictions): when the classifier's top probability
+is below {DEFAULT_CONFIDENCE_THRESHOLD:.0%} or the resume has fewer than {DEFAULT_MIN_WORD_COUNT} words,
+predictions are blended 50/50 with role-profile skill overlap (or replaced by it when the top
+probability is below {policy["very_low_confidence"]:.0%}). The API reports `confidence: "low"` when the
+final top probability is below {REPORTED_CONFIDENCE_THRESHOLD:.0%}; on held-out resumes and snippets
+those predictions were right ~34% of the time, versus ~70% at or above it.
 
 ## 2. Integration check (in-sample, 50 dataset rows)
 
@@ -205,16 +209,16 @@ prediction without errors.
 | Metric | Value |
 | --- | --- |
 | Match score MAE / RMSE / R² | {mae:.2f} / {rmse:.2f} / {r2:.3f} |
-| Role top-1 / top-3 | {sample['top1_hit'].mean():.0%} / {sample['top3_hit'].mean():.0%} |
-| Low-confidence predictions | {int((sample['confidence'] == 'low').sum())} / {len(sample)} |
-| Resume length | median {int(sample['resume_words'].median())} words (range {sample['resume_words'].min()}–{sample['resume_words'].max()}) |
+| Role top-1 / top-3 | {sample["top1_hit"].mean():.0%} / {sample["top3_hit"].mean():.0%} |
+| Low-confidence predictions | {int((sample["confidence"] == "low").sum())} / {len(sample)} |
+| Resume length | median {int(sample["resume_words"].median())} words (range {sample["resume_words"].min()}–{sample["resume_words"].max()}) |
 
 ### Short synthetic resumes (fallback behaviour)
 
 Dataset resumes are long professional ones; these {len(sparse)} hand-written short resumes
 (`scripts/synthetic_resumes.py`) represent students and freshers. Raw ML top-1 is correct for
-**{sum(s['raw_top1'] == s['true_role'] for s in sparse)}/{len(sparse)}**; with the fallback the final
-top-1 is correct for **{sum(s['final_top1'] == s['true_role'] for s in sparse)}/{len(sparse)}**. This is why
+**{sum(s["raw_top1"] == s["true_role"] for s in sparse)}/{len(sparse)}**; with the fallback the final
+top-1 is correct for **{sum(s["final_top1"] == s["true_role"] for s in sparse)}/{len(sparse)}**. This is why
 the fallback is kept even though it costs 1–2 points on dataset resumes.
 
 | Profile | Words | Raw ML top-1 | Final top-1 | In final top-3? | Confidence |

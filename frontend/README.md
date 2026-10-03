@@ -53,7 +53,7 @@ src/
 │   ├── UploadView.jsx       file drop zone (type/size checks) + job description
 │   ├── AnalyzingView.jsx    loading state with a cold-start notice
 │   ├── ResultsView.jsx      results layout
-│   ├── ScoreGauge.jsx       score gauge, quick metrics, "Why this score?" breakdown
+│   ├── ScoreGauge.jsx       score gauge, quick metrics, short-input warnings, "Why this score?"
 │   ├── SkillChips.jsx       matched / missing skills
 │   ├── SuggestionsSection.jsx
 │   ├── RoleBarChart.jsx     top job categories + low-confidence notice

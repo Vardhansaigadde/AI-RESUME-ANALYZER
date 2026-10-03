@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -14,33 +14,35 @@ class RolePrediction(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     match_score: float
-    matched_skills: List[str]
-    missing_skills: List[str]
-    features: Dict[str, float]
-    score_breakdown: Dict[str, float] = Field(
+    matched_skills: list[str]
+    missing_skills: list[str]
+    features: dict[str, float]
+    score_breakdown: dict[str, float] = Field(
         default_factory=dict,
         description=(
-            "Points each feature adds to (or removes from) the model baseline. "
-            "baseline + the feature contributions = match_score before clipping to 0-100."
+            "Baseline plus the points each feature adds or removes. When the score "
+            "is soft-capped near 0 or 100, a range_adjustment entry is included, so "
+            "the values always sum to match_score."
         ),
+    )
+    score_warnings: list[str] = Field(
+        default_factory=list,
+        description="Reasons the score may be unreliable, e.g. a very short resume.",
     )
     resume_skills_count: int
     required_skills_count: int
-    suggested_roles: List[RolePrediction]
-    suggestions: List[str]
+    suggested_roles: list[RolePrediction]
+    suggestions: list[str]
     confidence: Literal["high", "low"] = "high"
 
 
 class SuggestRolesResponse(BaseModel):
-    suggested_roles: List[RolePrediction]
+    suggested_roles: list[RolePrediction]
     confidence: Literal["high", "low"] = "high"
 
-
-RolesOnlyResponse = SuggestRolesResponse
 
 __all__ = [
     "RolePrediction",
     "AnalyzeResponse",
     "SuggestRolesResponse",
-    "RolesOnlyResponse",
 ]

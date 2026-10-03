@@ -115,7 +115,7 @@ export default function RoleBarChart({ suggestedRoles = [], confidence = 'high' 
           }}
         >
           <span>⚠️</span>
-          <span>Role suggestions are less certain — try adding more detail to your resume.</span>
+          <span>No category stands out clearly — role suggestions are less certain. Adding more detail to your resume helps.</span>
         </div>
       )}
 

@@ -13,12 +13,11 @@ Loads the skills taxonomy from app/data/skills_list.json and provides:
   (matched, missing) sets indicating overlap and gaps.
 """
 
+from functools import lru_cache
 import json
 import logging
-import re
-from functools import lru_cache
 from pathlib import Path
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ _SKILLS_JSON = Path(__file__).resolve().parent.parent / "data" / "skills_list.js
 # Ambiguous / polysemous skills that require nearby contextual keywords
 # (within a window of ~5 words) to avoid false positives from everyday English,
 # course grades, academic calendar semesters, or non-technical proper names.
-CONTEXT_DEPENDENT_SKILLS: Dict[str, Tuple[str, ...]] = {
+CONTEXT_DEPENDENT_SKILLS: dict[str, tuple[str, ...]] = {
     "swift": (
         "ios",
         "apple",
@@ -123,7 +122,7 @@ CONTEXT_DEPENDENT_SKILLS: Dict[str, Tuple[str, ...]] = {
 # Unambiguous surface forms that should count as a canonical taxonomy skill.
 # Matched with the same boundary rules as the skills themselves; an alias is
 # only used if its canonical target exists in skills_list.json.
-SKILL_ALIASES: Dict[str, str] = {
+SKILL_ALIASES: dict[str, str] = {
     # Languages & runtimes
     "golang": "go",
     "cpp": "c++",
@@ -206,7 +205,7 @@ SKILL_ALIASES: Dict[str, str] = {
 
 # Aliases that are also common non-technical abbreviations and therefore need
 # nearby technical context (e.g. "ml" is also millilitres in nursing resumes).
-ALIAS_CONTEXT: Dict[str, Tuple[str, ...]] = {
+ALIAS_CONTEXT: dict[str, tuple[str, ...]] = {
     "ml": (
         "ai",
         "machine",
@@ -230,7 +229,7 @@ def _has_required_context(
     text: str,
     match_start: int,
     match_end: int,
-    context_keywords: Tuple[str, ...],
+    context_keywords: tuple[str, ...],
     window_words: int = 5,
 ) -> bool:
     """Check whether any required context keyword appears within window_words of the match.
@@ -300,18 +299,14 @@ def _build_skill_pattern(skill: str) -> re.Pattern:
 
     target = re.escape(skill)
 
-    pattern = (
-        r"(?<![" + _WORD_CHARS + r"])(?<![a-z0-9]\.)"
-        + target
-        + r"(?![" + _WORD_CHARS + r"])(?!\.[a-z0-9])"
-    )
+    pattern = r"(?<![" + _WORD_CHARS + r"])(?<![a-z0-9]\.)" + target + r"(?![" + _WORD_CHARS + r"])(?!\.[a-z0-9])"
     return re.compile(pattern, re.IGNORECASE)
 
 
 @lru_cache(maxsize=1)
 def _load_skill_patterns(
     skills_json: Path = _SKILLS_JSON,
-) -> Tuple[Tuple[str, str, re.Pattern], ...]:
+) -> tuple[tuple[str, str, re.Pattern], ...]:
     """Load skills list plus aliases and pre-compile regex patterns (cached).
 
     Every taxonomy skill matches itself; every entry in SKILL_ALIASES whose
@@ -331,15 +326,14 @@ def _load_skill_patterns(
     """
     if not skills_json.exists():
         raise FileNotFoundError(
-            f"Skills list not found at: {skills_json}. "
-            "Run scripts/build_skills_taxonomy.py to generate it."
+            f"Skills list not found at: {skills_json}. Run scripts/build_skills_taxonomy.py to generate it."
         )
 
-    with open(skills_json, "r", encoding="utf-8") as f:
-        raw_skills: List[str] = json.load(f)
+    with open(skills_json, encoding="utf-8") as f:
+        raw_skills: list[str] = json.load(f)
 
     # Normalize and deduplicate
-    surface_to_canonical: Dict[str, str] = {}
+    surface_to_canonical: dict[str, str] = {}
     for s in raw_skills:
         norm = s.strip().lower()
         if norm and norm not in surface_to_canonical:
@@ -354,14 +348,9 @@ def _load_skill_patterns(
 
     # Sort: longest (by token count, then char count) first so multi-word
     # phrases match before their shorter substrings
-    surfaces = sorted(
-        surface_to_canonical, key=lambda s: (len(s.split()), len(s)), reverse=True
-    )
+    surfaces = sorted(surface_to_canonical, key=lambda s: (len(s.split()), len(s)), reverse=True)
 
-    patterns = tuple(
-        (surface, surface_to_canonical[surface], _build_skill_pattern(surface))
-        for surface in surfaces
-    )
+    patterns = tuple((surface, surface_to_canonical[surface], _build_skill_pattern(surface)) for surface in surfaces)
     logger.info(
         "Loaded and compiled %d skill patterns (%d skills + aliases) from %s.",
         len(patterns),
@@ -371,7 +360,7 @@ def _load_skill_patterns(
     return patterns
 
 
-def _context_keywords_for(surface: str, canonical: str) -> Optional[Tuple[str, ...]]:
+def _context_keywords_for(surface: str, canonical: str) -> tuple[str, ...] | None:
     """Return the context keywords a surface form needs, or None if unambiguous."""
     if surface in ALIAS_CONTEXT:
         return ALIAS_CONTEXT[surface]
@@ -380,7 +369,7 @@ def _context_keywords_for(surface: str, canonical: str) -> Optional[Tuple[str, .
     return None
 
 
-def extract_skills(text: str) -> Set[str]:
+def extract_skills(text: str) -> set[str]:
     """Extract all known skills present in a text string.
 
     Matching is case-insensitive and word-boundary-safe:
@@ -410,7 +399,7 @@ def extract_skills(text: str) -> Set[str]:
         return set()
 
     patterns = _load_skill_patterns()
-    found: Set[str] = set()
+    found: set[str] = set()
 
     # Context is checked against the unmasked lowercased text; matching runs on
     # a mutable copy where consumed spans are masked to prevent sub-string
@@ -443,9 +432,9 @@ def extract_skills(text: str) -> Set[str]:
 
 
 def compare_skills(
-    resume_skills: FrozenSet[str] | Set[str] | List[str],
-    job_skills: FrozenSet[str] | Set[str] | List[str],
-) -> Tuple[Set[str], Set[str]]:
+    resume_skills: frozenset[str] | set[str] | list[str],
+    job_skills: frozenset[str] | set[str] | list[str],
+) -> tuple[set[str], set[str]]:
     """Compare resume skills against job requirements.
 
     Args:

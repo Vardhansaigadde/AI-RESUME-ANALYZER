@@ -19,8 +19,6 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from app.services.suggestions import (
-    GENERIC_SOFT_SKILLS,
-    check_structural_issues,
     generate_suggestions,
     is_high_frequency_technical_skill,
 )
@@ -144,9 +142,7 @@ class TestSuggestionsService(unittest.TestCase):
             missing_skills=[],
             resume_text=text_without_numbers,
         )
-        has_metrics_suggestion = any(
-            "quantifiable metrics" in s.lower() or "numbers" in s.lower() for s in suggestions
-        )
+        has_metrics_suggestion = any("quantifiable metrics" in s.lower() or "numbers" in s.lower() for s in suggestions)
         self.assertTrue(has_metrics_suggestion)
 
         # Conversely, resume with numbers should not trigger this
