@@ -68,5 +68,6 @@ class RecheckRequest(BaseModel):
     """Edited resume plus the job description to analyze it against."""
 
     resume: StructuredResume
-    job_description: str = Field(..., min_length=1, max_length=20_000)
+    job_description: str = Field("", max_length=20_000, description="Optional; empty for a resume-only report.")
     student_mode: bool = False
+    target_role: str | None = Field(None, max_length=60)

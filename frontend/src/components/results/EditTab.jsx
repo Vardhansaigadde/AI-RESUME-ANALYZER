@@ -20,7 +20,18 @@ function Section({ title, hint, children }) {
   );
 }
 
-export default function EditTab({ draft, setDraft, missingSkills, dirty, checking, downloading, onRecheck, onDownload, onReset }) {
+export default function EditTab({
+  draft,
+  setDraft,
+  missingSkills,
+  missingLabel,
+  dirty,
+  checking,
+  downloading,
+  onRecheck,
+  onDownload,
+  onReset,
+}) {
   const set = (key) => (value) => setDraft((d) => ({ ...d, [key]: value }));
   const weak = weakBulletCount(draft);
 
@@ -57,7 +68,7 @@ export default function EditTab({ draft, setDraft, missingSkills, dirty, checkin
             onChange={set('skills')}
             placeholder="Python, SQL, Docker…"
             suggestions={missingSkills}
-            suggestionsLabel="In the job but not in your resume. Only add the ones you really have:"
+            suggestionsLabel={missingLabel || 'In the job but not in your resume. Only add the ones you really have:'}
           />
         </Section>
 

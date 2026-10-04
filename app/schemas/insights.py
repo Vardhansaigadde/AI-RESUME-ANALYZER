@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.resume import StructuredResume
+
 
 class JobInsights(BaseModel):
     """Rule-based reading of the job posting (see app.services.job_decoder)."""
@@ -40,4 +42,36 @@ class LearningItem(BaseModel):
     why: str = Field("", description="The line of the job posting that mentions the skill.")
     resources: list[LearningResource] = Field(default_factory=list)
     project: str = Field("", description="A small project that proves the skill on a resume.")
-    priority: Literal["must-have", "nice-to-have", "mentioned"] = "mentioned"
+    priority: Literal["must-have", "nice-to-have", "mentioned", "core-skill"] = "mentioned"
+
+
+class RoleGap(BaseModel):
+    """Resume skills compared with a role's skill profile (app/data/role_profiles.json)."""
+
+    role: str
+    have: list[str] = Field(default_factory=list, description="Profile skills found in the resume, most common first.")
+    missing: list[str] = Field(default_factory=list, description="Profile skills not in the resume, most common first.")
+    coverage: float = Field(0.0, description="Share of the profile's skills the resume shows (0-1).")
+    available_roles: list[str] = Field(default_factory=list)
+
+
+class InventorySkill(BaseModel):
+    skill: str
+    count: int
+
+
+class InventoryGroup(BaseModel):
+    group: str
+    skills: list[InventorySkill]
+
+
+class RoleGapRequest(BaseModel):
+    """Edited resume plus the role to compare it with."""
+
+    resume: StructuredResume
+    target_role: str = Field(..., min_length=1, max_length=60)
+
+
+class RoleGapResponse(BaseModel):
+    role_gap: RoleGap
+    learning_plan: list[LearningItem]

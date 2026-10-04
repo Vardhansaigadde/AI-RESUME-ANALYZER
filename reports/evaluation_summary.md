@@ -21,9 +21,9 @@ GroupKFold, k = 5, grouped by job description (23 unique jobs,
 
 | Metric | Value |
 | --- | --- |
-| R² | 0.370 ± 0.163 |
-| RMSE (0–100 scale) | 17.83 ± 2.31 |
-| MAE | 14.59 ± 2.26 |
+| R² | 0.377 ± 0.156 |
+| RMSE (0–100 scale) | 17.71 ± 2.14 |
+| MAE | 14.48 ± 2.11 |
 
 Mismatched-pair check: the dataset only pairs resumes with jobs from their own category, so
 300 resumes were also scored against a job from another category. Mean score is
@@ -61,7 +61,7 @@ prediction without errors.
 
 | Metric | Value |
 | --- | --- |
-| Match score MAE / RMSE / R² | 13.72 / 17.01 / 0.605 |
+| Match score MAE / RMSE / R² | 13.67 / 16.99 / 0.606 |
 | Role top-1 / top-3 | 100% / 100% |
 | Low-confidence predictions | 0 / 50 |
 | Resume length | median 717 words (range 165–1727) |
@@ -80,7 +80,7 @@ the fallback is kept even though it costs 1–2 points on dataset resumes.
 | Junior accounting intern (expected ACCOUNTANT) | 29 | ACCOUNTANT (66.2%) | ACCOUNTANT (64.9%) | yes | `high` |
 | UI/UX design student (expected DESIGNER) | 30 | DESIGNER (67.2%) | DESIGNER (60.9%) | yes | `high` |
 | HR recruitment assistant (expected HR) | 28 | HR (81.4%) | HR (78.2%) | yes | `high` |
-| Entry-level digital marketer (expected DIGITAL-MEDIA) | 25 | DIGITAL-MEDIA (85.5%) | DIGITAL-MEDIA (78.4%) | yes | `high` |
+| Entry-level digital marketer (expected DIGITAL-MEDIA) | 25 | DIGITAL-MEDIA (85.5%) | DIGITAL-MEDIA (80.2%) | yes | `high` |
 | Frontend web developer (expected INFORMATION-TECHNOLOGY) | 23 | ARTS (12.2%) | INFORMATION-TECHNOLOGY (71.4%) | yes | `high` |
 | Python backend engineer (expected INFORMATION-TECHNOLOGY) | 23 | ENGINEERING (21.0%) | INFORMATION-TECHNOLOGY (38.8%) | yes | `low` |
 | Certified public accountant (expected ACCOUNTANT) | 24 | ACCOUNTANT (70.8%) | ACCOUNTANT (72.9%) | yes | `high` |

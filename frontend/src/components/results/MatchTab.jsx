@@ -154,7 +154,7 @@ function Skills({ matched, missing }) {
 // Suggestions quote canonical lowercase skills ('ci/cd'); display them like the chips
 const formatSuggestion = (text) => text.replace(/'([^']+)'/g, (_, skill) => `'${formatSkill(skill)}'`);
 
-function Suggestions({ suggestions }) {
+export function Suggestions({ suggestions }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -200,7 +200,7 @@ function Suggestions({ suggestions }) {
   );
 }
 
-function Roles({ roles, confidence }) {
+export function Roles({ roles, confidence }) {
   return (
     <motion.section variants={reveal} className="card p-5 sm:p-6">
       <SectionTitle>Closest job categories</SectionTitle>

@@ -66,9 +66,11 @@ def _lines(text: str) -> list[str]:
 def _years(text: str) -> tuple[int | None, int | None]:
     """Smallest years-of-experience range mentioned next to 'experience'."""
     found: list[tuple[int, int | None]] = []
+    title_end = text.find("\n") if "\n" in text else len(text)
     for match in _YEARS_RE.finditer(text):
         window = text[match.end() : match.end() + 60].lower() + text[max(0, match.start() - 40) : match.start()].lower()
-        if "experience" in window or "exp" in window:
+        # "5+ years of experience", or a range in the title line ("Associate (0-1 years)")
+        if "experience" in window or "exp" in window or match.start() < title_end:
             low = int(match.group(1))
             high = int(match.group(2)) if match.group(2) else None
             if low <= 30:

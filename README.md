@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml/badge.svg)](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml)
 
-Upload a resume (PDF or DOCX) and paste a job description. FitLens returns:
+Upload a resume (PDF or DOCX) and, optionally, paste a job description. FitLens returns:
 
 - a **match score (0–100)** with a breakdown of what raised or lowered it,
 - the job's skills you **have** and are **missing**, plus up to five **suggestions**,
@@ -22,6 +22,16 @@ Built for students and freshers:
 - **Bullet coach**: instant feedback on every bullet in the editor (weak openers, missing numbers,
   passive voice, length).
 
+No job description? A **resume-only check** still gives the ATS check, editor and download, plus:
+
+- **Resume strength report**: a letter grade per section (contact, summary, skills, experience,
+  projects, education) and your weakest bullets, updating live while you edit.
+- **Target-role gap**: your skills compared with the core skills of a job role (25 roles such as
+  Software Engineer, Data Analyst, UI/UX Designer, Accountant), defaulting to the role closest to
+  your resume; the Skill plan then follows that role.
+- **Skills inventory**: every skill found, grouped, with how often it appears.
+- **Sample job postings** to try a match with one click, and "add a job" later from the results.
+
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
 
 ## How it works
@@ -36,7 +46,7 @@ FastAPI on Render (Docker)
   app/services/pipeline.py    file checks (type, 5 MB, magic bytes) → orchestration
     ├─ parser.py              pdfplumber / python-docx → text, plus layout facts (tables, columns, images…)
     ├─ data_cleaning.py       same normalization used to build the training data
-    ├─ skill_extractor.py     regex over a 423-skill taxonomy + aliases (k8s → kubernetes)
+    ├─ skill_extractor.py     regex over a 436-skill taxonomy + aliases (k8s → kubernetes)
     ├─ matcher.py             3 features → RobustScaler → Ridge → soft-capped score + breakdown
     ├─ suggestions.py         rule-based, max 5 (2 slots reserved for structural issues)
     ├─ role_predictor.py      TF-IDF → calibrated LinearSVC (24 categories) + skill-overlap fallback
@@ -44,6 +54,8 @@ FastAPI on Render (Docker)
     ├─ ats_checker.py         rule-based ATS-friendliness report (+ student checklist)
     ├─ job_decoder.py         must-haves, nice-to-haves, level and years from the posting
     ├─ learning_plan.py       missing skills → resources + project ideas (app/data/learning_resources.json)
+    ├─ role_gap.py            resume vs a target job role (app/data/target_roles.json)
+    ├─ skills_inventory.py    skills found, grouped and counted
     └─ resume_docx.py         sections → ATS-friendly .docx
 ```
 
@@ -115,6 +127,17 @@ bullet lists, no tables, images or headers).
   that hasn't passed.
 - **Bullet coach** runs in the browser (`frontend/src/lib/bulletCoach.js`) so feedback is instant.
 
+### Resume-only mode
+
+An empty job description gives `"mode": "resume_only"`: `match_score` is `null` and the job fields are
+empty, but the ATS check (minus the keyword check), role predictions, `role_gap`, `skills_inventory`
+and a role-based `learning_plan` are returned. Target roles live in `app/data/target_roles.json`
+(built and validated by `scripts/build_target_roles.py`): job-title roles with core skills in
+order of importance, plus a default role for each classifier category. They are separate from the
+classifier's 24 dataset categories because those are broad (the dataset's IT category is mostly
+infrastructure resumes) and would give a software student misleading gaps. The resume strength
+report is computed in the browser (`frontend/src/lib/strength.js`) so it updates while editing.
+
 ## Data
 
 | File | Rows | Used for |
@@ -135,11 +158,12 @@ training and test folds:
 
 | Model | R² | RMSE (0–100) | MAE |
 | --- | --- | --- | --- |
-| **Ridge (production)** | **0.370 ± 0.163** | **17.83 ± 2.31** | 14.59 ± 2.26 |
-| Random forest | 0.352 ± 0.198 | 18.02 ± 2.54 | 14.55 ± 2.77 |
-| Gradient boosting | 0.248 ± 0.261 | 19.32 ± 2.78 | 15.66 ± 2.98 |
+| **Ridge (production)** | **0.377 ± 0.156** | **17.71 ± 2.14** | 14.48 ± 2.11 |
+| Random forest | 0.349 ± 0.174 | 18.13 ± 2.50 | 14.66 ± 2.69 |
+| Gradient boosting | 0.280 ± 0.127 | 19.29 ± 3.18 | 15.52 ± 3.20 |
 
-Predictions are soft-capped exactly as in production (this raised Ridge from 0.360 to 0.370).
+Predictions are soft-capped exactly as in production. (The original model scored 0.360; the soft cap
+and the larger skill taxonomy raised it to 0.377.)
 
 The dataset never pairs a resume with a job from another category, so a separate check scores
 300 resumes against a random other-category job: those pairs average **28** vs **45** for
@@ -228,6 +252,11 @@ JSON) for the student checklist.
 
 `POST /api/resume/docx` — JSON resume sections; returns an ATS-friendly `.docx` download.
 
+`POST /api/role-gap` — JSON `{"resume": {...}, "target_role": "Data Analyst"}`; returns `role_gap` and a
+role-based `learning_plan` without re-running the models.
+
+`job_description` is optional on `/api/analyze` and `/api/recheck`; both also accept `target_role`.
+
 `POST /api/suggest-roles` — a resume file or `resume_text`, optional `top_n` (1–24).
 
 `GET /` (or `HEAD /`) — health check.
@@ -245,6 +274,7 @@ python scripts/train_match_scorer.py       # → match_scorer + feature_scaler, 
 python scripts/train_role_classifier.py    # → role_classifier + role_vectorizer, reports/role_classifier_metrics.json
 python scripts/evaluate_pipeline.py        # → reports/evaluation_summary.md
 python scripts/build_learning_resources.py # checks every link → app/data/learning_resources.json
+python scripts/build_target_roles.py       # validates job-title roles → app/data/target_roles.json
 ```
 
 `requirements.txt` pins scikit-learn to the version that pickled `models/*.joblib`. If you upgrade

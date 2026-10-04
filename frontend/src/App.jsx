@@ -9,7 +9,7 @@ import Toast from './components/ui/Toast';
 import UploadView from './components/upload/UploadView';
 import { useTheme } from './hooks/useTheme';
 import { analyzeResume } from './lib/api';
-import { DEMO_HIGH_RESULT, DEMO_LOW_RESULT } from './lib/demo';
+import { DEMO_HIGH_RESULT, DEMO_LOW_RESULT, DEMO_RESUME_ONLY_RESULT } from './lib/demo';
 
 const PAGES = { '/': 'home', '/index.html': 'home', '/privacy': 'privacy', '/terms': 'terms' };
 const DEMO_JOB = 'Junior software engineer: Python, SQL, Docker, AWS, Kubernetes, CI/CD and REST APIs.';
@@ -22,6 +22,7 @@ function currentPage() {
 function demoResult() {
   const demo = new URLSearchParams(window.location.search).get('demo');
   if (demo === 'low') return DEMO_LOW_RESULT;
+  if (demo === 'resume') return DEMO_RESUME_ONLY_RESULT;
   if (demo === 'high' || demo === 'results') return DEMO_HIGH_RESULT;
   return null;
 }
@@ -30,7 +31,7 @@ export default function App() {
   const { dark, toggle } = useTheme();
   const [page, setPage] = useState(currentPage);
   const [file, setFile] = useState(null);
-  const [jobText, setJobText] = useState(() => (demoResult() ? DEMO_JOB : ''));
+  const [jobText, setJobText] = useState(() => (demoResult() && demoResult().mode !== 'resume_only' ? DEMO_JOB : ''));
   const [studentMode, setStudentMode] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   // `original` is the analysis of the upload; `result` changes after re-checks
@@ -63,12 +64,12 @@ export default function App() {
     goHome();
   };
 
-  const analyze = async (mode = studentMode) => {
+  const analyze = async (mode = studentMode, job = jobText) => {
     setToast(null);
     setAnalyzing(true);
     window.scrollTo({ top: 0 });
     try {
-      const data = await analyzeResume(file, jobText, mode);
+      const data = await analyzeResume(file, job, mode);
       setOriginal(data);
       setResult(data);
     } catch (err) {
@@ -86,17 +87,19 @@ export default function App() {
   else if (result)
     content = (
       <ResultsView
-        key={original === DEMO_HIGH_RESULT || original === DEMO_LOW_RESULT ? 'demo' : 'results'}
+        key={[DEMO_HIGH_RESULT, DEMO_LOW_RESULT, DEMO_RESUME_ONLY_RESULT].includes(original) ? 'demo' : 'results'}
         result={result}
         original={original}
         jobText={jobText}
         onResult={setResult}
         onStartOver={startOver}
         canReanalyze={Boolean(file)}
-        onReanalyze={(mode) => {
+        onReanalyze={({ studentMode: mode = studentMode, job = jobText } = {}) => {
           setStudentMode(mode);
-          analyze(mode);
+          setJobText(job);
+          analyze(mode, job);
         }}
+        onJobText={setJobText}
         notify={notify}
       />
     );

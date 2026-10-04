@@ -1,7 +1,7 @@
 # FitLens frontend
 
 React 19 + Vite + Tailwind CSS 4 single-page app for the Resume Analyzer. Upload a resume
-(PDF/DOCX) and a job description to get a match score with a per-factor breakdown, a decoded view
+(PDF/DOCX), with or without a job description (sample postings included), to get a match score with a per-factor breakdown, a decoded view
 of the job, an ATS check (with a student / fresher checklist), a skill-gap learning plan, and an
 editor with a live bullet coach to fix the resume, re-check it and download an ATS-friendly `.docx`.
 
@@ -45,6 +45,7 @@ instance can take close to a minute to wake up):
 | --- | --- |
 | Analyze an upload | `POST /api/analyze` (multipart `resume_file`, `job_description`) |
 | Re-check the edited resume | `POST /api/recheck` (JSON) |
+| Change the target role | `POST /api/role-gap` (JSON) |
 | Download the edited resume | `POST /api/resume/docx` (JSON → `.docx`) |
 
 | Environment | `VITE_API_BASE_URL` | Requests go to |
@@ -55,7 +56,7 @@ instance can take close to a minute to wake up):
 
 ## Demo mode
 
-Open `/?demo=high` or `/?demo=low` to see the results page with sample data (same shape as a real
+Open `/?demo=high`, `/?demo=low` or `/?demo=resume` (no job description) to see the results page with sample data (same shape as a real
 `/api/analyze` response, defined in `src/lib/demo.js`) without running the backend.
 
 ## Structure
@@ -67,7 +68,9 @@ src/
 ├── lib/
 │   ├── api.js                   fetch wrappers, timeouts, error messages, .docx download
 │   ├── bulletCoach.js           instant rule-based feedback on resume bullets
-│   ├── demo.js                  demo payloads
+│   ├── demo.js                  demo payloads (?demo=high, ?demo=low, ?demo=resume)
+│   ├── sampleJobs.js            sample job postings
+│   ├── strength.js              resume strength grades (live, from the editor draft)
 │   └── resume.js                editor draft helpers, score colours
 ├── hooks/                       useCountUp (number animation), useTheme (light/dark)
 ├── utils/format.js              display labels for skills, roles and score factors
@@ -77,7 +80,9 @@ src/
     ├── upload/UploadView.jsx    hero, resume drop zone, job description, student-mode switch
     ├── AnalyzingView.jsx        loading state with a cold-start notice
     ├── results/
-    │   ├── ResultsView.jsx      summary + tabs, student mode, re-check/download actions
+    │   ├── ResultsView.jsx      summary + tabs, student mode, add a job, re-check/download
+    │   ├── ProfileTab.jsx       strength report, target-role gap, skills inventory
+    │   ├── AddJobCard.jsx       add a job to a resume-only report
     │   ├── SummaryCards.jsx     match dial, ATS stamp, closest job category
     │   ├── MatchTab.jsx         job at a glance, score breakdown, skills, suggestions, categories
     │   ├── JobInsightsCard.jsx  decoded job posting

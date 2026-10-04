@@ -109,7 +109,58 @@ const LEARNING_PLAN = [
   },
 ];
 
+const ROLE_GAP = {
+  role: 'Software Engineer',
+  have: ['object-oriented programming', 'python', 'git', 'sql', 'rest api', 'docker'],
+  missing: ['data structures', 'algorithms', 'java', 'linux', 'agile', 'javascript', 'c++', 'aws', 'ci/cd'],
+  coverage: 0.4,
+  available_roles: [
+    'Software Engineer',
+    'Backend Developer',
+    'Frontend Developer',
+    'Full-Stack Developer',
+    'Mobile App Developer',
+    'Data Analyst',
+    'Data Scientist',
+    'Machine Learning Engineer',
+    'Data Engineer',
+    'DevOps / Cloud Engineer',
+    'Cybersecurity Analyst',
+    'IT Support Specialist',
+    'UI/UX Designer',
+    'Graphic Designer',
+    'Business Analyst',
+    'Digital Marketing Specialist',
+    'Accountant',
+    'Financial Analyst',
+    'HR Specialist',
+    'Sales / Business Development',
+    'Mechanical / Civil Engineer',
+    'Teacher',
+    'Registered Nurse',
+    'Chef / Culinary',
+    'Project Manager',
+  ],
+};
+
+const SKILLS_INVENTORY = [
+  {
+    group: 'Programming languages',
+    skills: [
+      { skill: 'python', count: 3 },
+      { skill: 'sql', count: 2 },
+    ],
+  },
+  { group: 'Web & frameworks', skills: [{ skill: 'rest api', count: 2 }] },
+  { group: 'Data & AI', skills: [{ skill: 'machine learning', count: 1 }] },
+  { group: 'Cloud & DevOps', skills: [{ skill: 'docker', count: 1 }] },
+  { group: 'Engineering practices', skills: [{ skill: 'git', count: 1 }] },
+];
+
 export const DEMO_HIGH_RESULT = {
+  mode: 'job',
+  role_gap: ROLE_GAP,
+  skills_inventory: SKILLS_INVENTORY,
   match_score: 82.86,
   matched_skills: ['docker', 'git', 'machine learning', 'python', 'rest api', 'sql'],
   missing_skills: ['aws', 'ci/cd', 'kubernetes'],
@@ -223,5 +274,31 @@ export const DEMO_LOW_RESULT = {
         'Add the skills you genuinely have from the posting: aws, docker, sql.',
       ),
     ],
+  },
+};
+
+// Resume-only report (no job description): /?demo=resume
+export const DEMO_RESUME_ONLY_RESULT = {
+  ...DEMO_HIGH_RESULT,
+  mode: 'resume_only',
+  match_score: null,
+  matched_skills: [],
+  missing_skills: [],
+  features: {},
+  score_breakdown: {},
+  score_warnings: [],
+  required_skills_count: 0,
+  job_insights: null,
+  suggestions: ["Include a dedicated 'Projects' section to showcase practical, hands-on applications of your skills."],
+  learning_plan: DEMO_HIGH_RESULT.learning_plan.map((item) => ({
+    ...item,
+    priority: 'core-skill',
+    why: 'A core skill for Software Engineer roles.',
+  })),
+  ats: {
+    ...DEMO_HIGH_RESULT.ats,
+    checks: DEMO_HIGH_RESULT.ats.checks.map((c) =>
+      c.id === 'keywords' ? { ...c, status: 'skip', detail: 'Add a job description to check keywords.', tip: '' } : c,
+    ),
   },
 };

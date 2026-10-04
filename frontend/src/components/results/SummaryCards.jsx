@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, Briefcase } from 'lucide-react';
+import { ArrowDown, ArrowUp, Briefcase, NotebookPen } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
 import { scoreTone } from '../../lib/resume';
+import { resumeStrength } from '../../lib/strength';
 import { formatRole } from '../../utils/format';
 
 function Delta({ value }) {
@@ -117,11 +118,41 @@ function TopRole({ roles, confidence }) {
   );
 }
 
-export default function SummaryCards({ result, original }) {
-  const delta = (key) => (original && original !== result ? key(result) - key(original) : null);
+/** Resume-only mode: overall strength grade instead of a job match score. */
+function StrengthCard({ resume, studentMode, onAddJob }) {
+  const { grade, score } = resumeStrength(resume, { studentMode });
+  const tone = scoreTone(score);
+  return (
+    <div className="card flex items-center gap-5 p-5">
+      <motion.span
+        initial={{ scale: 0, rotate: -25 }}
+        animate={{ scale: 1, rotate: -6 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 13 }}
+        className={`grid size-28 shrink-0 place-items-center rounded-3xl font-display text-6xl font-bold ${tone.bg} ${tone.text}`}
+      >
+        {grade}
+      </motion.span>
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-muted uppercase">Resume strength</p>
+        <p className={`mt-1 font-display text-xl font-semibold ${tone.text}`}>{score}/100</p>
+        <button type="button" onClick={onAddJob} className="mt-1 inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-accent">
+          <NotebookPen className="size-3.5" aria-hidden /> Add a job for a match score
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function SummaryCards({ result, original, draft, onAddJob }) {
+  const sameMode = original && original.mode === result.mode;
+  const delta = (key) => (original && original !== result && sameMode ? key(result) - key(original) : null);
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <MatchDial score={result.match_score} delta={delta((r) => r.match_score)} />
+      {result.mode === 'resume_only' ? (
+        <StrengthCard resume={draft || result.resume} studentMode={result.student_mode} onAddJob={onAddJob} />
+      ) : (
+        <MatchDial score={result.match_score} delta={delta((r) => r.match_score)} />
+      )}
       {result.ats && <AtsStamp ats={result.ats} delta={delta((r) => r.ats?.score ?? 0)} />}
       <TopRole roles={result.suggested_roles} confidence={result.confidence} />
     </div>

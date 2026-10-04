@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.insights import JobInsights, LearningItem
+from app.schemas.insights import InventoryGroup, JobInsights, LearningItem, RoleGap
 from app.schemas.resume import AtsReport, StructuredResume
 
 
@@ -16,7 +16,10 @@ class RolePrediction(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
-    match_score: float
+    mode: Literal["job", "resume_only"] = Field(
+        "job", description="resume_only when no job description was given; job fields are then empty."
+    )
+    match_score: float | None
     matched_skills: list[str]
     missing_skills: list[str]
     features: dict[str, float]
@@ -46,6 +49,8 @@ class AnalyzeResponse(BaseModel):
     learning_plan: list[LearningItem] = Field(default_factory=list, description="How to close the skill gaps.")
     student_mode: bool = Field(False, description="Whether the student / fresher checklist was applied.")
     student_detected: bool = Field(False, description="The resume looks like a student's or fresher's.")
+    role_gap: RoleGap | None = Field(None, description="Core skills of the target role you have and lack.")
+    skills_inventory: list[InventoryGroup] = Field(default_factory=list, description="Skills found, grouped.")
 
 
 class SuggestRolesResponse(BaseModel):

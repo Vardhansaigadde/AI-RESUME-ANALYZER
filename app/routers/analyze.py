@@ -6,6 +6,7 @@ Provides:
                              from an uploaded PDF/DOCX resume file + job description.
   POST /api/recheck       -- Re-analyze an edited, structured resume.
   POST /api/resume/docx   -- Download a structured resume as an ATS-friendly .docx.
+  POST /api/role-gap      -- Compare a resume with a target job role.
   POST /api/suggest-roles -- Standalone top-N role predictions from an uploaded
                              resume file or resume text.
 """
@@ -21,6 +22,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, Response, Upl
 from starlette.concurrency import run_in_threadpool
 
 from app.schemas import AnalyzeResponse, SuggestRolesResponse
+from app.schemas.insights import RoleGapRequest, RoleGapResponse
 from app.schemas.resume import RecheckRequest, StructuredResume
 from app.services.pipeline import (
     MAX_FILE_SIZE,
@@ -29,6 +31,7 @@ from app.services.pipeline import (
     PipelineError,
     run_full_analysis,
     run_recheck,
+    run_role_gap,
     run_role_suggestion,
 )
 from app.services.resume_docx import build_resume_docx
@@ -112,6 +115,7 @@ async def analyze(
     job_description: str | None = Form(None),
     job_text: str | None = Form(None),
     student_mode: str | None = Form(None),
+    target_role: str | None = Form(None),
 ) -> dict[str, Any]:
     """Compute match score between a resume and a job description.
 
@@ -133,6 +137,7 @@ async def analyze(
             is_json=True,
             required_models=REQUIRED_ANALYZE_MODELS,
             student_mode=_as_bool(body.get("student_mode")),
+            target_role=_as_optional_text(body.get("target_role"), "target_role"),
         )
 
     # 2. Multipart form data flow (file upload + job_description)
@@ -147,6 +152,7 @@ async def analyze(
         is_json=False,
         required_models=REQUIRED_ANALYZE_MODELS,
         student_mode=_as_bool(student_mode),
+        target_role=target_role,
     )
 
 
@@ -202,7 +208,14 @@ async def recheck(payload: RecheckRequest) -> dict[str, Any]:
         resume=payload.resume,
         job_description=payload.job_description,
         student_mode=payload.student_mode,
+        target_role=payload.target_role,
     )
+
+
+@router.post("/role-gap", response_model=RoleGapResponse)
+async def role_gap(payload: RoleGapRequest) -> dict[str, Any]:
+    """Compare a (possibly edited) resume with another target role, without re-running the models."""
+    return await _run_pipeline(run_role_gap, resume=payload.resume, target_role=payload.target_role)
 
 
 @router.post("/resume/docx")

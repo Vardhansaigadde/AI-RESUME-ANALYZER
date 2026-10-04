@@ -165,14 +165,17 @@ class TestAnalyzeEndpoint(unittest.TestCase):
         self.assertIn("invalid file type", detail)
         self.assertIn(".txt", detail)
 
-    def test_empty_job_description(self):
-        """POST /api/analyze with empty job_description text returns 400 error."""
+    def test_empty_job_description_gives_resume_only_report(self):
+        """POST /api/analyze without a job description returns a resume-only report."""
         files = {"resume_file": ("resume.pdf", self.valid_pdf_bytes, "application/pdf")}
-        data = {"job_description": "   "}
-
-        response = client.post("/api/analyze", files=files, data=data)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("job_description text must not be empty", response.json()["detail"])
+        for data in ({"job_description": "   "}, {}):
+            response = client.post("/api/analyze", files=files, data=data)
+            self.assertEqual(response.status_code, 200)
+            payload = response.json()
+            self.assertEqual(payload["mode"], "resume_only")
+            self.assertIsNone(payload["match_score"])
+            self.assertIn("ats", payload)
+            self.assertEqual(len(payload["suggested_roles"]), 3)
 
     def test_oversized_file(self):
         """POST /api/analyze with file exceeding 5MB returns 400 error."""

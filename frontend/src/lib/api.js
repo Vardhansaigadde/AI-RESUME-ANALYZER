@@ -42,22 +42,38 @@ async function errorMessage(response) {
   return `Server error (${response.status}). Please try again.`;
 }
 
-/** Analyze an uploaded resume file against a job description. */
-export async function analyzeResume(file, jobDescription, studentMode = false) {
+/** Analyze an uploaded resume file, against a job description if one is given. */
+export async function analyzeResume(file, jobDescription, studentMode = false, targetRole = null) {
   const form = new FormData();
   form.append('resume_file', file);
-  form.append('job_description', jobDescription);
+  form.append('job_description', jobDescription || '');
   form.append('student_mode', studentMode ? 'true' : 'false');
+  if (targetRole) form.append('target_role', targetRole);
   const response = await request('/api/analyze', { method: 'POST', body: form });
   return response.json();
 }
 
 /** Re-analyze an edited, structured resume. */
-export async function recheckResume(resume, jobDescription, studentMode = false) {
+export async function recheckResume(resume, jobDescription, studentMode = false, targetRole = null) {
   const response = await request('/api/recheck', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resume, job_description: jobDescription, student_mode: studentMode }),
+    body: JSON.stringify({
+      resume,
+      job_description: jobDescription || '',
+      student_mode: studentMode,
+      target_role: targetRole,
+    }),
+  });
+  return response.json();
+}
+
+/** Compare the resume with another target job role (no model re-run). */
+export async function fetchRoleGap(resume, targetRole) {
+  const response = await request('/api/role-gap', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resume, target_role: targetRole }),
   });
   return response.json();
 }

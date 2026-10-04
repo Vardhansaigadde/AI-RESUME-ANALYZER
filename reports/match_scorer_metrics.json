@@ -13,53 +13,53 @@
     "method": "GroupKFold(n_splits=5) grouped by job_text; RobustScaler fitted per fold; predictions soft-capped as in production",
     "results": {
       "Ridge": {
-        "r2_mean": 0.3697165979148629,
-        "r2_std": 0.16320725504848005,
-        "rmse_mean": 17.830767391787994,
-        "rmse_std": 2.3144760781568694,
-        "mae_mean": 14.588102173893663,
-        "mae_std": 2.2627595612753235
+        "r2_mean": 0.3773606314954572,
+        "r2_std": 0.15611544500120253,
+        "rmse_mean": 17.714076361671296,
+        "rmse_std": 2.1440910175264305,
+        "mae_mean": 14.479623191275376,
+        "mae_std": 2.107522311890353
       },
       "GradientBoosting": {
-        "r2_mean": 0.24769424365053067,
-        "r2_std": 0.26063431043599783,
-        "rmse_mean": 19.316562387895353,
-        "rmse_std": 2.7820892574782157,
-        "mae_mean": 15.660201404105589,
-        "mae_std": 2.9811770478949104
+        "r2_mean": 0.27985869679927455,
+        "r2_std": 0.12731209753909695,
+        "rmse_mean": 19.28617008452601,
+        "rmse_std": 3.1764846312037074,
+        "mae_mean": 15.517481574664208,
+        "mae_std": 3.2042315811075706
       },
       "RandomForest": {
-        "r2_mean": 0.3518737605347209,
-        "r2_std": 0.19779969616457807,
-        "rmse_mean": 18.018516511578614,
-        "rmse_std": 2.5424333612060384,
-        "mae_mean": 14.546648162866244,
-        "mae_std": 2.772449183882985
+        "r2_mean": 0.34885649159998994,
+        "r2_std": 0.17410643677247967,
+        "rmse_mean": 18.125022730354075,
+        "rmse_std": 2.5025826713391335,
+        "mae_mean": 14.655558858909572,
+        "mae_std": 2.68575952890172
       }
     },
     "production_model": "Ridge"
   },
   "production_model": {
-    "in_sample_r2": 0.5108898947513025,
-    "in_sample_rmse": 17.220711131435323,
-    "intercept": 39.32670788455433,
+    "in_sample_r2": 0.5188241430117775,
+    "in_sample_rmse": 17.08046454243957,
+    "intercept": 39.39348849286181,
     "coefficients_scaled": {
-      "tfidf_similarity": 19.158472169167847,
-      "skill_overlap_ratio": 6.479686161307537,
-      "resume_word_count": 1.8744646153182634
+      "tfidf_similarity": 18.644257582402,
+      "skill_overlap_ratio": 7.330084396696149,
+      "resume_word_count": 1.7768128158540297
     },
     "points_per_unit": {
-      "tfidf_similarity": 131.33972427642215,
-      "skill_overlap_ratio": 47.89333249662094,
-      "resume_word_count": 0.006742678472367854
+      "tfidf_similarity": 127.81455789319513,
+      "skill_overlap_ratio": 53.07992149331698,
+      "resume_word_count": 0.006391413006669172
     }
   },
   "mismatched_pair_sanity_check": {
     "pairs": 300,
-    "same_category_mean_score": 45.172482494063395,
-    "other_category_mean_score": 28.175740433871887,
-    "other_category_p90_score": 39.69193843379378,
-    "share_same_category_scored_higher": 0.86
+    "same_category_mean_score": 45.168009220872364,
+    "other_category_mean_score": 28.212297820584062,
+    "other_category_p90_score": 39.304690863310235,
+    "share_same_category_scored_higher": 0.8633333333333333
   },
   "scikit_learn_version": "1.9.1"
 }

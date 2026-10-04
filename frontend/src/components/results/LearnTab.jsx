@@ -87,7 +87,7 @@ function PlanCard({ item, index }) {
 }
 
 /** Learning plan for the job's missing skills. */
-export default function LearnTab({ plan, missingCount }) {
+export default function LearnTab({ plan, missingCount, role }) {
   if (!plan?.length) {
     return (
       <div className="card flex flex-col items-center p-10 text-center">
@@ -95,7 +95,7 @@ export default function LearnTab({ plan, missingCount }) {
           <PartyPopper className="size-10 text-accent" aria-hidden />
         </motion.span>
         <h3 className="mt-4 font-display text-2xl font-semibold">
-          {missingCount ? 'No learning plan for these skills yet' : 'No skill gaps to close'}
+          {missingCount ? 'No learning plan for these skills yet' : role ? `You cover every core ${role} skill` : 'No skill gaps to close'}
         </h3>
         <p className="mt-2 max-w-md text-sm text-muted">
           {missingCount
@@ -108,8 +108,10 @@ export default function LearnTab({ plan, missingCount }) {
   return (
     <div>
       <p className="mb-5 text-sm text-muted">
-        Free resources for the skills this job asks for that your resume doesn’t show yet, most important first. Learn
-        them, build the small project, then add it to your resume.
+        {role
+          ? `Core ${role} skills your resume doesn’t show yet, most important first. Change the target role in the Profile tab.`
+          : 'Free resources for the skills this job asks for that your resume doesn’t show yet, most important first.'}{' '}
+        Learn them, build the small project, then add it to your resume.
       </p>
       <ul className="grid gap-5 lg:grid-cols-2">
         {plan.map((item, i) => (

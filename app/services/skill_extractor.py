@@ -208,6 +208,14 @@ SKILL_ALIASES: dict[str, str] = {
     "a/r": "accounts receivable",
     "intravenous": "iv therapy",
     "registered nurse": "nursing",
+    "recruiting": "talent acquisition",
+    "recruitment": "talent acquisition",
+    "social media marketing": "social media management",
+    "tax preparation": "tax return preparation",
+    "wireframes": "wireframing",
+    "account reconciliation": "reconciliation",
+    "bank reconciliation": "reconciliation",
+    "menu planning": "menu development",
     "rn": "nursing",
 }
 
@@ -403,11 +411,22 @@ def extract_skills(text: str) -> set[str]:
     Returns:
         Set of canonical skill strings found in the text.
     """
+    return set(extract_skill_counts(text))
+
+
+def extract_skill_counts(text: str) -> dict[str, int]:
+    """Like extract_skills(), but also count how often each skill appears.
+
+    Returns:
+        {canonical_skill: number_of_mentions}. For context-dependent skills
+        only mentions with valid context are counted; aliases count toward
+        their canonical skill.
+    """
     if not text or not isinstance(text, str):
-        return set()
+        return {}
 
     patterns = _load_skill_patterns()
-    found: set[str] = set()
+    counts: dict[str, int] = {}
 
     # Context is checked against the unmasked lowercased text; matching runs on
     # a mutable copy where consumed spans are masked to prevent sub-string
@@ -417,26 +436,20 @@ def extract_skills(text: str) -> set[str]:
 
     for surface, canonical, pattern in patterns:
         required_context = _context_keywords_for(surface, canonical)
+        matches = list(pattern.finditer(working))
         if required_context is not None:
-            matched = any(
-                _has_required_context(
-                    lowered,
-                    match.start(),
-                    match.end(),
-                    required_context,
-                    window_words=5,
-                )
-                for match in pattern.finditer(working)
-            )
-        else:
-            matched = pattern.search(working) is not None
+            matches = [
+                m
+                for m in matches
+                if _has_required_context(lowered, m.start(), m.end(), required_context, window_words=5)
+            ]
 
-        if matched:
-            found.add(canonical)
+        if matches:
+            counts[canonical] = counts.get(canonical, 0) + len(matches)
             # Mask all occurrences of this surface form in the working copy
             working = pattern.sub(lambda m: " " * len(m.group(0)), working)
 
-    return found
+    return counts
 
 
 def compare_skills(

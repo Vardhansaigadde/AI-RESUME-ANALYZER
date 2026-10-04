@@ -1,27 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, FileText, Gauge, PencilLine, ScanText, Sparkles, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { SAMPLE_JOBS } from '../../lib/sampleJobs';
 import Button from '../ui/Button';
 import Switch from '../ui/Switch';
 
 // Matches MAX_FILE_SIZE in app/services/pipeline.py
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MIN_JOB_WORDS = 5;
-
-const SAMPLE_JOB = `Junior Software Engineer
-
-We're hiring a junior engineer to build and maintain backend services and internal tools.
-
-Responsibilities
-- Build REST APIs in Python and maintain SQL databases
-- Containerize services with Docker and deploy them on AWS
-- Write tests, review code and use Git in an Agile team
-
-Requirements
-- Strong Python and object-oriented programming skills
-- Good knowledge of data structures and algorithms
-- Experience with SQL and Git; Docker or cloud exposure is a plus
-- Clear communication and problem solving`;
 
 const FEATURES = [
   { icon: Gauge, title: 'Match score', text: 'How well you fit this job, and why.' },
@@ -38,7 +24,9 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const words = jobText.trim() ? jobText.trim().split(/\s+/).length : 0;
-  const ready = Boolean(file) && words >= MIN_JOB_WORDS;
+  const hasJob = words > 0;
+  // The job description is optional; a few words are not enough to compare against
+  const ready = Boolean(file) && (!hasJob || words >= MIN_JOB_WORDS);
 
   const pick = (f) => {
     if (!f) return;
@@ -197,11 +185,28 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
         <section className="card flex flex-col p-5 sm:p-6" aria-labelledby="job-heading">
           <div className="mb-4 flex items-baseline justify-between gap-2">
             <h2 id="job-heading" className="font-display text-xl font-semibold">
-              <span className="mr-2 font-mono text-sm text-accent">02</span>Target job
+              <span className="mr-2 font-mono text-sm text-accent">02</span>Target job{' '}
+              <span className="font-sans text-sm font-normal text-muted">(optional)</span>
             </h2>
-            <Button variant="ghost" size="sm" icon={Sparkles} onClick={() => setJobText(SAMPLE_JOB)}>
-              Use a sample
-            </Button>
+          </div>
+          <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="Sample job postings">
+            <span className="mr-1 inline-flex items-center gap-1 text-xs text-muted">
+              <Sparkles className="size-3.5" aria-hidden /> Try a sample:
+            </span>
+            {SAMPLE_JOBS.map((job) => (
+              <motion.button
+                key={job.id}
+                type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setJobText(job.text)}
+                className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  jobText === job.text ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-card hover:border-ink/40'
+                }`}
+              >
+                {job.title}
+              </motion.button>
+            ))}
           </div>
           <label htmlFor="job-description-input" className="sr-only">
             Job description
@@ -210,11 +215,13 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
             id="job-description-input"
             value={jobText}
             onChange={(e) => setJobText(e.target.value)}
-            placeholder="Paste the full job posting: responsibilities, requirements, skills…"
+            placeholder="Paste a job posting to get a match score, or leave this empty for a resume-only check (ATS, strengths, skill gaps for a target role)."
             className="field min-h-64 flex-1 resize-y leading-relaxed"
           />
           <p className={`mt-2 text-right font-mono text-xs ${words >= 50 ? 'text-ok' : 'text-muted'}`}>
-            {words} words{words > 0 && words < 50 ? ' · paste the full posting for a reliable score' : ''}
+            {hasJob
+              ? `${words} words${words < 50 ? ' · paste the full posting for a reliable score' : ''}`
+              : 'No job? You still get the ATS check, strengths and role gaps.'}
           </p>
         </section>
       </motion.div>
@@ -229,15 +236,11 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
           />
         </div>
         <Button id="analyze-fit-button" size="lg" icon={ArrowRight} disabled={!ready} onClick={onAnalyze}>
-          Analyze my resume
+          {hasJob ? 'Analyze my fit' : 'Analyze my resume'}
         </Button>
         {!ready && (
           <p className="text-sm text-muted">
-            {!file && words < MIN_JOB_WORDS
-              ? 'Add your resume and paste a job description to start.'
-              : !file
-                ? 'Add your resume to start.'
-                : 'Paste a job description to start.'}
+            {!file ? 'Add your resume to start.' : `Paste a little more of the job (at least ${MIN_JOB_WORDS} words), or clear it.`}
           </p>
         )}
       </motion.div>
