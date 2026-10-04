@@ -2,8 +2,12 @@
 
 Each entry: a one-line explanation, 1-3 free resources from official docs or
 well-known free platforms, and a small project that proves the skill on a
-resume. Every URL is requested before writing, and the script fails if any
-link is broken, so the app never shows a dead link it hasn't checked.
+resume. Roadmap details (study order, hours, a "done when you can..." checklist,
+a YouTube video and a roadmap.sh link) come from learning_roadmap_data.py.
+Every URL is requested before writing, and the script fails if any link is
+broken, so the app never shows a dead link it hasn't checked. YouTube videos are
+checked with YouTube's oEmbed endpoint (no API key), which also gives their real
+title and channel.
 
 Run:
     python scripts/build_learning_resources.py
@@ -16,11 +20,18 @@ import json
 from pathlib import Path
 import sys
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learning_roadmap_data import ROADMAP, ROLE_ROADMAPS  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = REPO_ROOT / "app" / "data" / "learning_resources.json"
 SKILLS = REPO_ROOT / "app" / "data" / "skills_list.json"
+TARGET_ROLES = REPO_ROOT / "app" / "data" / "target_roles.json"
+ROLE_OUTPUT = REPO_ROOT / "app" / "data" / "role_roadmaps.json"
+ROADMAP_SH = "https://roadmap.sh/"
 
 
 def r(title: str, url: str, kind: str, time: str = "") -> dict:
@@ -658,13 +669,66 @@ def check(url: str) -> tuple[str, int | str]:
         return url, type(exc).__name__
 
 
+def youtube_info(video_id: str) -> tuple[str, dict | str]:
+    """Title and channel of a YouTube video via oEmbed, or the error if it doesn't exist."""
+    watch = f"https://www.youtube.com/watch?v={video_id}"
+    url = f"https://www.youtube.com/oembed?format=json&url={quote(watch, safe='')}"
+    try:
+        with urlopen(Request(url), timeout=20) as response:  # noqa: S310 - fixed https URL
+            data = json.loads(response.read().decode("utf-8"))
+        return video_id, {"title": data["title"], "by": data["author_name"], "url": watch}
+    except HTTPError as exc:
+        return video_id, f"HTTP {exc.code}"
+    except (URLError, TimeoutError, KeyError, ValueError) as exc:
+        return video_id, type(exc).__name__
+
+
+def validate_roadmap(taxonomy: set[str]) -> None:
+    """Every skill has roadmap details; prerequisites exist and never loop."""
+    problems = []
+    if set(ROADMAP) != set(RESOURCES):
+        problems.append(f"skills without roadmap details: {sorted(set(RESOURCES) ^ set(ROADMAP))}")
+    for skill, entry in ROADMAP.items():
+        if not entry["video"] or len(entry["done"]) != 3 or entry["hours"] <= 0:
+            problems.append(f"{skill}: needs a video, 3 checklist items and hours")
+        for need in entry["needs"]:
+            if need not in ROADMAP:
+                problems.append(f"{skill}: prerequisite {need!r} has no learning resources")
+
+    def visit(skill: str, path: tuple[str, ...]) -> None:
+        if skill in path:
+            problems.append(f"prerequisite loop: {' -> '.join((*path, skill))}")
+            return
+        for need in ROADMAP.get(skill, {}).get("needs", []):
+            visit(need, (*path, skill))
+
+    for skill in ROADMAP:
+        visit(skill, ())
+    roles = set(json.loads(TARGET_ROLES.read_text(encoding="utf-8"))["roles"])
+    if set(ROLE_ROADMAPS) - roles:
+        problems.append(f"unknown target roles: {sorted(set(ROLE_ROADMAPS) - roles)}")
+    if set(RESOURCES) - taxonomy:
+        problems.append(f"skills not in skills_list.json: {sorted(set(RESOURCES) - taxonomy)}")
+    if problems:
+        sys.exit("\n".join(problems))
+
+
 def main() -> None:
     taxonomy = {s.strip().lower() for s in json.loads(SKILLS.read_text(encoding="utf-8"))}
-    unknown = sorted(set(RESOURCES) - taxonomy)
-    if unknown:
-        sys.exit(f"Skills not in skills_list.json: {unknown}")
+    validate_roadmap(taxonomy)
 
-    urls = sorted({res["url"] for entry in RESOURCES.values() for res in entry["resources"]})
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        videos = dict(pool.map(youtube_info, sorted({e["video"] for e in ROADMAP.values()})))
+    missing_videos = {vid: err for vid, err in videos.items() if isinstance(err, str)}
+    if missing_videos:
+        sys.exit(f"YouTube videos not found: {missing_videos}")
+    print(f"Checked {len(videos)} YouTube videos: all exist")
+
+    roadmap_slugs = {e["roadmap"] for e in ROADMAP.values() if e["roadmap"]} | set(ROLE_ROADMAPS.values())
+    urls = sorted(
+        {res["url"] for entry in RESOURCES.values() for res in entry["resources"]}
+        | {ROADMAP_SH + slug for slug in roadmap_slugs}
+    )
     with ThreadPoolExecutor(max_workers=12) as pool:
         results = dict(pool.map(check, urls))
     # Some sites block automated requests (403/429) even though the page exists;
@@ -677,8 +741,23 @@ def main() -> None:
     if broken:
         sys.exit("Fix the broken links above before writing the file.")
 
-    OUTPUT.write_text(json.dumps(RESOURCES, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Wrote {len(RESOURCES)} skills to {OUTPUT.relative_to(REPO_ROOT)}")
+    output = {}
+    for skill, entry in RESOURCES.items():
+        extra = ROADMAP[skill]
+        video = videos[extra["video"]]
+        output[skill] = {
+            **entry,
+            "resources": [*entry["resources"], {**r(video["title"], video["url"], "video"), "by": video["by"]}],
+            "hours": extra["hours"],
+            "needs": extra["needs"],
+            "done": extra["done"],
+            "roadmap": ROADMAP_SH + extra["roadmap"] if extra["roadmap"] else "",
+        }
+    OUTPUT.write_text(json.dumps(output, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Wrote {len(output)} skills to {OUTPUT.relative_to(REPO_ROOT)}")
+    roles = {role: ROADMAP_SH + slug for role, slug in ROLE_ROADMAPS.items()}
+    ROLE_OUTPUT.write_text(json.dumps(roles, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Wrote {len(roles)} role roadmaps to {ROLE_OUTPUT.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from pathlib import Path
 from app.schemas.insights import RoleGap
 
 TARGET_ROLES_PATH = Path(__file__).resolve().parent.parent / "data" / "target_roles.json"
+ROLE_ROADMAPS_PATH = TARGET_ROLES_PATH.with_name("role_roadmaps.json")
 
 
 @lru_cache(maxsize=1)
@@ -22,6 +23,14 @@ def _load() -> dict:
     if not TARGET_ROLES_PATH.exists():
         return {"roles": {}, "category_default": {}}
     return json.loads(TARGET_ROLES_PATH.read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def role_roadmaps() -> dict[str, str]:
+    """roadmap.sh links for target roles (built by scripts/build_learning_resources.py)."""
+    if not ROLE_ROADMAPS_PATH.exists():
+        return {}
+    return json.loads(ROLE_ROADMAPS_PATH.read_text(encoding="utf-8"))
 
 
 def available_roles() -> list[str]:
@@ -52,4 +61,5 @@ def compare_with_role(resume_skills: set[str], role: str) -> RoleGap:
         missing=missing,
         coverage=round(len(have) / len(core), 3) if core else 0.0,
         available_roles=available_roles(),
+        roadmap=role_roadmaps().get(role, ""),
     )

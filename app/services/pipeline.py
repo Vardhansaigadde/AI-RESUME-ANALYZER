@@ -256,7 +256,7 @@ def run_role_gap(resume: StructuredResume, target_role: str, with_learning_plan:
     if role is None:
         raise PipelineError("No target roles are available.", status_code=503)
     gap = compare_with_role(resume_skills, role)
-    plan = build_learning_plan(gap.missing, "", None, role=role) if with_learning_plan else []
+    plan = build_learning_plan(gap.missing, "", None, role=role, have=resume_skills) if with_learning_plan else []
     return {"role_gap": gap, "learning_plan": plan}
 
 
@@ -314,10 +314,14 @@ def _analyze_text(
     role_gap = compare_with_role(resume_skills, role) if role else None
     if has_job:
         insights = decode_job(job_content_text, resume_skills)
-        learning_plan = build_learning_plan(match_result["missing_skills"], job_content_text, insights)
+        learning_plan = build_learning_plan(
+            match_result["missing_skills"], job_content_text, insights, have=resume_skills
+        )
     else:
         insights = None
-        learning_plan = build_learning_plan(role_gap.missing, "", None, role=role) if role_gap else []
+        learning_plan = (
+            build_learning_plan(role_gap.missing, "", None, role=role, have=resume_skills) if role_gap else []
+        )
 
     return {
         **match_result,

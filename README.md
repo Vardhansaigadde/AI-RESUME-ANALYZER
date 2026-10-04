@@ -10,7 +10,7 @@ with students and freshers in mind. The report has five tabs:
 | **Overview** | With a job: a **match score (0–100)** and why, plus the posting decoded (level, experience, must-have and nice-to-have skills you have or lack, which skills to list first). Always: a **resume strength** grade per section, your **target-role gap** (core skills of 25 job-title roles), the job categories your resume resembles, and every **skill found**. |
 | **ATS check** | A 0–100 estimate of how well applicant tracking systems can read the resume (layout, sections, contact details, bullets, keywords), each problem with a fix. **Student mode** adds a fresher checklist (projects, internships, CGPA, GitHub, one page). |
 | **Edit & re-check** | The resume split into editable sections, a live **bullet coach** (weak openers, missing numbers, passive voice), one-click re-check, and download as an ATS-friendly `.docx`. |
-| **Skill plan** | For each missing skill (from the job, or your target role when there's no job): why it matters, free link-checked resources and a small project that proves it. |
+| **Skill plan** | A study **roadmap** for the missing skills (from the job, or your target role when there's no job): in learning order with missing prerequisites first, hours and a week-by-week estimate at your pace, docs + a free course + a YouTube video for each skill, a "done when you can…" checklist with progress saved in the browser, a project that proves it, and roadmap.sh links. |
 | **Find jobs** | Live jobs and internships (search by role, country, and All / Internships / Entry-level), each with **your fit score**, the skills you have and miss, and a link to apply. |
 
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
@@ -100,8 +100,14 @@ bullet lists, no tables, images or headers).
   experience, level (entry / mid / senior) and whether a degree is mentioned.
 - **Learning plan** (`learning_plan.py`) uses `app/data/learning_resources.json`: 75 common skills,
   each with a one-line explanation, free resources from official docs and well-known free
-  platforms, and a project idea. `scripts/build_learning_resources.py` requests every link and
-  refuses to write the file if one is broken.
+  platforms, a YouTube video, a project idea, an hours estimate, a three-item "done when you
+  can…" checklist, prerequisites and a roadmap.sh link (details in
+  `scripts/learning_roadmap_data.py`). The plan is a study order: prerequisites the resume doesn't
+  show (JavaScript before React, Linux before Docker) are inserted before the skills that need
+  them. `scripts/build_learning_resources.py` requests every link, checks every video with
+  YouTube's oEmbed endpoint (no API key; it also records the real title and channel), rejects
+  prerequisite loops, and refuses to write the file if anything is broken. Target roles get a
+  roadmap.sh link too (`app/data/role_roadmaps.json`).
 - **Student mode** adds weighted checks to the ATS report: education before experience, 2+
   projects, an internship or training, grades in the Education section, a GitHub/portfolio link and
   one-page length. `student_detected` is true for resumes with student wording or a graduation year
@@ -279,7 +285,7 @@ python -m app.ml.features                  # → data/processed/features.csv + m
 python scripts/train_match_scorer.py       # → match_scorer + feature_scaler, reports/match_scorer_metrics.json
 python scripts/train_role_classifier.py    # → role_classifier + role_vectorizer, reports/role_classifier_metrics.json
 python scripts/evaluate_pipeline.py        # → reports/evaluation_summary.md
-python scripts/build_learning_resources.py # checks every link → app/data/learning_resources.json
+python scripts/build_learning_resources.py # checks every link and video → app/data/learning_resources.json
 python scripts/build_target_roles.py       # validates job-title roles → app/data/target_roles.json
 ```
 

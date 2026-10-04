@@ -217,6 +217,8 @@ export default function ResultsView({
                 plan={result.learning_plan}
                 missingCount={resumeOnly ? result.role_gap?.missing.length || 0 : result.missing_skills.length}
                 role={resumeOnly ? targetRole : null}
+                roleRoadmap={result.role_gap?.roadmap}
+                roadmapRole={targetRole}
               />
             )}
             {tab === 'jobs' && (

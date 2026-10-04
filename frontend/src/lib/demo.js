@@ -57,6 +57,44 @@ const JOB_INSIGHTS = {
 
 const LEARNING_PLAN = [
   {
+    skill: 'linux',
+    what: 'The operating system behind most servers and cloud machines.',
+    why: '',
+    resources: [
+      {
+        title: 'Linux Journey',
+        url: 'https://linuxjourney.com/',
+        kind: 'tutorial',
+        time: '8 h',
+        by: '',
+      },
+      {
+        title: 'OverTheWire: Bandit (practice)',
+        url: 'https://overthewire.org/wargames/bandit/',
+        kind: 'practice',
+        time: '',
+        by: '',
+      },
+      {
+        title: 'Linux Operating System - Crash Course for Beginners',
+        url: 'https://www.youtube.com/watch?v=ROjZy1WbCIA',
+        kind: 'video',
+        time: '',
+        by: 'freeCodeCamp.org',
+      },
+    ],
+    project: 'Host one of your projects on a Linux VM and set it up from the command line.',
+    priority: 'prerequisite',
+    hours: 15,
+    done: [
+      'Move around and manage files from the terminal',
+      'Manage permissions, users and processes',
+      'Install packages and read logs to debug a service',
+    ],
+    roadmap: 'https://roadmap.sh/linux',
+    needed_for: ['aws'],
+  },
+  {
     skill: 'aws',
     what: "Amazon's cloud platform, the most widely used in industry.",
     why: 'Deploy services on AWS and keep them running.',
@@ -66,16 +104,33 @@ const LEARNING_PLAN = [
         url: 'https://aws.amazon.com/getting-started/',
         kind: 'tutorial',
         time: '',
+        by: '',
       },
       {
         title: 'AWS Skill Builder (free courses)',
         url: 'https://skillbuilder.aws/',
         kind: 'course',
         time: '',
+        by: '',
+      },
+      {
+        title: 'AWS Certified Cloud Practitioner Certification Course (CLF-C02) - Pass the Exam!',
+        url: 'https://www.youtube.com/watch?v=NhDYbskXRgc',
+        kind: 'video',
+        time: '',
+        by: 'freeCodeCamp.org',
       },
     ],
     project: 'Deploy one of your apps on AWS (e.g. EC2 or Lambda + S3) using the free tier.',
     priority: 'must-have',
+    hours: 25,
+    done: [
+      'Launch an EC2 instance and connect with SSH',
+      'Store files in S3 and manage access with IAM',
+      'Explain regions, VPCs and the main managed services',
+    ],
+    roadmap: 'https://roadmap.sh/aws',
+    needed_for: [],
   },
   {
     skill: 'kubernetes',
@@ -87,10 +142,26 @@ const LEARNING_PLAN = [
         url: 'https://kubernetes.io/docs/tutorials/kubernetes-basics/',
         kind: 'tutorial',
         time: '3 h',
+        by: '',
+      },
+      {
+        title: 'Kubernetes Tutorial for Beginners [FULL COURSE in 4 Hours]',
+        url: 'https://www.youtube.com/watch?v=X48VuDVv0do',
+        kind: 'video',
+        time: '',
+        by: 'TechWorld with Nana',
       },
     ],
     project: 'Deploy a containerized app to a local cluster (kind or minikube) with a Deployment and Service.',
     priority: 'nice-to-have',
+    hours: 25,
+    done: [
+      'Deploy an app with a Deployment and a Service',
+      'Use ConfigMaps and Secrets',
+      'Debug pods with kubectl logs and describe',
+    ],
+    roadmap: 'https://roadmap.sh/kubernetes',
+    needed_for: [],
   },
   {
     skill: 'ci/cd',
@@ -102,10 +173,26 @@ const LEARNING_PLAN = [
         url: 'https://docs.github.com/en/actions',
         kind: 'docs',
         time: '3 h',
+        by: '',
+      },
+      {
+        title: 'GitHub Actions Tutorial - Basic Concepts and CI/CD Pipeline with Docker',
+        url: 'https://www.youtube.com/watch?v=R8_veQiYBjI',
+        kind: 'video',
+        time: '',
+        by: 'TechWorld with Nana',
       },
     ],
     project: 'Add a GitHub Actions workflow that runs your tests and deploys your project.',
     priority: 'mentioned',
+    hours: 10,
+    done: [
+      'Run tests automatically on every push',
+      'Build and publish an artifact or Docker image from a pipeline',
+      'Deploy automatically after tests pass',
+    ],
+    roadmap: 'https://roadmap.sh/devops',
+    needed_for: [],
   },
 ];
 
@@ -114,6 +201,7 @@ const ROLE_GAP = {
   have: ['object-oriented programming', 'python', 'git', 'sql', 'rest api', 'docker'],
   missing: ['data structures', 'algorithms', 'java', 'linux', 'agile', 'javascript', 'c++', 'aws', 'ci/cd'],
   coverage: 0.4,
+  roadmap: 'https://roadmap.sh/computer-science',
   available_roles: [
     'Software Engineer',
     'Backend Developer',
@@ -290,11 +378,11 @@ export const DEMO_RESUME_ONLY_RESULT = {
   required_skills_count: 0,
   job_insights: null,
   suggestions: ["Include a dedicated 'Projects' section to showcase practical, hands-on applications of your skills."],
-  learning_plan: DEMO_HIGH_RESULT.learning_plan.map((item) => ({
-    ...item,
-    priority: 'core-skill',
-    why: 'A core skill for Software Engineer roles.',
-  })),
+  learning_plan: DEMO_HIGH_RESULT.learning_plan.map((item) =>
+    item.priority === 'prerequisite'
+      ? item
+      : { ...item, priority: 'core-skill', why: 'A core skill for Software Engineer roles.' },
+  ),
   ats: {
     ...DEMO_HIGH_RESULT.ats,
     checks: DEMO_HIGH_RESULT.ats.checks.map((c) =>

@@ -5,6 +5,10 @@ scripts/build_learning_resources.py). Must-have skills come first, then
 nice-to-haves, then skills the posting only mentions. Each item quotes the
 line of the job posting that asks for the skill. Soft skills get advice on
 showing them with evidence instead of course links.
+
+When the resume's skills are known, the plan is also a study order: a skill's
+prerequisites (e.g. JavaScript before React) that the resume doesn't show are
+placed before it, as "prerequisite" items when the job didn't ask for them.
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from app.services.skill_extractor import extract_skills
 from app.services.suggestions import GENERIC_SOFT_SKILLS
 
 RESOURCES_PATH = Path(__file__).resolve().parent.parent / "data" / "learning_resources.json"
-MAX_ITEMS = 8
+MAX_ITEMS = 10
 
 
 @lru_cache(maxsize=1)
@@ -43,12 +47,15 @@ def build_learning_plan(
     job_text: str,
     insights: JobInsights | None,
     role: str | None = None,
+    have: set[str] | None = None,
 ) -> list[LearningItem]:
-    """Learning plan for missing skills, most important first.
+    """Learning plan for missing skills, most important first, in study order.
 
     With a job description, skills are ranked must-have > nice-to-have >
     mentioned and quote the posting. Without one (``role`` given), the skills
     are a target role's missing core skills, already in importance order.
+    ``have`` (the resume's skills) turns on prerequisites: missing ones are
+    inserted before the skills that need them.
     """
     resources = load_resources()
     must = set(insights.must_have) if insights else set()
@@ -66,8 +73,28 @@ def build_learning_plan(
         order = {"must-have": 0, "nice-to-have": 1, "mentioned": 2}
         ranked = sorted(missing_skills, key=lambda s: (order[priority(s)], s in GENERIC_SOFT_SKILLS, s))
 
-    plan: list[LearningItem] = []
+    # Study order: each skill after its missing prerequisites
+    sequence: list[str] = []
+    needed_for: dict[str, list[str]] = {}
+    missing = set(missing_skills)
+
+    def place(skill: str, parent: str | None = None) -> None:
+        if parent and parent not in needed_for.setdefault(skill, []):
+            needed_for[skill].append(parent)
+        if skill in sequence:
+            return
+        if have is not None:
+            for need in resources.get(skill, {}).get("needs", []):
+                if need not in have:
+                    place(need, skill)
+        sequence.append(skill)
+
     for skill in ranked:
+        if skill in resources or skill in GENERIC_SOFT_SKILLS:
+            place(skill)
+
+    plan: list[LearningItem] = []
+    for skill in sequence:
         entry = resources.get(skill)
         if entry:
             item = LearningItem(
@@ -75,6 +102,9 @@ def build_learning_plan(
                 what=entry["what"],
                 resources=[LearningResource(**res) for res in entry["resources"]],
                 project=entry["project"],
+                hours=entry.get("hours", 0),
+                done=entry.get("done", []),
+                roadmap=entry.get("roadmap", ""),
             )
         elif skill in GENERIC_SOFT_SKILLS:
             item = LearningItem(
@@ -85,9 +115,22 @@ def build_learning_plan(
             )
         else:
             continue  # no curated resources for this skill yet
-        item.why = f"A core skill for {role} roles." if role else _job_line(job_text, skill)
-        item.priority = priority(skill)
+        if skill in missing:
+            item.why = f"A core skill for {role} roles." if role else _job_line(job_text, skill)
+            item.priority = priority(skill)
+        else:
+            item.priority = "prerequisite"
+        item.needed_for = needed_for.get(skill, [])
         plan.append(item)
         if len(plan) >= MAX_ITEMS:
             break
-    return plan
+
+    # After the cut, keep prerequisites only for skills still in the plan
+    while True:
+        kept = {item.skill for item in plan}
+        for item in plan:
+            item.needed_for = [s for s in item.needed_for if s in kept]
+        trimmed = [i for i in plan if i.priority != "prerequisite" or i.needed_for]
+        if len(trimmed) == len(plan):
+            return plan
+        plan = trimmed

@@ -32,6 +32,7 @@ class LearningResource(BaseModel):
     url: str
     kind: Literal["docs", "course", "tutorial", "practice", "book", "video"]
     time: str = ""
+    by: str = Field("", description="Channel or author (videos).")
 
 
 class LearningItem(BaseModel):
@@ -42,7 +43,13 @@ class LearningItem(BaseModel):
     why: str = Field("", description="The line of the job posting that mentions the skill.")
     resources: list[LearningResource] = Field(default_factory=list)
     project: str = Field("", description="A small project that proves the skill on a resume.")
-    priority: Literal["must-have", "nice-to-have", "mentioned", "core-skill"] = "mentioned"
+    priority: Literal["must-have", "nice-to-have", "mentioned", "core-skill", "prerequisite"] = "mentioned"
+    hours: int = Field(0, description="Rough hours to learn the basics and build the project.")
+    done: list[str] = Field(default_factory=list, description='"Done when you can..." checklist.')
+    roadmap: str = Field("", description="roadmap.sh roadmap for the skill, if there is one.")
+    needed_for: list[str] = Field(
+        default_factory=list, description="Later skills in the plan that build on this one (prerequisites)."
+    )
 
 
 class RoleGap(BaseModel):
@@ -52,6 +59,7 @@ class RoleGap(BaseModel):
     have: list[str] = Field(default_factory=list, description="Profile skills found in the resume, most common first.")
     missing: list[str] = Field(default_factory=list, description="Profile skills not in the resume, most common first.")
     coverage: float = Field(0.0, description="Share of the profile's skills the resume shows (0-1).")
+    roadmap: str = Field("", description="roadmap.sh roadmap for the role, if there is one.")
     available_roles: list[str] = Field(default_factory=list)
 
 

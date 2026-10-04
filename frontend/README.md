@@ -90,7 +90,7 @@ src/
     │   │                        (strength, target role, skills found), AddJobBar
     │   ├── AtsTab.jsx           ATS checklist with fixes
     │   ├── EditTab.jsx          section-by-section resume editor
-    │   ├── LearnTab.jsx         skill-gap learning plan
+    │   ├── LearnTab.jsx         study roadmap: order, weeks at your pace, checklists, saved progress
     │   ├── JobsTab.jsx          live jobs and internships with a fit score on each
     │   └── edit/fields.jsx      fields, skill tag input, list/entry editors, bullet coach
     ├── pages/LegalPages.jsx     Privacy, Terms, 404
