@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, FileText, Gauge, PencilLine, ScanText, Sparkles, Upload, X } from 'lucide-react';
+import { ArrowRight, FileText, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { SAMPLE_JOBS } from '../../lib/sampleJobs';
 import Button from '../ui/Button';
@@ -9,11 +9,6 @@ import Switch from '../ui/Switch';
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MIN_JOB_WORDS = 5;
 
-const FEATURES = [
-  { icon: Gauge, title: 'Match score', text: 'How well you fit this job, and why.' },
-  { icon: ScanText, title: 'ATS check', text: 'Will applicant tracking software read it?' },
-  { icon: PencilLine, title: 'Edit & export', text: 'Fix it here, download an ATS-friendly .docx.' },
-];
 
 const item = {
   hidden: { opacity: 0, y: 18 },
@@ -57,34 +52,13 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
       className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6 sm:pt-16"
     >
       <motion.div variants={item} className="mx-auto max-w-3xl text-center">
-        <p className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-muted">
-          <Sparkles className="size-3.5 text-accent" aria-hidden /> Free · no sign-up · nothing stored
-        </p>
         <h1 className="font-display text-4xl leading-[1.08] font-bold tracking-tight sm:text-6xl">
           Will your resume make it <span className="marker">past the bots?</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted sm:text-lg">
-          Check how well your resume fits a job, whether applicant tracking systems can read it, and fix it on the spot.
+          See how your resume scores with applicant tracking systems and against a job, then fix it right here.
         </p>
       </motion.div>
-
-      <motion.ul variants={item} className="mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, text }, i) => (
-          <motion.li
-            key={title}
-            whileHover={{ y: -3, rotate: i === 1 ? 0 : i === 0 ? -1 : 1 }}
-            className="flex items-start gap-3 rounded-2xl border border-line bg-card/70 p-3.5"
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-              <Icon className="size-4.5" aria-hidden />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold">{title}</span>
-              <span className="block text-xs text-muted">{text}</span>
-            </span>
-          </motion.li>
-        ))}
-      </motion.ul>
 
       <motion.div variants={item} className="mt-10 grid gap-5 lg:grid-cols-2">
         {/* Resume file */}
@@ -188,25 +162,19 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
               <span className="mr-2 font-mono text-sm text-accent">02</span>Target job{' '}
               <span className="font-sans text-sm font-normal text-muted">(optional)</span>
             </h2>
-          </div>
-          <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="Sample job postings">
-            <span className="mr-1 inline-flex items-center gap-1 text-xs text-muted">
-              <Sparkles className="size-3.5" aria-hidden /> Try a sample:
-            </span>
-            {SAMPLE_JOBS.map((job) => (
-              <motion.button
-                key={job.id}
-                type="button"
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setJobText(job.text)}
-                className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                  jobText === job.text ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-card hover:border-ink/40'
-                }`}
-              >
-                {job.title}
-              </motion.button>
-            ))}
+            <select
+              aria-label="Use a sample job"
+              value=""
+              onChange={(e) => setJobText(SAMPLE_JOBS.find((j) => j.id === e.target.value)?.text || '')}
+              className="max-w-44 cursor-pointer rounded-lg border border-line bg-card px-2 py-1 text-xs text-muted hover:border-ink/40"
+            >
+              <option value="">Try a sample…</option>
+              {SAMPLE_JOBS.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.title}
+                </option>
+              ))}
+            </select>
           </div>
           <label htmlFor="job-description-input" className="sr-only">
             Job description
@@ -215,34 +183,27 @@ export default function UploadView({ file, setFile, jobText, setJobText, student
             id="job-description-input"
             value={jobText}
             onChange={(e) => setJobText(e.target.value)}
-            placeholder="Paste a job posting to get a match score, or leave this empty for a resume-only check (ATS, strengths, skill gaps for a target role)."
+            placeholder="Paste a job posting for a match score, or leave it empty for a resume-only check."
             className="field min-h-64 flex-1 resize-y leading-relaxed"
           />
           <p className={`mt-2 text-right font-mono text-xs ${words >= 50 ? 'text-ok' : 'text-muted'}`}>
-            {hasJob
-              ? `${words} words${words < 50 ? ' · paste the full posting for a reliable score' : ''}`
-              : 'No job? You still get the ATS check, strengths and role gaps.'}
+            {hasJob ? `${words} words${words < 50 ? ' · paste the full posting for a reliable score' : ''}` : '\u00a0'}
           </p>
         </section>
       </motion.div>
 
-      <motion.div variants={item} className="mt-8 flex flex-col items-center gap-5">
-        <div className="card px-5 py-4">
-          <Switch
-            checked={studentMode}
-            onChange={setStudentMode}
-            label="I'm a student / fresher"
-            description="Adds a student checklist: projects, internships, CGPA, GitHub, one page."
-          />
-        </div>
+      <motion.div variants={item} className="mt-8 flex flex-col items-center gap-4">
         <Button id="analyze-fit-button" size="lg" icon={ArrowRight} disabled={!ready} onClick={onAnalyze}>
           {hasJob ? 'Analyze my fit' : 'Analyze my resume'}
         </Button>
-        {!ready && (
-          <p className="text-sm text-muted">
-            {!file ? 'Add your resume to start.' : `Paste a little more of the job (at least ${MIN_JOB_WORDS} words), or clear it.`}
-          </p>
-        )}
+        <p className="h-5 text-sm text-muted">
+          {!ready && (!file ? 'Add your resume to start.' : `Paste a bit more of the job (${MIN_JOB_WORDS}+ words), or clear it.`)}
+        </p>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+          <Switch checked={studentMode} onChange={setStudentMode} label="I'm a student / fresher" />
+          <span className="hidden h-4 w-px bg-line sm:block" aria-hidden />
+          <p className="text-xs text-muted">Free · no sign-up · files are never stored</p>
+        </div>
       </motion.div>
     </motion.main>
   );

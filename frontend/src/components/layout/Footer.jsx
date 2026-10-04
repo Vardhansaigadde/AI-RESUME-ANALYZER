@@ -17,7 +17,7 @@ export default function Footer({ onNavigate }) {
   return (
     <footer className="mt-16 border-t border-line/70">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted sm:px-6">
-        <p>© {new Date().getFullYear()} FitLens · Your files are analyzed and discarded, never stored.</p>
+        <p>© {new Date().getFullYear()} FitLens</p>
         <nav className="flex items-center gap-4" aria-label="Footer">
           {link('/privacy', 'Privacy')}
           {link('/terms', 'Terms')}

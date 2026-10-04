@@ -6,12 +6,12 @@ import { newId } from '../../../lib/resume';
 import { formatSkill } from '../../../utils/format';
 import Button from '../../ui/Button';
 
-export function TextField({ label, value, onChange, placeholder, type = 'text', multiline = false, rows = 3 }) {
+export function TextField({ label, value, onChange, placeholder, type = 'text', multiline = false, rows = 3, hideLabel = false }) {
   const id = useId();
   const Tag = multiline ? 'textarea' : 'input';
   return (
     <div>
-      <label htmlFor={id} className="label">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'label'}>
         {label}
       </label>
       <Tag
@@ -28,7 +28,7 @@ export function TextField({ label, value, onChange, placeholder, type = 'text', 
 }
 
 /** Chip input: Enter or comma adds, × removes. `suggestions` are one-click additions. */
-export function TagInput({ label, tags, onChange, placeholder, suggestions = [], suggestionsLabel }) {
+export function TagInput({ label, tags, onChange, placeholder, suggestions = [], suggestionsLabel, hideLabel = false }) {
   const id = useId();
   const [draft, setDraft] = useState('');
   const has = (t) => tags.some((x) => x.toLowerCase() === t.toLowerCase());
@@ -45,7 +45,7 @@ export function TagInput({ label, tags, onChange, placeholder, suggestions = [],
 
   return (
     <div>
-      <label htmlFor={id} className="label">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'label'}>
         {label}
       </label>
       <div className="field flex flex-wrap items-center gap-1.5 py-2">

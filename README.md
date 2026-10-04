@@ -2,35 +2,15 @@
 
 [![CI](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml/badge.svg)](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml)
 
-Upload a resume (PDF or DOCX) and, optionally, paste a job description. FitLens returns:
+Upload a resume (PDF or DOCX) and, optionally, paste a job description (or pick a sample). Built
+with students and freshers in mind. The report has four tabs:
 
-- a **match score (0–100)** with a breakdown of what raised or lowered it,
-- the job's skills you **have** and are **missing**, plus up to five **suggestions**,
-- an **ATS check**: a 0–100 estimate of how well applicant tracking systems can read it, with fixes,
-- an **editor**: your resume split into sections you can edit, re-check and download as an
-  ATS-friendly `.docx`,
-- the three **job categories** your resume most resembles, with a high/low confidence flag.
-
-Built for students and freshers:
-
-- **Job description decoder**: must-have vs nice-to-have skills, level, years asked, and which of
-  your skills to list first.
-- **Skill-gap learning plan**: for each missing skill, the line of the job that asks for it, free
-  link-checked resources and a small project that proves it.
-- **Student / fresher mode**: an extra checklist (education first, projects, internships, CGPA,
-  GitHub, one page), suggested automatically when a resume looks like a student's.
-- **Bullet coach**: instant feedback on every bullet in the editor (weak openers, missing numbers,
-  passive voice, length).
-
-No job description? A **resume-only check** still gives the ATS check, editor and download, plus:
-
-- **Resume strength report**: a letter grade per section (contact, summary, skills, experience,
-  projects, education) and your weakest bullets, updating live while you edit.
-- **Target-role gap**: your skills compared with the core skills of a job role (25 roles such as
-  Software Engineer, Data Analyst, UI/UX Designer, Accountant), defaulting to the role closest to
-  your resume; the Skill plan then follows that role.
-- **Skills inventory**: every skill found, grouped, with how often it appears.
-- **Sample job postings** to try a match with one click, and "add a job" later from the results.
+| Tab | What you get |
+| --- | --- |
+| **Overview** | With a job: a **match score (0–100)** and why, plus the posting decoded (level, experience, must-have and nice-to-have skills you have or lack, which skills to list first). Always: a **resume strength** grade per section, your **target-role gap** (core skills of 25 job-title roles), the job categories your resume resembles, and every **skill found**. |
+| **ATS check** | A 0–100 estimate of how well applicant tracking systems can read the resume (layout, sections, contact details, bullets, keywords), each problem with a fix. **Student mode** adds a fresher checklist (projects, internships, CGPA, GitHub, one page). |
+| **Edit & re-check** | The resume split into editable sections, a live **bullet coach** (weak openers, missing numbers, passive voice), one-click re-check, and download as an ATS-friendly `.docx`. |
+| **Skill plan** | For each missing skill (from the job, or your target role when there's no job): why it matters, free link-checked resources and a small project that proves it. |
 
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
 
@@ -71,7 +51,7 @@ A Ridge regression on three features, all computable at inference time:
 
 Because the model is linear, the API also returns `score_breakdown`: a baseline (≈ 39, the
 score of a median training pair) plus each feature's signed contribution. The UI shows it as
-"Why this score?".
+"Why this score".
 
 Raw linear predictions can run past 100 (up to 119 even on training data), so instead of a hard
 clip the score is **soft-capped**: unchanged between 15 and 85, smoothly compressed beyond, never a

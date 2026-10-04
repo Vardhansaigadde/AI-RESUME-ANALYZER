@@ -37,10 +37,9 @@ export default function EditTab({
 
   return (
     <div className="pb-28">
-      <p className="mb-5 flex gap-2 rounded-2xl border border-dashed border-line px-4 py-3 text-sm text-muted">
-        <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-        We split your resume into sections automatically. Check each one, since unusual layouts can land in the wrong
-        place. Then re-check your score and download an ATS-friendly .docx.
+      <p className="mb-5 flex items-center gap-2 text-sm text-muted">
+        <Info className="size-4 shrink-0" aria-hidden />
+        We split your resume into sections automatically; check each one, then re-check or download.
       </p>
 
       <div className="space-y-5">
@@ -58,12 +57,13 @@ export default function EditTab({
         </Section>
 
         <Section title="Summary" hint="Two or three lines: who you are, what you're good at, what you want.">
-          <TextField label="Summary" multiline rows={4} value={draft.summary} onChange={set('summary')} />
+          <TextField label="Summary" hideLabel multiline rows={4} value={draft.summary} onChange={set('summary')} />
         </Section>
 
         <Section title="Skills" hint="Type a skill and press Enter or comma.">
           <TagInput
             label="Skills"
+            hideLabel
             tags={draft.skills}
             onChange={set('skills')}
             placeholder="Python, SQL, Docker…"

@@ -71,21 +71,21 @@ src/
 │   ├── demo.js                  demo payloads (?demo=high, ?demo=low, ?demo=resume)
 │   ├── sampleJobs.js            sample job postings
 │   ├── strength.js              resume strength grades (live, from the editor draft)
+│   ├── motion.js                shared animation presets
 │   └── resume.js                editor draft helpers, score colours
 ├── hooks/                       useCountUp (number animation), useTheme (light/dark)
 ├── utils/format.js              display labels for skills, roles and score factors
 └── components/
     ├── layout/                  Header (logo, theme toggle), Footer
     ├── ui/                      Button, Switch, Tabs (animated), Toast
-    ├── upload/UploadView.jsx    hero, resume drop zone, job description, student-mode switch
+    ├── upload/UploadView.jsx    headline, resume drop zone, optional job (+ samples), student switch
     ├── AnalyzingView.jsx        loading state with a cold-start notice
     ├── results/
-    │   ├── ResultsView.jsx      summary + tabs, student mode, add a job, re-check/download
-    │   ├── ProfileTab.jsx       strength report, target-role gap, skills inventory
-    │   ├── AddJobCard.jsx       add a job to a resume-only report
-    │   ├── SummaryCards.jsx     match dial, ATS stamp, closest job category
-    │   ├── MatchTab.jsx         job at a glance, score breakdown, skills, suggestions, categories
-    │   ├── JobInsightsCard.jsx  decoded job posting
+    │   ├── ResultsView.jsx      header, score cards, tabs, re-check / download / add-a-job logic
+    │   ├── SummaryCards.jsx     three scores: match or role readiness, ATS stamp, strength grade
+    │   ├── OverviewTab.jsx      "Job match" and "Your resume" sections
+    │   ├── overview/            Panel, JobMatch (the job, why this score), ResumeProfile
+    │   │                        (strength, target role, skills found), AddJobBar
     │   ├── AtsTab.jsx           ATS checklist with fixes
     │   ├── EditTab.jsx          section-by-section resume editor
     │   ├── LearnTab.jsx         skill-gap learning plan

@@ -41,7 +41,7 @@ export default function Tabs({ tabs, active, onChange, idPrefix = 'tab' }) {
               />
             )}
             <span className="relative flex items-center gap-2">
-              {Icon && <Icon className="size-4" aria-hidden />}
+              {Icon && <Icon className="hidden size-4 sm:block" aria-hidden />}
               <span className="sm:hidden">{short || label}</span>
               <span className="hidden sm:inline">{label}</span>
               {badge != null && (
