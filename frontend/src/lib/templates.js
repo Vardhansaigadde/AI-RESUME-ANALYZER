@@ -33,12 +33,12 @@ export function loadTemplateFonts() {
 
 /** A sample resume for template thumbnails and "start from a sample". */
 export const SAMPLE_RESUME = {
-  name: 'Priya Sharma',
+  name: 'Gadde Vardhan Sai',
   headline: 'Computer Science Student | Aspiring Full-Stack Developer',
-  email: 'priya.sharma@email.com',
+  email: 'gadde.vardhansai@email.com',
   phone: '+91 98765 43210',
   location: 'Bengaluru, India',
-  links: ['linkedin.com/in/priyasharma', 'github.com/priyasharma'],
+  links: ['linkedin.com/in/gaddevardhansai', 'github.com/gaddevardhansai'],
   summary:
     'Final-year B.Tech student who builds and ships full-stack web apps. Comfortable across React, Node.js and SQL, with an internship building internal tools used by 200+ employees.',
   skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'SQL', 'PostgreSQL', 'Git', 'Docker', 'REST APIs'],
@@ -56,7 +56,7 @@ export const SAMPLE_RESUME = {
   projects: [
     {
       title: 'Campus Events Platform',
-      subtitle: 'React, Node.js, PostgreSQL · github.com/priyasharma/events',
+      subtitle: 'React, Node.js, PostgreSQL · github.com/gaddevardhansai/events',
       date: '2025',
       bullets: [
         'Built a full-stack app for event sign-ups, used by 1,200+ students in its first semester.',
