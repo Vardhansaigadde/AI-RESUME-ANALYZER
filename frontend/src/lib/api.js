@@ -112,3 +112,67 @@ export async function fetchJobOptions() {
   const response = await request('/api/jobs/options', { method: 'GET' });
   return response.json();
 }
+
+const GITHUB_API = 'https://api.github.com';
+
+async function githubGet(path) {
+  let response;
+  try {
+    response = await fetch(`${GITHUB_API}${path}`, { headers: { Accept: 'application/vnd.github+json' } });
+  } catch {
+    throw new Error('Could not reach GitHub. Check your connection and try again.');
+  }
+  if (response.status === 404) throw new Error('No GitHub user with that username.');
+  if (response.status === 403 || response.status === 429) {
+    const reset = Number(response.headers.get('x-ratelimit-reset'));
+    const minutes = reset ? Math.max(1, Math.ceil((reset * 1000 - Date.now()) / 60000)) : null;
+    throw new Error(
+      `GitHub's free hourly limit for your network is used up${minutes ? `; try again in ${minutes} min` : ''}.`,
+    );
+  }
+  if (!response.ok) throw new Error(`GitHub error (${response.status}). Please try again.`);
+  return response.json();
+}
+
+/**
+ * GitHub proof check. The browser reads the public profile and repositories
+ * straight from GitHub (each visitor has their own free rate limit), then the
+ * backend compares them with the resume.
+ */
+export async function checkGithub(resume, username) {
+  const login = encodeURIComponent(username);
+  const [user, repos] = await Promise.all([
+    githubGet(`/users/${login}`),
+    githubGet(`/users/${login}/repos?per_page=100&sort=pushed&type=owner`),
+  ]);
+  const cut = (text, n) => (text ? String(text).slice(0, n) : null);
+  const response = await request('/api/github-check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      resume,
+      profile: {
+        login: user.login,
+        name: cut(user.name, 255),
+        bio: cut(user.bio, 500),
+        avatar_url: user.avatar_url || '',
+        html_url: user.html_url || '',
+        public_repos: user.public_repos || 0,
+        followers: user.followers || 0,
+      },
+      repos: repos.slice(0, 100).map((r) => ({
+        name: r.name,
+        description: cut(r.description, 1000),
+        topics: (r.topics || []).slice(0, 20),
+        language: r.language,
+        fork: r.fork,
+        archived: r.archived,
+        pushed_at: r.pushed_at,
+        stargazers_count: r.stargazers_count || 0,
+        html_url: r.html_url || '',
+        homepage: cut(r.homepage, 500),
+      })),
+    }),
+  });
+  return { ...(await response.json()), profile: user };
+}

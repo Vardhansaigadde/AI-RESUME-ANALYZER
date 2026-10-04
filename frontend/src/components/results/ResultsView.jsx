@@ -3,6 +3,7 @@ import { Briefcase, GraduationCap, LayoutDashboard, Lightbulb, PencilLine, Rotat
 import { useMemo, useState } from 'react';
 import { downloadResumeDocx, fetchRoleGap, recheckResume } from '../../lib/api';
 import { snapshot, withIds } from '../../lib/resume';
+import { formatSkill } from '../../utils/format';
 import Button from '../ui/Button';
 import Switch from '../ui/Switch';
 import Tabs from '../ui/Tabs';
@@ -33,6 +34,7 @@ export default function ResultsView({
   const [roleLoading, setRoleLoading] = useState(false);
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [jobSearch, setJobSearch] = useState({ loading: false, error: null, params: null, data: null });
+  const [githubCheck, setGithubCheck] = useState({ loading: false, error: null, data: null, username: '' });
 
   const studentMode = Boolean(result.student_mode);
   const targetRole = result.role_gap?.role || null;
@@ -110,6 +112,17 @@ export default function ResultsView({
     } finally {
       setDownloading(false);
     }
+  };
+
+  const addSkills = (skills) => {
+    setDraft((d) => {
+      const have = new Set((d.skills || []).map((s) => s.toLowerCase()));
+      return { ...d, skills: [...(d.skills || []), ...skills.map(formatSkill).filter((s) => !have.has(s.toLowerCase()))] };
+    });
+    notify({
+      tone: 'success',
+      message: `Added ${skills.map(formatSkill).join(', ')} to your Skills. Re-check in the Edit tab to update your scores.`,
+    });
   };
 
   const resetDraft = () => {
@@ -191,6 +204,7 @@ export default function ResultsView({
                 onRoleChange={changeRole}
                 roleLoading={roleLoading}
                 addJob={{ onSubmit: addJob, loading: checking, open: addJobOpen, setOpen: setAddJobOpen }}
+                github={{ state: githubCheck, setState: setGithubCheck, onAddSkills: addSkills }}
               />
             )}
             {tab === 'ats' && <AtsTab ats={result.ats} onEdit={() => showTab('edit')} />}

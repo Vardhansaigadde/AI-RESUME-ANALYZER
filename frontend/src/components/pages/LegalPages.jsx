@@ -64,7 +64,8 @@ export function PrivacyPage({ onHome }) {
           file types, never resume content.
         </li>
         <li>
-          <strong>Your theme choice</strong> (light or dark) is saved in your own browser only.
+          <strong>Your theme choice</strong> (light or dark), <strong>skill-plan progress</strong> and pace are saved in
+          your own browser only.
         </li>
       </ul>
 
@@ -77,6 +78,14 @@ export function PrivacyPage({ onHome }) {
         <li>
           All analysis runs on our own server. Your resume is <strong>not sent to any AI provider</strong> or analytics
           service, and we never sell or share it.
+        </li>
+        <li>
+          <strong>Job search:</strong> only your search words, country and job type are sent to the job sites (Himalayas,
+          and Adzuna when enabled). Your resume is scored against the postings on our server and never sent to them.
+        </li>
+        <li>
+          <strong>GitHub check:</strong> if you use it, your browser asks GitHub directly for the public profile and
+          repositories of the username you enter. GitHub sees that request like any visit to its site.
         </li>
         <li>The site is hosted on Vercel (frontend) and Render (backend), which process requests to deliver the service.</li>
       </ul>

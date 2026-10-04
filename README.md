@@ -7,7 +7,7 @@ with students and freshers in mind. The report has five tabs:
 
 | Tab | What you get |
 | --- | --- |
-| **Overview** | With a job: a **match score (0–100)** and why, plus the posting decoded (level, experience, must-have and nice-to-have skills you have or lack, which skills to list first). Always: a **resume strength** grade per section, your **target-role gap** (core skills of 25 job-title roles), the job categories your resume resembles, and every **skill found**. |
+| **Overview** | With a job: a **match score (0–100)** and why, plus the posting decoded (level, experience, must-have and nice-to-have skills you have or lack, which skills to list first). Always: a **resume strength** grade per section, your **target-role gap** (core skills of 25 job-title roles), the job categories your resume resembles, every **skill found**, and a **GitHub proof check** (which resume skills your public repos back up, which they don't, skills your repos show that the resume misses, and profile fixes). |
 | **ATS check** | A 0–100 estimate of how well applicant tracking systems can read the resume (layout, sections, contact details, bullets, keywords), each problem with a fix. **Student mode** adds a fresher checklist (projects, internships, CGPA, GitHub, one page). |
 | **Edit & re-check** | The resume split into editable sections, a live **bullet coach** (weak openers, missing numbers, passive voice), one-click re-check, and download as an ATS-friendly `.docx`. |
 | **Skill plan** | A study **roadmap** for the missing skills (from the job, or your target role when there's no job): in learning order with missing prerequisites first, hours and a week-by-week estimate at your pace, docs + a free course + a YouTube video for each skill, a "done when you can…" checklist with progress saved in the browser, a project that proves it, and roadmap.sh links. |
@@ -124,6 +124,19 @@ order of importance, plus a default role for each classifier category. They are 
 classifier's 24 dataset categories because those are broad (the dataset's IT category is mostly
 infrastructure resumes) and would give a software student misleading gaps. The resume strength
 report is computed in the browser (`frontend/src/lib/strength.js`) so it updates while editing.
+
+### GitHub proof check
+
+The browser reads the student's public profile and repositories straight from GitHub's API (no
+sign-in or key; each visitor has GitHub's free 60 requests an hour, instead of every user sharing
+the server's), then `POST /api/github-check` (`app/services/github_check.py`) compares them with
+the resume. A repository shows a skill through its language (`Jupyter Notebook` → Python,
+`Dockerfile` → Docker), topics (`machine-learning`, `nodejs`) and name/description; forks don't
+count. Only technical groups (languages, web, data & AI, databases, cloud & DevOps) are judged.
+The report lists skills backed by a repo, skills with no public proof, skills the repos show that
+the resume leaves out (one click adds them to the editor), and a profile checklist: own projects,
+recent activity, descriptions, topics, live demos, a profile README, name and bio, and whether the
+resume links to the profile.
 
 ### Live job search
 
@@ -267,6 +280,10 @@ role-based `learning_plan` without re-running the models.
 `jobs` (each with `fit_score`, `matched_skills`, `missing_skills`, `url`, `source`), sorted by fit,
 and the status of each `sources` entry.
 
+`POST /api/github-check` — JSON `{"resume": {...}, "profile": {...}, "repos": [...]}` with the
+public GitHub profile and up to 100 repositories as GitHub's API returns them. Returns `proven`,
+`unproven`, `hidden`, `checks` and `stats`.
+
 `GET /api/jobs/options` — countries for the job search and whether on-site jobs are enabled.
 
 `POST /api/suggest-roles` — a resume file or `resume_text`, optional `top_n` (1–24).
@@ -325,7 +342,7 @@ same backend.
 ## Project structure
 
 ```text
-app/                FastAPI app (main.py, rate_limit.py), routers, schemas (analysis, resume, insights, jobs), services, ml/, data/*.json
+app/                FastAPI app (main.py, rate_limit.py), routers, schemas (analysis, resume, insights, jobs, github), services, ml/, data/*.json
 data/raw/           source datasets (.csv.gz)
 data/processed/     cleaned datasets and features.csv (generated)
 models/             serialized models (~5.2 MB total)

@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import AddJobBar from './overview/AddJobBar';
+import GithubCheck from './overview/GithubCheck';
 import { JobSummary, ScoreBreakdown } from './overview/JobMatch';
 import { SectionLabel } from './overview/Panel';
 import { SkillsFound, StrengthReport, TargetRole } from './overview/ResumeProfile';
 
 /** Overview: the job match (when there is a job) and the resume's own profile. */
-export default function OverviewTab({ result, draft, onEdit, onRoleChange, roleLoading, addJob }) {
+export default function OverviewTab({ result, draft, onEdit, onRoleChange, roleLoading, addJob, github }) {
   const resumeOnly = result.mode === 'resume_only';
   return (
     <motion.div
@@ -38,6 +39,7 @@ export default function OverviewTab({ result, draft, onEdit, onRoleChange, roleL
       <div className="lg:col-span-2">
         <SkillsFound groups={result.skills_inventory || []} />
       </div>
+      <GithubCheck resume={draft} {...github} />
     </motion.div>
   );
 }

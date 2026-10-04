@@ -49,6 +49,7 @@ instance can take close to a minute to wake up):
 | Change the target role | `POST /api/role-gap` (JSON) |
 | Download the edited resume | `POST /api/resume/docx` (JSON → `.docx`) |
 | Find jobs and internships | `POST /api/jobs`, `GET /api/jobs/options` |
+| GitHub proof check | `GET https://api.github.com/users/…` (public data, from the browser), then `POST /api/github-check` |
 
 | Environment | `VITE_API_BASE_URL` | Requests go to |
 | --- | --- | --- |
@@ -68,7 +69,7 @@ src/
 ├── App.jsx                      routing (/, /privacy, /terms), upload → analyzing → results flow
 ├── main.jsx, index.css          entry point; Tailwind theme tokens (light + dark) and base styles
 ├── lib/
-│   ├── api.js                   fetch wrappers, timeouts, error messages, .docx download
+│   ├── api.js                   fetch wrappers, timeouts, error messages, .docx download, GitHub
 │   ├── bulletCoach.js           instant rule-based feedback on resume bullets
 │   ├── demo.js                  demo payloads (?demo=high, ?demo=low, ?demo=resume)
 │   ├── sampleJobs.js            sample job postings
@@ -87,7 +88,8 @@ src/
     │   ├── SummaryCards.jsx     three scores: match or role readiness, ATS stamp, strength grade
     │   ├── OverviewTab.jsx      "Job match" and "Your resume" sections
     │   ├── overview/            Panel, JobMatch (the job, why this score), ResumeProfile
-    │   │                        (strength, target role, skills found), AddJobBar
+    │   │                        (strength, target role, skills found), AddJobBar,
+    │   │                        GithubCheck (GitHub proof check)
     │   ├── AtsTab.jsx           ATS checklist with fixes
     │   ├── EditTab.jsx          section-by-section resume editor
     │   ├── LearnTab.jsx         study roadmap: order, weeks at your pace, checklists, saved progress

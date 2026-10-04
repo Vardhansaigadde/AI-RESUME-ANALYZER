@@ -9,6 +9,7 @@ Provides:
   POST /api/role-gap      -- Compare a resume with a target job role.
   POST /api/jobs          -- Live jobs and internships, each with the resume's fit score.
   GET  /api/jobs/options  -- Countries and job sources the search supports.
+  POST /api/github-check  -- Which resume skills the student's public GitHub repos back up.
   POST /api/suggest-roles -- Standalone top-N role predictions from an uploaded
                              resume file or resume text.
 """
@@ -24,9 +25,11 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, Response, Upl
 from starlette.concurrency import run_in_threadpool
 
 from app.schemas import AnalyzeResponse, SuggestRolesResponse
+from app.schemas.github import GithubCheckRequest, GithubCheckResponse
 from app.schemas.insights import RoleGapRequest, RoleGapResponse
 from app.schemas.jobs import JobSearchRequest, JobSearchResponse
 from app.schemas.resume import RecheckRequest, StructuredResume
+from app.services.github_check import check_github
 from app.services.job_search import ADZUNA_COUNTRIES, COUNTRIES, adzuna_keys
 from app.services.pipeline import (
     MAX_FILE_SIZE,
@@ -245,6 +248,12 @@ async def job_options() -> dict[str, Any]:
         ],
         "onsite_enabled": onsite,
     }
+
+
+@router.post("/github-check", response_model=GithubCheckResponse)
+async def github_check(payload: GithubCheckRequest) -> dict[str, Any]:
+    """Compare the resume with the public GitHub profile and repositories the browser fetched."""
+    return await run_in_threadpool(check_github, payload.resume, payload.profile, payload.repos)
 
 
 @router.post("/resume/docx")

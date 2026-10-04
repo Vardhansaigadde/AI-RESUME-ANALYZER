@@ -25,3 +25,12 @@ export function scoreTone(score) {
   if (score >= 50) return { text: 'text-warn', bg: 'bg-warn-soft', stroke: 'var(--color-warn)' };
   return { text: 'text-pen', bg: 'bg-pen-soft', stroke: 'var(--color-pen)' };
 }
+
+/** The GitHub username from a resume link such as github.com/asha-dev, if any. */
+export function githubFromLinks(links = []) {
+  for (const link of links) {
+    const match = /github\.com\/([A-Za-z0-9-]{1,39})(?:[/?#]|$)/i.exec(link);
+    if (match) return match[1];
+  }
+  return '';
+}
