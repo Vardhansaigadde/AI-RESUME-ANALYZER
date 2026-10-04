@@ -12,7 +12,7 @@ import ast
 import html
 import logging
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import pandas as pd
 
@@ -91,7 +91,7 @@ def strip_leading_title(text: Any, max_tokens: int = 12) -> str:
     return " ".join(tokens[i:])
 
 
-def safe_parse_skills(val: Any) -> Optional[List[str]]:
+def safe_parse_skills(val: Any) -> list[str] | None:
     """Safely parse a stringified list of skills using ast.literal_eval.
 
     Reuses the validated logic from notebooks/01_explore_data.ipynb.
@@ -168,9 +168,9 @@ def clean_resume_dataframe(
 
 def clean_job_fit_dataframe(
     df: pd.DataFrame,
-    text_cols: Optional[List[str]] = None,
-    skill_cols: Optional[List[str]] = None,
-) -> Tuple[pd.DataFrame, int]:
+    text_cols: list[str] | None = None,
+    skill_cols: list[str] | None = None,
+) -> tuple[pd.DataFrame, int]:
     """Clean the raw job_resume_fit.csv DataFrame.
 
     - Cleans resume_text and job_text columns.

@@ -22,12 +22,13 @@ Run:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 import itertools
 import json
 import logging
 from pathlib import Path
 import sys
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -62,13 +63,13 @@ VECTORIZER_OUT = REPO_ROOT / "models" / "role_vectorizer.joblib"
 METRICS_OUT = REPO_ROOT / "reports" / "role_classifier_metrics.json"
 
 RANDOM_STATE = 42
-SMALLEST_CLASSES: List[str] = ["AGRICULTURE", "AUTOMOBILE", "BPO"]
-SNIPPET_LENGTHS: Tuple[int, ...] = (60, 120, 250)
+SMALLEST_CLASSES: list[str] = ["AGRICULTURE", "AUTOMOBILE", "BPO"]
+SNIPPET_LENGTHS: tuple[int, ...] = (60, 120, 250)
 
 # Chosen by 5-fold CV on the training split (title-removed accuracy):
 # sublinear_tf and min_df=2 help short and title-less resumes; 5k vs 20k
 # features and C=1 vs 0.3 were within noise / worse.
-VECTORIZER_PARAMS: Dict[str, Any] = {
+VECTORIZER_PARAMS: dict[str, Any] = {
     "max_features": 5000,
     "stop_words": "english",
     "ngram_range": (1, 2),
@@ -99,14 +100,12 @@ def _new_vectorizer() -> TfidfVectorizer:
 
 
 def _new_calibrated_svc() -> CalibratedClassifierCV:
-    return CalibratedClassifierCV(
-        estimator=LinearSVC(random_state=RANDOM_STATE, max_iter=5000), cv=5
-    )
+    return CalibratedClassifierCV(estimator=LinearSVC(random_state=RANDOM_STATE, max_iter=5000), cv=5)
 
 
 def _topk_accuracy(proba: np.ndarray, classes: np.ndarray, y_true: Sequence[str], k: int) -> float:
     top = np.argsort(proba, axis=1)[:, ::-1][:, :k]
-    return float(np.mean([y in classes[idx] for y, idx in zip(y_true, top)]))
+    return float(np.mean([y in classes[idx] for y, idx in zip(y_true, top, strict=True)]))
 
 
 def load_dataset(path: Path = INPUT_CSV) -> pd.DataFrame:
@@ -118,9 +117,7 @@ def load_dataset(path: Path = INPUT_CSV) -> pd.DataFrame:
     return df
 
 
-def benchmark_candidates(
-    train: pd.DataFrame, test: pd.DataFrame
-) -> Tuple[str, Dict[str, Dict[str, float]]]:
+def benchmark_candidates(train: pd.DataFrame, test: pd.DataFrame) -> tuple[str, dict[str, dict[str, float]]]:
     """Fit candidate classifiers and compare them on the held-out test split."""
     vectorizer = _new_vectorizer()
     X_train = vectorizer.fit_transform(train["text"])
@@ -132,11 +129,14 @@ def benchmark_candidates(
         "LinearSVC": LinearSVC(random_state=RANDOM_STATE, max_iter=5000),
         "MultinomialNB": MultinomialNB(),
     }
-    results: Dict[str, Dict[str, float]] = {}
+    results: dict[str, dict[str, float]] = {}
     print(_sep())
     print("CANDIDATE BENCHMARK (stratified 80/20 test split)")
     print(_sep())
-    print(f"{'Model':<20} | {'Acc':>6} | {'MacroF1':>7} | {'Acc no-title':>12} | {'F1 no-title':>11} | {'Small-class F1':>14}")
+    print(
+        f"{'Model':<20} | {'Acc':>6} | {'MacroF1':>7} | {'Acc no-title':>12} | "
+        f"{'F1 no-title':>11} | {'Small-class F1':>14}"
+    )
     for name, clf in candidates.items():
         clf.fit(X_train, train["Category"])
         pred = clf.predict(X_test)
@@ -170,9 +170,7 @@ def _make_estimator(winner: str):
     return MultinomialNB()
 
 
-def _evaluation_texts(
-    df: pd.DataFrame, rng: np.random.Generator
-) -> Dict[str, Tuple[List[str], List[str]]]:
+def _evaluation_texts(df: pd.DataFrame, rng: np.random.Generator) -> dict[str, tuple[list[str], list[str]]]:
     """Title-removed full resumes plus short snippets of each, with labels."""
     sets = {"full_no_title": (df["text_no_title"].tolist(), df["Category"].tolist())}
     for n in SNIPPET_LENGTHS:
@@ -186,17 +184,17 @@ def _evaluation_texts(
 def _policy_accuracy(
     proba: np.ndarray,
     classes: np.ndarray,
-    texts: List[str],
-    skills: List[set],
-    y_true: List[str],
-    profiles: Dict[str, List[str]],
+    texts: list[str],
+    skills: list[set],
+    y_true: list[str],
+    profiles: dict[str, list[str]],
     threshold: float,
     min_words: int,
     size_normalized: bool,
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """Top-1 accuracy, top-3 accuracy and low-confidence rate of a fallback policy."""
     top1, top3, low = 0, 0, 0
-    for p, text, sk, y in zip(proba, texts, skills, y_true):
+    for p, text, sk, y in zip(proba, texts, skills, y_true, strict=True):
         low_conf = is_low_confidence(p, threshold=threshold, word_count=len(text.split()), min_word_count=min_words)
         eff = p
         if low_conf:
@@ -212,12 +210,12 @@ def _policy_accuracy(
 
 
 def tune_fallback_policy(
-    train: pd.DataFrame, winner: str, profiles: Dict[str, List[str]]
-) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    train: pd.DataFrame, winner: str, profiles: dict[str, list[str]]
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Grid-search the fallback policy on out-of-fold predictions of the training split."""
     rng = np.random.default_rng(RANDOM_STATE)
     eval_sets = _evaluation_texts(train, rng)
-    oof: Dict[str, np.ndarray] = {}
+    oof: dict[str, np.ndarray] = {}
     classes = None
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
     for name in eval_sets:
@@ -252,8 +250,7 @@ def tune_fallback_policy(
 
     # ML-only reference (fallback never engaged)
     ml_only = {
-        name: float(np.mean(classes[np.argmax(oof[name], axis=1)] == np.array(y)))
-        for name, (_, y) in eval_sets.items()
+        name: float(np.mean(classes[np.argmax(oof[name], axis=1)] == np.array(y))) for name, (_, y) in eval_sets.items()
     }
 
     print("\n" + _sep())
@@ -262,7 +259,8 @@ def tune_fallback_policy(
     print("  ML only (no fallback): " + "  ".join(f"{k}={v:.3f}" for k, v in ml_only.items()))
     for g in sorted(grid, key=lambda g: -g["mean_top1"])[:6]:
         print(
-            f"  thr={g['threshold']:.2f} min_words={g['min_words']:>3} size_norm={str(g['size_normalized_overlap']):<5} "
+            f"  thr={g['threshold']:.2f} min_words={g['min_words']:>3} "
+            f"size_norm={str(g['size_normalized_overlap']):<5} "
             f"mean={g['mean_top1']:.3f}  " + "  ".join(f"{k}={v:.3f}" for k, v in g["top1_by_set"].items())
         )
     best = max(grid, key=lambda g: g["mean_top1"])
@@ -274,9 +272,9 @@ def evaluate_on_test(
     train: pd.DataFrame,
     test: pd.DataFrame,
     winner: str,
-    policy: Dict[str, Any],
-    profiles: Dict[str, List[str]],
-) -> Dict[str, Any]:
+    policy: dict[str, Any],
+    profiles: dict[str, list[str]],
+) -> dict[str, Any]:
     """Report the chosen model + fallback policy on the untouched test split."""
     vec = _new_vectorizer()
     model = _make_estimator(winner)
@@ -287,7 +285,7 @@ def evaluate_on_test(
     rng = np.random.default_rng(RANDOM_STATE + 1)
     eval_sets = _evaluation_texts(test, rng)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "test_resumes": int(len(test)),
         "with_title": {
             "top1_accuracy": float(np.mean(classes[np.argmax(proba_full, 1)] == test["Category"].to_numpy())),
@@ -300,8 +298,15 @@ def evaluate_on_test(
         pred = classes[np.argmax(proba, 1)]
         skills = [extract_skills(t) for t in texts]
         top1, top3, low_rate = _policy_accuracy(
-            proba, classes, texts, skills, y, profiles,
-            policy["threshold"], policy["min_words"], policy["size_normalized_overlap"],
+            proba,
+            classes,
+            texts,
+            skills,
+            y,
+            profiles,
+            policy["threshold"],
+            policy["min_words"],
+            policy["size_normalized_overlap"],
         )
         result[name] = {
             "ml_only_top1_accuracy": float(np.mean(pred == np.array(y))),
@@ -316,7 +321,10 @@ def evaluate_on_test(
     print("HELD-OUT TEST SPLIT (chosen model + fallback policy)")
     print(_sep())
     wt = result["with_title"]
-    print(f"  with title    : top1={wt['top1_accuracy']:.3f}  top3={wt['top3_accuracy']:.3f}  macroF1={wt['macro_f1']:.3f}  (optimistic)")
+    print(
+        f"  with title    : top1={wt['top1_accuracy']:.3f}  top3={wt['top3_accuracy']:.3f}  "
+        f"macroF1={wt['macro_f1']:.3f}  (optimistic)"
+    )
     for name in eval_sets:
         r = result[name]
         print(
@@ -330,9 +338,7 @@ def evaluate_on_test(
 def main() -> None:
     df = load_dataset()
     print(f"Loaded {len(df):,} resumes, {df['Category'].nunique()} categories")
-    train, test = train_test_split(
-        df, test_size=0.20, random_state=RANDOM_STATE, stratify=df["Category"]
-    )
+    train, test = train_test_split(df, test_size=0.20, random_state=RANDOM_STATE, stratify=df["Category"])
     train = train.reset_index(drop=True)
     test = test.reset_index(drop=True)
     profiles = _load_role_profiles()

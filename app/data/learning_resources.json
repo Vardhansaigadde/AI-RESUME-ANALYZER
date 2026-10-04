@@ -1,0 +1,2256 @@
+{
+  "python": {
+    "what": "General-purpose language used for backends, scripting, data and machine learning.",
+    "resources": [
+      {
+        "title": "The Python Tutorial (official)",
+        "url": "https://docs.python.org/3/tutorial/",
+        "kind": "docs",
+        "time": "6-8 h"
+      },
+      {
+        "title": "Kaggle Learn: Python",
+        "url": "https://www.kaggle.com/learn/python",
+        "kind": "course",
+        "time": "5 h"
+      },
+      {
+        "title": "Learn Python - Full Course for Beginners [Tutorial]",
+        "url": "https://www.youtube.com/watch?v=rfscVS0vtbw",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Write a CLI tool that solves a real chore (e.g. renames files or tracks expenses) and publish it on GitHub.",
+    "hours": 25,
+    "needs": [],
+    "done": [
+      "Write functions, loops and conditionals without looking up syntax",
+      "Use lists, dicts and sets, and read/write files",
+      "Install a package with pip and use it in a small script"
+    ],
+    "roadmap": "https://roadmap.sh/python"
+  },
+  "java": {
+    "what": "Object-oriented language behind many enterprise backends and Android apps.",
+    "resources": [
+      {
+        "title": "Learn Java (dev.java, official)",
+        "url": "https://dev.java/learn/",
+        "kind": "docs",
+        "time": "10 h"
+      },
+      {
+        "title": "Java Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=eIrMbAQSU34",
+        "kind": "video",
+        "time": "",
+        "by": "Programming with Mosh"
+      }
+    ],
+    "project": "Build a library-management console app with classes, collections and file storage.",
+    "hours": 35,
+    "needs": [],
+    "done": [
+      "Write classes with constructors, fields and methods",
+      "Use ArrayList, HashMap and exceptions correctly",
+      "Build and run a multi-file project with Maven or Gradle"
+    ],
+    "roadmap": "https://roadmap.sh/java"
+  },
+  "c++": {
+    "what": "Fast systems language used in games, embedded software and competitive programming.",
+    "resources": [
+      {
+        "title": "LearnCpp.com",
+        "url": "https://www.learncpp.com/",
+        "kind": "tutorial",
+        "time": "20 h"
+      },
+      {
+        "title": "C++ Tutorial for Beginners - Full Course",
+        "url": "https://www.youtube.com/watch?v=vLnPwxZdW4Y",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Implement a few data structures (vector, linked list, hash map) from scratch with tests.",
+    "hours": 40,
+    "needs": [],
+    "done": [
+      "Explain pointers, references and stack vs heap memory",
+      "Use STL containers (vector, map) and algorithms (sort, find)",
+      "Write a class with a constructor, destructor and operator overload"
+    ],
+    "roadmap": "https://roadmap.sh/cpp"
+  },
+  "c": {
+    "what": "Low-level language used in operating systems, embedded devices and drivers.",
+    "resources": [
+      {
+        "title": "Learn-C.org interactive tutorial",
+        "url": "https://www.learn-c.org/",
+        "kind": "tutorial",
+        "time": "6 h"
+      },
+      {
+        "title": "CS50x (Harvard, free)",
+        "url": "https://cs50.harvard.edu/x/",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "C Programming Tutorial for Beginners",
+        "url": "https://www.youtube.com/watch?v=KJgsSFOSQv0",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Write a small shell or a text-file statistics tool in C.",
+    "hours": 30,
+    "needs": [],
+    "done": [
+      "Use pointers, arrays and strings safely",
+      "Allocate and free memory with malloc and free",
+      "Split a program into .c and .h files and compile it with gcc"
+    ],
+    "roadmap": ""
+  },
+  "c#": {
+    "what": "Microsoft's main language for .NET backends, desktop apps and Unity games.",
+    "resources": [
+      {
+        "title": "C# documentation (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/dotnet/csharp/",
+        "kind": "docs",
+        "time": "8 h"
+      },
+      {
+        "title": "C# Tutorial - Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=GhQdlIFylQ8",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a small ASP.NET Core web API with a database.",
+    "hours": 30,
+    "needs": [],
+    "done": [
+      "Write classes, interfaces and properties",
+      "Query collections with LINQ",
+      "Build and run a console app with the dotnet CLI"
+    ],
+    "roadmap": ""
+  },
+  "javascript": {
+    "what": "The language of the web: interactive pages, frontends and Node.js backends.",
+    "resources": [
+      {
+        "title": "The Modern JavaScript Tutorial",
+        "url": "https://javascript.info/",
+        "kind": "tutorial",
+        "time": "15 h"
+      },
+      {
+        "title": "MDN JavaScript Guide",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Learn JavaScript - Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=PkZNo7MFNFg",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Make an interactive to-do or quiz app with plain JavaScript, then deploy it on GitHub Pages.",
+    "hours": 30,
+    "needs": [],
+    "done": [
+      "Use let/const, arrow functions, arrays and objects fluently",
+      "Change a web page with the DOM and handle click/input events",
+      "Fetch data from an API with async/await and show it on a page"
+    ],
+    "roadmap": "https://roadmap.sh/javascript"
+  },
+  "typescript": {
+    "what": "JavaScript with types, now standard for larger frontend and Node.js codebases.",
+    "resources": [
+      {
+        "title": "TypeScript Handbook (official)",
+        "url": "https://www.typescriptlang.org/docs/handbook/intro.html",
+        "kind": "docs",
+        "time": "6 h"
+      },
+      {
+        "title": "Learn TypeScript – Full Tutorial",
+        "url": "https://www.youtube.com/watch?v=30LWjhZzg50",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Convert one of your JavaScript projects to TypeScript and enable strict mode.",
+    "hours": 15,
+    "needs": [
+      "javascript"
+    ],
+    "done": [
+      "Type functions, objects and arrays, and write interfaces",
+      "Use union types and generics in your own code",
+      "Set up tsconfig and convert a small JavaScript project"
+    ],
+    "roadmap": "https://roadmap.sh/typescript"
+  },
+  "go": {
+    "what": "Simple, fast language popular for cloud services and developer tools.",
+    "resources": [
+      {
+        "title": "A Tour of Go (official)",
+        "url": "https://go.dev/tour/",
+        "kind": "tutorial",
+        "time": "4 h"
+      },
+      {
+        "title": "Go Programming – Golang Course with Bonus Projects",
+        "url": "https://www.youtube.com/watch?v=un6ZyFkqFKo",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a URL shortener HTTP service in Go.",
+    "hours": 25,
+    "needs": [],
+    "done": [
+      "Write structs, methods and interfaces",
+      "Handle errors the Go way and use slices and maps",
+      "Run work concurrently with goroutines and channels"
+    ],
+    "roadmap": "https://roadmap.sh/golang"
+  },
+  "rust": {
+    "what": "Memory-safe systems language used for performance-critical software.",
+    "resources": [
+      {
+        "title": "The Rust Programming Language (official book)",
+        "url": "https://doc.rust-lang.org/book/",
+        "kind": "book",
+        "time": "20 h"
+      },
+      {
+        "title": "Learn Rust Programming - Complete Course 🦀",
+        "url": "https://www.youtube.com/watch?v=BpPEoZW5IiY",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Write a command-line grep clone (the book's own project is a great start).",
+    "hours": 40,
+    "needs": [],
+    "done": [
+      "Explain ownership, borrowing and lifetimes in your own words",
+      "Use structs, enums and match with Result/Option",
+      "Build a small CLI with cargo and an external crate"
+    ],
+    "roadmap": "https://roadmap.sh/rust"
+  },
+  "r": {
+    "what": "Language for statistics, data analysis and research visualisations.",
+    "resources": [
+      {
+        "title": "R for Data Science (free online book)",
+        "url": "https://r4ds.hadley.nz/",
+        "kind": "book",
+        "time": "15 h"
+      },
+      {
+        "title": "R Programming Tutorial - Learn the Basics of Statistical Computing",
+        "url": "https://www.youtube.com/watch?v=_V8eKsto3Ug",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Analyse a public dataset in R and publish the report with charts.",
+    "hours": 25,
+    "needs": [],
+    "done": [
+      "Load a CSV into a data frame and summarise it",
+      "Clean and reshape data with dplyr",
+      "Plot data with ggplot2"
+    ],
+    "roadmap": "https://roadmap.sh/r"
+  },
+  "php": {
+    "what": "Server-side language that powers WordPress and many web apps.",
+    "resources": [
+      {
+        "title": "PHP manual: getting started (official)",
+        "url": "https://www.php.net/manual/en/getting-started.php",
+        "kind": "docs",
+        "time": "4 h"
+      },
+      {
+        "title": "PHP Programming Language Tutorial - Full Course",
+        "url": "https://www.youtube.com/watch?v=OK_JCtrrv-c",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a small blog with login and a MySQL database.",
+    "hours": 25,
+    "needs": [
+      "html"
+    ],
+    "done": [
+      "Handle a form submission and validate input",
+      "Read and write a MySQL database with PDO",
+      "Use sessions for a simple login"
+    ],
+    "roadmap": "https://roadmap.sh/php"
+  },
+  "ruby": {
+    "what": "Readable language best known for the Ruby on Rails web framework.",
+    "resources": [
+      {
+        "title": "Ruby in Twenty Minutes (official)",
+        "url": "https://www.ruby-lang.org/en/documentation/quickstart/",
+        "kind": "tutorial",
+        "time": "1 h"
+      },
+      {
+        "title": "Ruby Programming Language - Full Course",
+        "url": "https://www.youtube.com/watch?v=t_ispmWmdjY",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a simple CRUD web app with Rails.",
+    "hours": 20,
+    "needs": [],
+    "done": [
+      "Use blocks, hashes and classes",
+      "Write and run tests with Minitest or RSpec",
+      "Build a small CLI or script with gems"
+    ],
+    "roadmap": "https://roadmap.sh/ruby"
+  },
+  "kotlin": {
+    "what": "Modern JVM language and the preferred language for Android apps.",
+    "resources": [
+      {
+        "title": "Kotlin: get started (official)",
+        "url": "https://kotlinlang.org/docs/getting-started.html",
+        "kind": "docs",
+        "time": "5 h"
+      },
+      {
+        "title": "Learn Kotlin Programming – Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=EExSSotojVI",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Make a simple Android notes app in Kotlin.",
+    "hours": 25,
+    "needs": [],
+    "done": [
+      "Use null safety, data classes and when expressions",
+      "Use collections with map/filter",
+      "Build a simple Android screen or a JVM CLI app"
+    ],
+    "roadmap": "https://roadmap.sh/kotlin"
+  },
+  "swift": {
+    "what": "Apple's language for iOS and macOS apps.",
+    "resources": [
+      {
+        "title": "The Swift Programming Language (official book)",
+        "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/",
+        "kind": "book",
+        "time": "10 h"
+      },
+      {
+        "title": "Swift Tutorial - Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=comQ1-x2a1Q",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a small iOS app such as a habit tracker with SwiftUI.",
+    "hours": 25,
+    "needs": [],
+    "done": [
+      "Use optionals, structs and protocols",
+      "Build a SwiftUI screen with state",
+      "Run your app on the iOS simulator"
+    ],
+    "roadmap": "https://roadmap.sh/swift-ui"
+  },
+  "html": {
+    "what": "The structure of every web page.",
+    "resources": [
+      {
+        "title": "MDN: HTML basics",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTML",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "freeCodeCamp Responsive Web Design",
+        "url": "https://www.freecodecamp.org/learn/2022/responsive-web-design/",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "Learn HTML – Full Tutorial for Beginners",
+        "url": "https://www.youtube.com/watch?v=kUMe1FH4CHE",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build your own portfolio page in semantic HTML.",
+    "hours": 10,
+    "needs": [],
+    "done": [
+      "Structure a page with semantic tags (header, main, section, footer)",
+      "Build an accessible form with labels and validation",
+      "Add images, links and tables correctly"
+    ],
+    "roadmap": "https://roadmap.sh/html"
+  },
+  "css": {
+    "what": "Styling and layout for web pages, including responsive design.",
+    "resources": [
+      {
+        "title": "web.dev: Learn CSS",
+        "url": "https://web.dev/learn/css",
+        "kind": "course",
+        "time": "8 h"
+      },
+      {
+        "title": "MDN CSS reference",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/CSS",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "CSS Tutorial – Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=OXGznpKZ_sA",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Make your portfolio responsive with Flexbox and Grid.",
+    "hours": 15,
+    "needs": [
+      "html"
+    ],
+    "done": [
+      "Lay out a page with Flexbox and Grid",
+      "Make a page responsive with media queries",
+      "Explain specificity and the box model"
+    ],
+    "roadmap": "https://roadmap.sh/css"
+  },
+  "react": {
+    "what": "The most widely used library for building web user interfaces.",
+    "resources": [
+      {
+        "title": "react.dev: Learn React (official)",
+        "url": "https://react.dev/learn",
+        "kind": "docs",
+        "time": "8 h"
+      },
+      {
+        "title": "React Course - Beginner's Tutorial for React JavaScript Library [2022]",
+        "url": "https://www.youtube.com/watch?v=bMknfKXIFA8",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a React app that fetches data from a public API, with search and filters.",
+    "hours": 30,
+    "needs": [
+      "javascript",
+      "html",
+      "css"
+    ],
+    "done": [
+      "Build components with props and state (useState)",
+      "Fetch data in useEffect and handle loading and errors",
+      "Render lists with keys and handle forms"
+    ],
+    "roadmap": "https://roadmap.sh/react"
+  },
+  "angular": {
+    "what": "Full frontend framework by Google, common in enterprise apps.",
+    "resources": [
+      {
+        "title": "Angular tutorials (official)",
+        "url": "https://angular.dev/tutorials",
+        "kind": "tutorial",
+        "time": "6 h"
+      },
+      {
+        "title": "Angular for Beginners Course [Full Front End Tutorial with TypeScript]",
+        "url": "https://www.youtube.com/watch?v=3qBXWUpoPHo",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a small Angular dashboard with routing and a form.",
+    "hours": 30,
+    "needs": [
+      "typescript",
+      "html",
+      "css"
+    ],
+    "done": [
+      "Build components and pass data with inputs/outputs",
+      "Call an API from a service with HttpClient",
+      "Set up routing between pages"
+    ],
+    "roadmap": "https://roadmap.sh/angular"
+  },
+  "vue": {
+    "what": "Approachable frontend framework for building interactive UIs.",
+    "resources": [
+      {
+        "title": "Vue.js guide (official)",
+        "url": "https://vuejs.org/guide/introduction.html",
+        "kind": "docs",
+        "time": "6 h"
+      },
+      {
+        "title": "Vue.js Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=FXpIoQ_rT_c",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a Vue app such as a recipe finder with a public API.",
+    "hours": 25,
+    "needs": [
+      "javascript",
+      "html",
+      "css"
+    ],
+    "done": [
+      "Build single-file components with props and events",
+      "Use reactive state and computed values",
+      "Add routing with Vue Router"
+    ],
+    "roadmap": "https://roadmap.sh/vue"
+  },
+  "node.js": {
+    "what": "Runs JavaScript on the server to build APIs and tools.",
+    "resources": [
+      {
+        "title": "Node.js: Learn (official)",
+        "url": "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs",
+        "kind": "docs",
+        "time": "4 h"
+      },
+      {
+        "title": "Node.js and Express.js - Full Course",
+        "url": "https://www.youtube.com/watch?v=Oe421EPjeBE",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a REST API with Express and connect it to a database.",
+    "hours": 25,
+    "needs": [
+      "javascript"
+    ],
+    "done": [
+      "Build a REST API with Express (GET, POST, PUT, DELETE)",
+      "Use npm packages and environment variables",
+      "Connect the API to a database"
+    ],
+    "roadmap": "https://roadmap.sh/nodejs"
+  },
+  "django": {
+    "what": "Batteries-included Python web framework.",
+    "resources": [
+      {
+        "title": "Django tutorial (official)",
+        "url": "https://docs.djangoproject.com/en/stable/intro/tutorial01/",
+        "kind": "tutorial",
+        "time": "6 h"
+      },
+      {
+        "title": "Python Django Web Framework - Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=F5mRW0jo-U4",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a blog or job board with Django, user login and an admin panel.",
+    "hours": 30,
+    "needs": [
+      "python"
+    ],
+    "done": [
+      "Create models, run migrations and use the admin",
+      "Build views, URLs and templates for CRUD pages",
+      "Add user login with Django's auth system"
+    ],
+    "roadmap": "https://roadmap.sh/django"
+  },
+  "flask": {
+    "what": "Lightweight Python web framework for APIs and small web apps.",
+    "resources": [
+      {
+        "title": "Flask tutorial (official)",
+        "url": "https://flask.palletsprojects.com/en/stable/tutorial/",
+        "kind": "tutorial",
+        "time": "4 h"
+      },
+      {
+        "title": "Learn Flask for Python - Full Tutorial",
+        "url": "https://www.youtube.com/watch?v=Z1RJmh_OqeA",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a Flask REST API for a notes app with SQLite.",
+    "hours": 15,
+    "needs": [
+      "python"
+    ],
+    "done": [
+      "Create routes that return HTML and JSON",
+      "Store data with SQLite or SQLAlchemy",
+      "Handle forms and errors"
+    ],
+    "roadmap": ""
+  },
+  "spring": {
+    "what": "The standard Java framework (Spring Boot) for backend services.",
+    "resources": [
+      {
+        "title": "Spring quickstart (official)",
+        "url": "https://spring.io/quickstart",
+        "kind": "tutorial",
+        "time": "1 h"
+      },
+      {
+        "title": "Spring guides",
+        "url": "https://spring.io/guides",
+        "kind": "tutorial",
+        "time": ""
+      },
+      {
+        "title": "Spring Boot Tutorial | Full Course [2023] [NEW]",
+        "url": "https://www.youtube.com/watch?v=9SGDpanrc8U",
+        "kind": "video",
+        "time": "",
+        "by": "Amigoscode"
+      }
+    ],
+    "project": "Build a Spring Boot REST API with a database and tests.",
+    "hours": 35,
+    "needs": [
+      "java",
+      "object-oriented programming"
+    ],
+    "done": [
+      "Build a REST controller with Spring Boot",
+      "Persist entities with Spring Data JPA",
+      "Explain dependency injection and write a service test"
+    ],
+    "roadmap": "https://roadmap.sh/spring-boot"
+  },
+  ".net": {
+    "what": "Microsoft's platform for web APIs, desktop and cloud apps.",
+    "resources": [
+      {
+        "title": ".NET documentation (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/dotnet/",
+        "kind": "docs",
+        "time": "8 h"
+      },
+      {
+        "title": "Learn ASP.NET Core MVC (.NET 6) - Full Course",
+        "url": "https://www.youtube.com/watch?v=hZ1DASYd9rk",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build an ASP.NET Core minimal API and deploy it.",
+    "hours": 35,
+    "needs": [
+      "c#"
+    ],
+    "done": [
+      "Build a web API or MVC app with ASP.NET Core",
+      "Use Entity Framework Core for database access",
+      "Configure dependency injection and app settings"
+    ],
+    "roadmap": "https://roadmap.sh/aspnet-core"
+  },
+  "rest api": {
+    "what": "The standard way web services expose data over HTTP (GET, POST, status codes, JSON).",
+    "resources": [
+      {
+        "title": "MDN: An overview of HTTP",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview",
+        "kind": "docs",
+        "time": "1 h"
+      },
+      {
+        "title": "FastAPI tutorial",
+        "url": "https://fastapi.tiangolo.com/tutorial/",
+        "kind": "tutorial",
+        "time": "4 h"
+      },
+      {
+        "title": "What is a REST API?",
+        "url": "https://www.youtube.com/watch?v=lsMQRaeKNDk",
+        "kind": "video",
+        "time": "",
+        "by": "IBM Technology"
+      }
+    ],
+    "project": "Design and build a REST API for one of your projects, with docs and tests.",
+    "hours": 12,
+    "needs": [],
+    "done": [
+      "Explain HTTP methods, status codes and JSON bodies",
+      "Design resource URLs for a small app",
+      "Call and test an API with curl or Postman"
+    ],
+    "roadmap": "https://roadmap.sh/api-design"
+  },
+  "graphql": {
+    "what": "Query language for APIs that lets clients ask for exactly the data they need.",
+    "resources": [
+      {
+        "title": "Learn GraphQL (official)",
+        "url": "https://graphql.org/learn/",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "GraphQL Full Course - Novice to Expert",
+        "url": "https://www.youtube.com/watch?v=ed8SzALpx1Q",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Add a GraphQL endpoint to an existing API.",
+    "hours": 15,
+    "needs": [
+      "rest api"
+    ],
+    "done": [
+      "Write queries and mutations against a public GraphQL API",
+      "Define a schema with types and resolvers",
+      "Explain when GraphQL is a better fit than REST"
+    ],
+    "roadmap": "https://roadmap.sh/graphql"
+  },
+  "git": {
+    "what": "Version control: tracking changes and collaborating on code.",
+    "resources": [
+      {
+        "title": "Pro Git book (official, free)",
+        "url": "https://git-scm.com/book/en/v2",
+        "kind": "book",
+        "time": "6 h"
+      },
+      {
+        "title": "Learn Git Branching (interactive)",
+        "url": "https://learngitbranching.js.org/",
+        "kind": "practice",
+        "time": "2 h"
+      },
+      {
+        "title": "Git and GitHub for Beginners - Crash Course",
+        "url": "https://www.youtube.com/watch?v=RGOj5yH7evk",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Keep all your projects on GitHub with clear commits, branches and pull requests.",
+    "hours": 8,
+    "needs": [],
+    "done": [
+      "Commit, branch, merge and resolve a merge conflict",
+      "Push to and pull from a remote repository",
+      "Undo mistakes with restore, revert and reset"
+    ],
+    "roadmap": "https://roadmap.sh/git-github"
+  },
+  "github": {
+    "what": "Hosting and collaboration platform for Git repositories.",
+    "resources": [
+      {
+        "title": "GitHub Docs: Get started",
+        "url": "https://docs.github.com/en/get-started",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "GitHub Skills (interactive)",
+        "url": "https://skills.github.com/",
+        "kind": "practice",
+        "time": ""
+      },
+      {
+        "title": "Your First GitHub Pull Request (in 10 Mins)",
+        "url": "https://www.youtube.com/watch?v=dSl_qnWO104",
+        "kind": "video",
+        "time": "",
+        "by": "Jackson Bates"
+      }
+    ],
+    "project": "Polish your GitHub profile: pinned projects, READMEs and a profile README.",
+    "hours": 5,
+    "needs": [
+      "git"
+    ],
+    "done": [
+      "Open a pull request and respond to review comments",
+      "Write a clear README for a project",
+      "Set up a simple GitHub Actions workflow"
+    ],
+    "roadmap": "https://roadmap.sh/git-github"
+  },
+  "docker": {
+    "what": "Packages an app and its dependencies into containers that run the same everywhere.",
+    "resources": [
+      {
+        "title": "Docker: Get started (official)",
+        "url": "https://docs.docker.com/get-started/",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "Docker Tutorial for Beginners - A Full DevOps Course on How to Run Applications in Containers",
+        "url": "https://www.youtube.com/watch?v=fqMOX6JJhGo",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Containerize one of your projects with a Dockerfile and docker compose, and mention it on your resume.",
+    "hours": 15,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Write a Dockerfile for your own app and build an image",
+      "Run containers with ports, volumes and environment variables",
+      "Run an app and its database together with Docker Compose"
+    ],
+    "roadmap": "https://roadmap.sh/docker"
+  },
+  "kubernetes": {
+    "what": "Runs and scales containers across many machines.",
+    "resources": [
+      {
+        "title": "Kubernetes basics (official)",
+        "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/",
+        "kind": "tutorial",
+        "time": "3 h"
+      },
+      {
+        "title": "Kubernetes Tutorial for Beginners [FULL COURSE in 4 Hours]",
+        "url": "https://www.youtube.com/watch?v=X48VuDVv0do",
+        "kind": "video",
+        "time": "",
+        "by": "TechWorld with Nana"
+      }
+    ],
+    "project": "Deploy a containerized app to a local cluster (kind or minikube) with a Deployment and Service.",
+    "hours": 25,
+    "needs": [
+      "docker"
+    ],
+    "done": [
+      "Deploy an app with a Deployment and a Service",
+      "Use ConfigMaps and Secrets",
+      "Debug pods with kubectl logs and describe"
+    ],
+    "roadmap": "https://roadmap.sh/kubernetes"
+  },
+  "ci/cd": {
+    "what": "Automatically testing and deploying code on every change.",
+    "resources": [
+      {
+        "title": "GitHub Actions documentation",
+        "url": "https://docs.github.com/en/actions",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "GitHub Actions Tutorial - Basic Concepts and CI/CD Pipeline with Docker",
+        "url": "https://www.youtube.com/watch?v=R8_veQiYBjI",
+        "kind": "video",
+        "time": "",
+        "by": "TechWorld with Nana"
+      }
+    ],
+    "project": "Add a GitHub Actions workflow that runs your tests and deploys your project.",
+    "hours": 10,
+    "needs": [
+      "git"
+    ],
+    "done": [
+      "Run tests automatically on every push",
+      "Build and publish an artifact or Docker image from a pipeline",
+      "Deploy automatically after tests pass"
+    ],
+    "roadmap": "https://roadmap.sh/devops"
+  },
+  "jenkins": {
+    "what": "Widely used automation server for CI/CD pipelines.",
+    "resources": [
+      {
+        "title": "Jenkins tutorials (official)",
+        "url": "https://www.jenkins.io/doc/tutorials/",
+        "kind": "tutorial",
+        "time": "3 h"
+      },
+      {
+        "title": "Complete Jenkins Pipeline Tutorial | Jenkinsfile explained",
+        "url": "https://www.youtube.com/watch?v=7KCS70sCoK0",
+        "kind": "video",
+        "time": "",
+        "by": "TechWorld with Nana"
+      }
+    ],
+    "project": "Set up a Jenkins pipeline that builds and tests one of your projects.",
+    "hours": 12,
+    "needs": [
+      "ci/cd"
+    ],
+    "done": [
+      "Write a declarative Jenkinsfile with build and test stages",
+      "Trigger builds from a Git repository",
+      "Store credentials safely in Jenkins"
+    ],
+    "roadmap": ""
+  },
+  "terraform": {
+    "what": "Infrastructure as code: defining cloud resources in config files.",
+    "resources": [
+      {
+        "title": "Terraform tutorials (HashiCorp)",
+        "url": "https://developer.hashicorp.com/terraform/tutorials",
+        "kind": "tutorial",
+        "time": "4 h"
+      },
+      {
+        "title": "Terraform Course - Automate your AWS cloud infrastructure",
+        "url": "https://www.youtube.com/watch?v=SLB_c_ayRMo",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Provision a small cloud setup (storage bucket + VM) with Terraform.",
+    "hours": 15,
+    "needs": [
+      "aws"
+    ],
+    "done": [
+      "Write resources, variables and outputs",
+      "Run plan and apply, and explain the state file",
+      "Split infrastructure into a reusable module"
+    ],
+    "roadmap": "https://roadmap.sh/terraform"
+  },
+  "ansible": {
+    "what": "Automates server configuration and deployments.",
+    "resources": [
+      {
+        "title": "Getting started with Ansible (official)",
+        "url": "https://docs.ansible.com/ansible/latest/getting_started/index.html",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "Ansible Course for Beginners - Learn Ansible in 1 Hour",
+        "url": "https://www.youtube.com/watch?v=s4cXrNEDYiw",
+        "kind": "video",
+        "time": "",
+        "by": "Sandip Das"
+      }
+    ],
+    "project": "Write a playbook that sets up a web server on a Linux VM.",
+    "hours": 12,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Write an inventory and run ad-hoc commands",
+      "Write a playbook that installs and configures a service",
+      "Use variables, handlers and roles"
+    ],
+    "roadmap": ""
+  },
+  "linux": {
+    "what": "The operating system behind most servers and cloud machines.",
+    "resources": [
+      {
+        "title": "Linux Journey",
+        "url": "https://linuxjourney.com/",
+        "kind": "tutorial",
+        "time": "8 h"
+      },
+      {
+        "title": "OverTheWire: Bandit (practice)",
+        "url": "https://overthewire.org/wargames/bandit/",
+        "kind": "practice",
+        "time": ""
+      },
+      {
+        "title": "Linux Operating System - Crash Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=ROjZy1WbCIA",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Host one of your projects on a Linux VM and set it up from the command line.",
+    "hours": 15,
+    "needs": [],
+    "done": [
+      "Move around and manage files from the terminal",
+      "Manage permissions, users and processes",
+      "Install packages and read logs to debug a service"
+    ],
+    "roadmap": "https://roadmap.sh/linux"
+  },
+  "bash": {
+    "what": "The command-line shell and scripting language on Linux and macOS.",
+    "resources": [
+      {
+        "title": "LinuxCommand.org: Learning the shell",
+        "url": "https://linuxcommand.org/lc3_learning_the_shell.php",
+        "kind": "tutorial",
+        "time": "4 h"
+      },
+      {
+        "title": "Bash Scripting Tutorial for Beginners",
+        "url": "https://www.youtube.com/watch?v=tK9Oc6AEnR4",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Automate a repetitive task (backups, log cleanup) with a Bash script.",
+    "hours": 8,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Write a script with variables, if-statements and loops",
+      "Pipe commands together with grep, sort and awk",
+      "Schedule a script with cron"
+    ],
+    "roadmap": "https://roadmap.sh/shell-bash"
+  },
+  "jira": {
+    "what": "Issue and project tracker used by most software teams.",
+    "resources": [
+      {
+        "title": "Jira guides (Atlassian)",
+        "url": "https://www.atlassian.com/software/jira/guides",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "Ultimate Jira Tutorial for Beginners | Free Agile Project Management Tool",
+        "url": "https://www.youtube.com/watch?v=8jWKwiIcWPI",
+        "kind": "video",
+        "time": "",
+        "by": "Stewart Gauld"
+      }
+    ],
+    "project": "Plan a team project in Jira with epics, stories and a sprint board.",
+    "hours": 3,
+    "needs": [
+      "agile"
+    ],
+    "done": [
+      "Create epics, stories and sub-tasks",
+      "Run a sprint on a Scrum board",
+      "Filter issues and read a burndown chart"
+    ],
+    "roadmap": ""
+  },
+  "aws": {
+    "what": "Amazon's cloud platform, the most widely used in industry.",
+    "resources": [
+      {
+        "title": "AWS Getting Started",
+        "url": "https://aws.amazon.com/getting-started/",
+        "kind": "tutorial",
+        "time": ""
+      },
+      {
+        "title": "AWS Skill Builder (free courses)",
+        "url": "https://skillbuilder.aws/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "AWS Certified Cloud Practitioner Certification Course (CLF-C02) - Pass the Exam!",
+        "url": "https://www.youtube.com/watch?v=NhDYbskXRgc",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Deploy one of your apps on AWS (e.g. EC2 or Lambda + S3) using the free tier.",
+    "hours": 25,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Launch an EC2 instance and connect with SSH",
+      "Store files in S3 and manage access with IAM",
+      "Explain regions, VPCs and the main managed services"
+    ],
+    "roadmap": "https://roadmap.sh/aws"
+  },
+  "azure": {
+    "what": "Microsoft's cloud platform, common in enterprises.",
+    "resources": [
+      {
+        "title": "Azure training (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/training/azure/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Microsoft Azure Fundamentals Certification Course (AZ-900) - Pass the exam in 3 hours!",
+        "url": "https://www.youtube.com/watch?v=NKEFWyqJ5XA",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Deploy a web app to Azure App Service with the free tier.",
+    "hours": 20,
+    "needs": [],
+    "done": [
+      "Create resources in a resource group from the portal and CLI",
+      "Deploy a web app to App Service",
+      "Explain Azure identity, storage and networking basics"
+    ],
+    "roadmap": ""
+  },
+  "gcp": {
+    "what": "Google Cloud Platform, strong in data and machine learning services.",
+    "resources": [
+      {
+        "title": "Google Cloud: Get started",
+        "url": "https://cloud.google.com/docs/get-started",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Google Cloud Skills Boost",
+        "url": "https://www.cloudskillsboost.google/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Google Cloud Associate Cloud Engineer Course - Pass the Exam!",
+        "url": "https://www.youtube.com/watch?v=jpno8FSqpc8",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Deploy a containerized app on Cloud Run.",
+    "hours": 20,
+    "needs": [],
+    "done": [
+      "Create a project and use Cloud Shell and gcloud",
+      "Deploy a container to Cloud Run",
+      "Store data in Cloud Storage and query it with BigQuery"
+    ],
+    "roadmap": ""
+  },
+  "sql": {
+    "what": "The language for querying and managing relational databases.",
+    "resources": [
+      {
+        "title": "SQLBolt (interactive)",
+        "url": "https://sqlbolt.com/",
+        "kind": "practice",
+        "time": "3 h"
+      },
+      {
+        "title": "Kaggle Learn: Intro to SQL",
+        "url": "https://www.kaggle.com/learn/intro-to-sql",
+        "kind": "course",
+        "time": "3 h"
+      },
+      {
+        "title": "SQL Tutorial - Full Database Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=HXV3zeQKqGY",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Design a small database for a real use case (e.g. college events) and write 10 useful queries.",
+    "hours": 15,
+    "needs": [],
+    "done": [
+      "Write SELECT queries with WHERE, ORDER BY and LIMIT",
+      "Combine tables with JOINs and summarise with GROUP BY",
+      "Create tables with keys and insert, update and delete rows"
+    ],
+    "roadmap": "https://roadmap.sh/sql"
+  },
+  "mysql": {
+    "what": "Popular open-source relational database.",
+    "resources": [
+      {
+        "title": "MySQL tutorial (official manual)",
+        "url": "https://dev.mysql.com/doc/refman/8.4/en/tutorial.html",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "SQL Course for Beginners [Full Course]",
+        "url": "https://www.youtube.com/watch?v=7S_tz1z_5bA",
+        "kind": "video",
+        "time": "",
+        "by": "Programming with Mosh"
+      }
+    ],
+    "project": "Back one of your web projects with a MySQL database.",
+    "hours": 10,
+    "needs": [
+      "sql"
+    ],
+    "done": [
+      "Install MySQL and design a small schema",
+      "Add indexes and explain why a query is slow",
+      "Back up and restore a database"
+    ],
+    "roadmap": "https://roadmap.sh/sql"
+  },
+  "postgresql": {
+    "what": "Powerful open-source relational database, a default choice for new backends.",
+    "resources": [
+      {
+        "title": "PostgreSQL tutorial (official)",
+        "url": "https://www.postgresql.org/docs/current/tutorial.html",
+        "kind": "docs",
+        "time": "4 h"
+      },
+      {
+        "title": "Learn PostgreSQL Tutorial - Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=qw--VYLpxG4",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Move one of your projects to PostgreSQL and add indexes for its slow queries.",
+    "hours": 12,
+    "needs": [
+      "sql"
+    ],
+    "done": [
+      "Design tables with constraints and foreign keys",
+      "Use indexes and EXPLAIN to speed up a query",
+      "Use transactions and JSONB columns"
+    ],
+    "roadmap": "https://roadmap.sh/postgresql-dba"
+  },
+  "mongodb": {
+    "what": "Document (NoSQL) database that stores JSON-like records.",
+    "resources": [
+      {
+        "title": "MongoDB University (free)",
+        "url": "https://learn.mongodb.com/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Learn MongoDB in 1 hour 🍃",
+        "url": "https://www.youtube.com/watch?v=c2M-rlkkT5o",
+        "kind": "video",
+        "time": "",
+        "by": "Bro Code"
+      }
+    ],
+    "project": "Build a small app that stores user profiles in MongoDB.",
+    "hours": 10,
+    "needs": [],
+    "done": [
+      "Model data as documents and collections",
+      "Query, update and index documents",
+      "Group data with the aggregation pipeline"
+    ],
+    "roadmap": "https://roadmap.sh/mongodb"
+  },
+  "redis": {
+    "what": "In-memory data store used for caching, queues and sessions.",
+    "resources": [
+      {
+        "title": "Redis docs: Get started",
+        "url": "https://redis.io/docs/latest/get-started/",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "Redis Course - In-Memory Database Tutorial",
+        "url": "https://www.youtube.com/watch?v=XCsS_NVAa1g",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Add Redis caching to one of your APIs and measure the speed-up.",
+    "hours": 8,
+    "needs": [],
+    "done": [
+      "Use strings, hashes, lists and sets",
+      "Cache API responses with an expiry time",
+      "Explain when to use Redis and when not to"
+    ],
+    "roadmap": "https://roadmap.sh/redis"
+  },
+  "machine learning": {
+    "what": "Building models that learn patterns from data to make predictions.",
+    "resources": [
+      {
+        "title": "Google Machine Learning Crash Course",
+        "url": "https://developers.google.com/machine-learning/crash-course",
+        "kind": "course",
+        "time": "15 h"
+      },
+      {
+        "title": "Kaggle Learn: Intro to Machine Learning",
+        "url": "https://www.kaggle.com/learn/intro-to-machine-learning",
+        "kind": "course",
+        "time": "3 h"
+      },
+      {
+        "title": "Machine Learning for Everybody – Full Course",
+        "url": "https://www.youtube.com/watch?v=i_LwzRVP7bg",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Train and evaluate a model on a Kaggle dataset; write up what worked and why.",
+    "hours": 40,
+    "needs": [
+      "python",
+      "statistics"
+    ],
+    "done": [
+      "Split data into train and test sets and avoid data leakage",
+      "Train and compare a regression and a classification model",
+      "Choose and explain metrics (accuracy, precision/recall, RMSE)"
+    ],
+    "roadmap": "https://roadmap.sh/machine-learning"
+  },
+  "deep learning": {
+    "what": "Neural-network models for images, text and audio.",
+    "resources": [
+      {
+        "title": "Practical Deep Learning for Coders (fast.ai)",
+        "url": "https://course.fast.ai/",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "Dive into Deep Learning (free book)",
+        "url": "https://d2l.ai/",
+        "kind": "book",
+        "time": ""
+      },
+      {
+        "title": "But what is a neural network? | Deep learning chapter 1",
+        "url": "https://www.youtube.com/watch?v=aircAruvnKk",
+        "kind": "video",
+        "time": "",
+        "by": "3Blue1Brown"
+      }
+    ],
+    "project": "Fine-tune an image classifier on your own small dataset and deploy a demo.",
+    "hours": 40,
+    "needs": [
+      "machine learning"
+    ],
+    "done": [
+      "Explain neurons, layers, loss and backpropagation",
+      "Train a neural network and spot overfitting",
+      "Use a pretrained model for a new task (transfer learning)"
+    ],
+    "roadmap": "https://roadmap.sh/machine-learning"
+  },
+  "tensorflow": {
+    "what": "Google's deep-learning framework.",
+    "resources": [
+      {
+        "title": "TensorFlow tutorials (official)",
+        "url": "https://www.tensorflow.org/tutorials",
+        "kind": "tutorial",
+        "time": "6 h"
+      },
+      {
+        "title": "TensorFlow 2.0 Complete Course - Python Neural Networks for Beginners Tutorial",
+        "url": "https://www.youtube.com/watch?v=tPYj3fFJGjk",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build and train a TensorFlow/Keras model for a simple classification task.",
+    "hours": 20,
+    "needs": [
+      "deep learning"
+    ],
+    "done": [
+      "Build and train a Keras model",
+      "Load data with tf.data and evaluate the model",
+      "Save, load and serve predictions from the model"
+    ],
+    "roadmap": ""
+  },
+  "pytorch": {
+    "what": "The most popular deep-learning framework in research and industry.",
+    "resources": [
+      {
+        "title": "Learn the Basics (official PyTorch tutorial)",
+        "url": "https://docs.pytorch.org/tutorials/beginner/basics/intro.html",
+        "kind": "tutorial",
+        "time": "4 h"
+      },
+      {
+        "title": "PyTorch for Deep Learning & Machine Learning – Full Course",
+        "url": "https://www.youtube.com/watch?v=V_xro1bcAuA",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Train a small PyTorch model end to end and share the notebook.",
+    "hours": 20,
+    "needs": [
+      "deep learning"
+    ],
+    "done": [
+      "Work with tensors and autograd",
+      "Write a training loop with Dataset and DataLoader",
+      "Fine-tune a pretrained model"
+    ],
+    "roadmap": ""
+  },
+  "scikit-learn": {
+    "what": "Python's standard library for classic machine learning.",
+    "resources": [
+      {
+        "title": "scikit-learn: Getting started (official)",
+        "url": "https://scikit-learn.org/stable/getting_started.html",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "Scikit-Learn Course - Machine Learning in Python Tutorial",
+        "url": "https://www.youtube.com/watch?v=pqNCD_5r0IU",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Compare 3 models on one dataset with cross-validation and report the results.",
+    "hours": 15,
+    "needs": [
+      "python",
+      "pandas"
+    ],
+    "done": [
+      "Build a Pipeline with preprocessing and a model",
+      "Tune hyperparameters with cross-validation",
+      "Evaluate a model with the right metrics and a confusion matrix"
+    ],
+    "roadmap": ""
+  },
+  "pandas": {
+    "what": "Python library for cleaning and analysing tabular data.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Pandas",
+        "url": "https://www.kaggle.com/learn/pandas",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "pandas: Getting started (official)",
+        "url": "https://pandas.pydata.org/docs/getting_started/index.html",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Complete Python Pandas Data Science Tutorial! (Reading CSV/Excel files, Sorting, Filtering, Groupby)",
+        "url": "https://www.youtube.com/watch?v=vmEHCJofslg",
+        "kind": "video",
+        "time": "",
+        "by": "Keith Galli"
+      }
+    ],
+    "project": "Clean and analyse a messy public dataset and summarise 5 findings.",
+    "hours": 12,
+    "needs": [
+      "python"
+    ],
+    "done": [
+      "Load CSV/Excel files and explore them",
+      "Clean data: missing values, types and duplicates",
+      "Filter, group, merge and pivot data"
+    ],
+    "roadmap": ""
+  },
+  "numpy": {
+    "what": "Python's foundation for fast numerical arrays.",
+    "resources": [
+      {
+        "title": "NumPy: the absolute basics for beginners",
+        "url": "https://numpy.org/doc/stable/user/absolute_beginners.html",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "Python NumPy Tutorial for Beginners",
+        "url": "https://www.youtube.com/watch?v=QUT1VHiLmmI",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Implement linear regression from scratch with NumPy.",
+    "hours": 6,
+    "needs": [
+      "python"
+    ],
+    "done": [
+      "Create and reshape arrays",
+      "Use vectorised operations instead of loops",
+      "Index and slice arrays with boolean masks"
+    ],
+    "roadmap": ""
+  },
+  "data analysis": {
+    "what": "Turning raw data into answers: cleaning, summarising and interpreting.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Pandas",
+        "url": "https://www.kaggle.com/learn/pandas",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "Kaggle Learn: Data Cleaning",
+        "url": "https://www.kaggle.com/learn/data-cleaning",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "Data Analysis with Python - Full Course for Beginners (Numpy, Pandas, Matplotlib, Seaborn)",
+        "url": "https://www.youtube.com/watch?v=r-uOLxNrNk8",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Answer 3 concrete questions about a public dataset and present them with charts.",
+    "hours": 25,
+    "needs": [
+      "sql"
+    ],
+    "done": [
+      "Clean a messy dataset and document your steps",
+      "Answer a business question with summary statistics",
+      "Present findings in a short report with charts"
+    ],
+    "roadmap": "https://roadmap.sh/data-analyst"
+  },
+  "data visualization": {
+    "what": "Presenting data clearly with charts and dashboards.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Data Visualization",
+        "url": "https://www.kaggle.com/learn/data-visualization",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "Intro to Data Analysis / Visualization with Python, Matplotlib and Pandas | Matplotlib Tutorial",
+        "url": "https://www.youtube.com/watch?v=a9UrKTVEeZA",
+        "kind": "video",
+        "time": "",
+        "by": "CS Dojo"
+      }
+    ],
+    "project": "Build a small dashboard (Tableau Public, Power BI or Python) for a dataset you care about.",
+    "hours": 10,
+    "needs": [],
+    "done": [
+      "Pick the right chart for comparison, trend and distribution",
+      "Build clear charts with labels and no clutter",
+      "Combine charts into a dashboard that tells one story"
+    ],
+    "roadmap": ""
+  },
+  "statistics": {
+    "what": "The maths behind data analysis: distributions, testing and inference.",
+    "resources": [
+      {
+        "title": "Khan Academy: Statistics and probability",
+        "url": "https://www.khanacademy.org/math/statistics-probability",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Statistics - A Full University Course on Data Science Basics",
+        "url": "https://www.youtube.com/watch?v=xxpc-HPKN28",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Run and explain an A/B-test style analysis on a public dataset.",
+    "hours": 25,
+    "needs": [],
+    "done": [
+      "Explain mean, median, variance and distributions",
+      "Run and interpret a hypothesis test and a p-value",
+      "Explain correlation vs causation with an example"
+    ],
+    "roadmap": ""
+  },
+  "natural language processing": {
+    "what": "Teaching computers to understand and generate text.",
+    "resources": [
+      {
+        "title": "Hugging Face LLM Course (free)",
+        "url": "https://huggingface.co/learn/llm-course/chapter1/1",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "Natural Language Processing with spaCy & Python - Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=dIUTsFT2MeQ",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a text classifier (e.g. spam or sentiment) and deploy a demo.",
+    "hours": 25,
+    "needs": [
+      "machine learning"
+    ],
+    "done": [
+      "Clean and tokenise text, and build TF-IDF features",
+      "Train a text classifier and evaluate it",
+      "Use a pretrained transformer for a text task"
+    ],
+    "roadmap": ""
+  },
+  "computer vision": {
+    "what": "Models that understand images and video.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Computer Vision",
+        "url": "https://www.kaggle.com/learn/computer-vision",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "OpenCV Course - Full Tutorial with Python",
+        "url": "https://www.youtube.com/watch?v=oXlwWbU8l2o",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Train an image classifier on a small custom dataset.",
+    "hours": 25,
+    "needs": [
+      "python"
+    ],
+    "done": [
+      "Load, resize and filter images with OpenCV",
+      "Train or fine-tune an image classifier",
+      "Explain how CNNs process images"
+    ],
+    "roadmap": ""
+  },
+  "tableau": {
+    "what": "Popular business-intelligence tool for interactive dashboards.",
+    "resources": [
+      {
+        "title": "Tableau free training",
+        "url": "https://www.tableau.com/learn/training",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Tableau for Data Science and Data Visualization - Crash Course Tutorial",
+        "url": "https://www.youtube.com/watch?v=TPMlZxRRaBQ",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Publish a dashboard on Tableau Public and link it on your resume.",
+    "hours": 12,
+    "needs": [],
+    "done": [
+      "Connect data and build bar, line and map charts",
+      "Use calculated fields and filters",
+      "Publish an interactive dashboard to Tableau Public"
+    ],
+    "roadmap": ""
+  },
+  "power bi": {
+    "what": "Microsoft's business-intelligence and dashboard tool.",
+    "resources": [
+      {
+        "title": "Power BI training (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/training/powerplatform/power-bi",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "How to use Microsoft Power BI - Tutorial for Beginners",
+        "url": "https://www.youtube.com/watch?v=TmhQCQr_DCA",
+        "kind": "video",
+        "time": "",
+        "by": "Kevin Stratvert"
+      }
+    ],
+    "project": "Build a Power BI report from a public dataset and share screenshots.",
+    "hours": 12,
+    "needs": [
+      "excel"
+    ],
+    "done": [
+      "Import and clean data with Power Query",
+      "Model tables and write basic DAX measures",
+      "Build an interactive report with slicers"
+    ],
+    "roadmap": "https://roadmap.sh/bi-analyst"
+  },
+  "excel": {
+    "what": "Spreadsheets for analysis, reporting and modelling.",
+    "resources": [
+      {
+        "title": "Excel help & learning (Microsoft)",
+        "url": "https://support.microsoft.com/en-us/excel",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Excel Easy (free tutorial)",
+        "url": "https://www.excel-easy.com/",
+        "kind": "tutorial",
+        "time": ""
+      },
+      {
+        "title": "Microsoft Excel Tutorial for Beginners - Full Course",
+        "url": "https://www.youtube.com/watch?v=Vl0H-qTclOg",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Build a budget or sales tracker with formulas, pivot tables and charts.",
+    "hours": 10,
+    "needs": [],
+    "done": [
+      "Use XLOOKUP/VLOOKUP, IF and SUMIFS",
+      "Summarise data with PivotTables and charts",
+      "Clean data with text functions and remove duplicates"
+    ],
+    "roadmap": ""
+  },
+  "spark": {
+    "what": "Distributed engine for processing big data.",
+    "resources": [
+      {
+        "title": "Spark quick start (official)",
+        "url": "https://spark.apache.org/docs/latest/quick-start.html",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "PySpark Tutorial",
+        "url": "https://www.youtube.com/watch?v=_C8kWso4ne4",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Process a large public dataset with PySpark and compare it with pandas.",
+    "hours": 20,
+    "needs": [
+      "python",
+      "sql"
+    ],
+    "done": [
+      "Load and transform data with PySpark DataFrames",
+      "Query data with Spark SQL",
+      "Explain partitions, transformations and actions"
+    ],
+    "roadmap": ""
+  },
+  "hadoop": {
+    "what": "Early big-data ecosystem for distributed storage and processing.",
+    "resources": [
+      {
+        "title": "Apache Hadoop documentation",
+        "url": "https://hadoop.apache.org/docs/stable/",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Apache Hadoop Tutorial | Hadoop Tutorial For Beginners | Big Data Hadoop | Hadoop Training | Edureka",
+        "url": "https://www.youtube.com/watch?v=mafw2-CVYnA",
+        "kind": "video",
+        "time": "",
+        "by": "edureka!"
+      }
+    ],
+    "project": "Run a word-count MapReduce job on a single-node Hadoop setup.",
+    "hours": 15,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Explain HDFS, YARN and MapReduce",
+      "Move files in and out of HDFS",
+      "Run a word-count MapReduce job"
+    ],
+    "roadmap": ""
+  },
+  "kafka": {
+    "what": "Event-streaming platform for real-time data pipelines.",
+    "resources": [
+      {
+        "title": "Apache Kafka quickstart",
+        "url": "https://kafka.apache.org/quickstart",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "Apache Kafka for Beginners (3+ hours long)",
+        "url": "https://www.youtube.com/watch?v=CU44hKLMg7k",
+        "kind": "video",
+        "time": "",
+        "by": "Bogdan Stashchuk"
+      }
+    ],
+    "project": "Stream events between two small services through Kafka.",
+    "hours": 15,
+    "needs": [],
+    "done": [
+      "Explain topics, partitions, producers and consumers",
+      "Write a producer and a consumer in your language",
+      "Explain consumer groups and offsets"
+    ],
+    "roadmap": ""
+  },
+  "airflow": {
+    "what": "Schedules and monitors data pipelines.",
+    "resources": [
+      {
+        "title": "Airflow tutorial (official)",
+        "url": "https://airflow.apache.org/docs/apache-airflow/stable/tutorial/index.html",
+        "kind": "tutorial",
+        "time": "3 h"
+      },
+      {
+        "title": "Airflow Tutorial for Beginners - Full Course in 2 Hours 2022",
+        "url": "https://www.youtube.com/watch?v=K9AnJ9_ZAXE",
+        "kind": "video",
+        "time": "",
+        "by": "coder2j"
+      }
+    ],
+    "project": "Build a daily pipeline that fetches, cleans and stores data with Airflow.",
+    "hours": 12,
+    "needs": [
+      "python"
+    ],
+    "done": [
+      "Write a DAG with dependent tasks",
+      "Schedule, retry and backfill runs",
+      "Pass data between tasks and monitor runs in the UI"
+    ],
+    "roadmap": ""
+  },
+  "etl": {
+    "what": "Extract, transform, load: moving and cleaning data between systems.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Data Cleaning",
+        "url": "https://www.kaggle.com/learn/data-cleaning",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "Data Pipelines for ETL | Build Your Data Engineering Skillset",
+        "url": "https://www.youtube.com/watch?v=BqVSs52B71o",
+        "kind": "video",
+        "time": "",
+        "by": "DataCamp"
+      }
+    ],
+    "project": "Build a small ETL script that loads a public API's data into a database every day.",
+    "hours": 15,
+    "needs": [
+      "sql",
+      "python"
+    ],
+    "done": [
+      "Extract data from an API or files",
+      "Transform and validate it with pandas or SQL",
+      "Load it into a database on a schedule"
+    ],
+    "roadmap": "https://roadmap.sh/data-engineer"
+  },
+  "data structures": {
+    "what": "Arrays, lists, stacks, queues, trees, graphs, hash maps: how data is organised in code.",
+    "resources": [
+      {
+        "title": "CS50x (Harvard, free)",
+        "url": "https://cs50.harvard.edu/x/",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "NeetCode roadmap (practice)",
+        "url": "https://neetcode.io/roadmap",
+        "kind": "practice",
+        "time": ""
+      },
+      {
+        "title": "Data Structures Easy to Advanced Course - Full Tutorial from a Google Engineer",
+        "url": "https://www.youtube.com/watch?v=RBSGKlAvoiM",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Solve 50+ problems on one platform and link your profile; mention the count on your resume.",
+    "hours": 30,
+    "needs": [],
+    "done": [
+      "Implement a linked list, stack, queue and hash map",
+      "Explain Big-O for common operations on each structure",
+      "Use trees and graphs to solve practice problems"
+    ],
+    "roadmap": "https://roadmap.sh/datastructures-and-algorithms"
+  },
+  "algorithms": {
+    "what": "Sorting, searching, recursion, dynamic programming and graph algorithms.",
+    "resources": [
+      {
+        "title": "CP-Algorithms",
+        "url": "https://cp-algorithms.com/",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "LeetCode Explore",
+        "url": "https://leetcode.com/explore/",
+        "kind": "practice",
+        "time": ""
+      },
+      {
+        "title": "Algorithms and Data Structures Tutorial - Full Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=8hly31xKli0",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Take part in a few contests (LeetCode, Codeforces, CodeChef) and add your rating.",
+    "hours": 40,
+    "needs": [
+      "data structures"
+    ],
+    "done": [
+      "Solve problems with two pointers, binary search and sorting",
+      "Use recursion, BFS/DFS and basic dynamic programming",
+      "Solve 50+ easy/medium practice problems on LeetCode or similar"
+    ],
+    "roadmap": "https://roadmap.sh/datastructures-and-algorithms"
+  },
+  "object-oriented programming": {
+    "what": "Designing code with classes, objects, inheritance and encapsulation.",
+    "resources": [
+      {
+        "title": "Python tutorial: Classes (official)",
+        "url": "https://docs.python.org/3/tutorial/classes.html",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "dev.java: Object-oriented programming concepts",
+        "url": "https://dev.java/learn/oop/",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "Intro to Object Oriented Programming - Crash Course",
+        "url": "https://www.youtube.com/watch?v=SiBw7os-_zI",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Refactor one of your projects into well-designed classes and explain the design in the README.",
+    "hours": 12,
+    "needs": [],
+    "done": [
+      "Explain encapsulation, inheritance and polymorphism with code",
+      "Design classes for a small system (e.g. a library or a bank)",
+      "Prefer composition over inheritance where it fits"
+    ],
+    "roadmap": ""
+  },
+  "agile": {
+    "what": "Iterative way of building software in short cycles with frequent feedback.",
+    "resources": [
+      {
+        "title": "Atlassian Agile Coach",
+        "url": "https://www.atlassian.com/agile",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "What is Agile?",
+        "url": "https://www.youtube.com/watch?v=Z9QbYZh1YXY",
+        "kind": "video",
+        "time": "",
+        "by": "Mark Shead"
+      }
+    ],
+    "project": "Run your next team project in sprints with a board and short retros; mention it in the bullet.",
+    "hours": 3,
+    "needs": [],
+    "done": [
+      "Explain the Agile values and iterative delivery",
+      "Write user stories with acceptance criteria",
+      "Compare Scrum and Kanban"
+    ],
+    "roadmap": ""
+  },
+  "scrum": {
+    "what": "The most common Agile framework: sprints, stand-ups, reviews and retrospectives.",
+    "resources": [
+      {
+        "title": "The Scrum Guide (official)",
+        "url": "https://scrumguides.org/scrum-guide.html",
+        "kind": "docs",
+        "time": "1 h"
+      },
+      {
+        "title": "Intro to Scrum in Under 10 Minutes",
+        "url": "https://www.youtube.com/watch?v=XU0llRltyFM",
+        "kind": "video",
+        "time": "",
+        "by": "Axosoft"
+      }
+    ],
+    "project": "Use Scrum for a group project and describe your role (e.g. Scrum Master) on your resume.",
+    "hours": 3,
+    "needs": [
+      "agile"
+    ],
+    "done": [
+      "Explain the Scrum roles, events and artifacts",
+      "Plan a sprint and estimate stories",
+      "Run a stand-up and a retrospective"
+    ],
+    "roadmap": ""
+  },
+  "figma": {
+    "what": "Collaborative tool for UI design and prototypes.",
+    "resources": [
+      {
+        "title": "Figma Learn (official)",
+        "url": "https://help.figma.com/hc/en-us",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Figma Tutorial for UI Design - Course for Beginners",
+        "url": "https://www.youtube.com/watch?v=jwCmIBJ8Jtc",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Redesign an app screen in Figma and add the prototype link to your portfolio.",
+    "hours": 10,
+    "needs": [],
+    "done": [
+      "Design a screen with frames, auto layout and components",
+      "Build a clickable prototype",
+      "Hand off a design with styles and spacing developers can follow"
+    ],
+    "roadmap": "https://roadmap.sh/ux-design"
+  },
+  "seo": {
+    "what": "Making websites easy to find in search engines.",
+    "resources": [
+      {
+        "title": "Google SEO Starter Guide",
+        "url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "SEO For Beginners: A Basic Search Engine Optimization Tutorial for Higher Google Rankings",
+        "url": "https://www.youtube.com/watch?v=DvwS7cV9GmQ",
+        "kind": "video",
+        "time": "",
+        "by": "Ahrefs"
+      }
+    ],
+    "project": "Improve the SEO of a site you built and measure the change with Search Console.",
+    "hours": 8,
+    "needs": [],
+    "done": [
+      "Do keyword research for a topic",
+      "Optimise titles, headings and meta descriptions",
+      "Check a site with Google Search Console"
+    ],
+    "roadmap": ""
+  },
+  "google analytics": {
+    "what": "Measuring website traffic and user behaviour.",
+    "resources": [
+      {
+        "title": "Google Skillshop (free certification)",
+        "url": "https://skillshop.withgoogle.com/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Google Analytics 4 Tutorial for Beginners",
+        "url": "https://www.youtube.com/watch?v=pRKpaZJJRxk",
+        "kind": "video",
+        "time": "",
+        "by": "Loves Data"
+      }
+    ],
+    "project": "Add analytics to your portfolio and report one insight it gave you.",
+    "hours": 6,
+    "needs": [],
+    "done": [
+      "Set up GA4 on a website",
+      "Track events and conversions",
+      "Build a report that answers a marketing question"
+    ],
+    "roadmap": ""
+  },
+  "cybersecurity": {
+    "what": "Protecting systems, networks and data from attacks.",
+    "resources": [
+      {
+        "title": "TryHackMe (beginner paths)",
+        "url": "https://tryhackme.com/",
+        "kind": "practice",
+        "time": ""
+      },
+      {
+        "title": "Cisco Networking Academy",
+        "url": "https://www.netacad.com/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Cyber Security Full Course 2026 | Cyber Security Course Training For Beginners 2026 | Simplilearn",
+        "url": "https://www.youtube.com/watch?v=hXSFdwIOfnE",
+        "kind": "video",
+        "time": "",
+        "by": "Simplilearn"
+      }
+    ],
+    "project": "Complete a beginner path and write up a lab you solved.",
+    "hours": 30,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Explain the CIA triad and common attacks (phishing, malware, injection)",
+      "Use basic tools such as Nmap and Wireshark in a lab",
+      "Harden a Linux machine and explain each step"
+    ],
+    "roadmap": "https://roadmap.sh/cyber-security"
+  },
+  "network security": {
+    "what": "Securing networks: firewalls, VPNs, monitoring and hardening.",
+    "resources": [
+      {
+        "title": "Cisco Networking Academy",
+        "url": "https://www.netacad.com/",
+        "kind": "course",
+        "time": ""
+      },
+      {
+        "title": "Computer Networking Course - Network Engineering [CompTIA Network+ Exam Prep]",
+        "url": "https://www.youtube.com/watch?v=qiQR5rTSshw",
+        "kind": "video",
+        "time": "",
+        "by": "freeCodeCamp.org"
+      }
+    ],
+    "project": "Set up and document a small home-lab network with a firewall and VPN.",
+    "hours": 25,
+    "needs": [
+      "linux"
+    ],
+    "done": [
+      "Explain the OSI model, TCP/IP, DNS and subnets",
+      "Configure firewall rules and a VPN",
+      "Read packet captures to spot suspicious traffic"
+    ],
+    "roadmap": "https://roadmap.sh/cyber-security"
+  }
+}

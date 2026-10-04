@@ -73,8 +73,8 @@ class TestMatcherService(unittest.TestCase):
         _ = get_feature_scaler()
         clear_matcher_cache()
         # Ensure no exception thrown and re-callable
-        model = get_match_model()
-        scaler = get_feature_scaler()
+        self.assertIsNotNone(get_match_model())
+        self.assertIsNotNone(get_feature_scaler())
 
     def test_get_feature_scaler_loads_artifact(self):
         """Feature scaler artifact loads correctly if present."""
@@ -82,7 +82,6 @@ class TestMatcherService(unittest.TestCase):
         if scaler is not None:
             self.assertEqual(len(scaler.center_), 3)
             self.assertEqual(len(scaler.scale_), 3)
-
 
     def test_raw_and_cleaned_input_give_same_result(self):
         """Inference normalizes text exactly like training, so pre-cleaning changes nothing."""
@@ -112,6 +111,20 @@ class TestMatcherService(unittest.TestCase):
         software_score = match_resume_to_job(software, job)["match_score"]
         nurse_score = match_resume_to_job(nurse, job)["match_score"]
         self.assertGreater(software_score, nurse_score + 20)
+
+    def test_soft_cap_score(self):
+        """Soft cap: identity in the middle, strictly inside (0, 100), order preserving."""
+        from app.services.matcher import SOFT_CAP_HIGH, SOFT_CAP_LOW, soft_cap_score
+
+        for raw in [SOFT_CAP_LOW, 40.0, 63.2, SOFT_CAP_HIGH]:
+            self.assertAlmostEqual(soft_cap_score(raw), raw)
+        raws = [-500, -50, 0, 5, 15, 50, 85, 95, 120, 500]
+        capped = [soft_cap_score(r) for r in raws]
+        self.assertEqual(capped, sorted(capped))
+        self.assertEqual(len(set(capped[:-1])), len(capped) - 1)  # distinct until float saturation
+        self.assertTrue(all(0.0 <= c <= 100.0 for c in capped))
+        self.assertLess(soft_cap_score(120.0), 100.0)
+        self.assertGreater(soft_cap_score(-20.0), 0.0)
 
 
 if __name__ == "__main__":

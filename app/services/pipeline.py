@@ -8,21 +8,36 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+
+from datetime import date
 
 from app.ml.features import DEFAULT_VECTORIZER_PATH as TFIDF_VECTORIZER_PATH
-from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH, match_resume_to_job
-from app.services.parser import extract_text_from_file
+from app.schemas.resume import StructuredResume
+from app.services.ats_checker import check_ats
+from app.services.data_cleaning import clean_text
+from app.services.job_decoder import decode_job
+from app.services.job_search import ANYWHERE, COUNTRIES, search_jobs
+from app.services.learning_plan import build_learning_plan, load_resources
+from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
+from app.services.matcher import match_resume_to_job
+from app.services.parser import LayoutInfo, extract_text_from_file, inspect_layout
+from app.services.project_picker import pick_projects
+from app.services.resume_sections import looks_like_student, parse_resume, render_resume_text
+from app.services.role_gap import compare_with_role, resolve_role, role_roadmaps, target_roles
 from app.services.role_predictor import (
     DEFAULT_CLASSIFIER_PATH as ROLE_CLASSIFIER_PATH,
+)
+from app.services.role_predictor import (
     DEFAULT_VECTORIZER_PATH as ROLE_VECTORIZER_PATH,
+)
+from app.services.role_predictor import (
     predict_roles_with_confidence,
 )
+from app.services.skill_extractor import extract_skills
+from app.services.skills_inventory import build_inventory
 from app.services.suggestions import generate_suggestions
 
 logger = logging.getLogger(__name__)
@@ -30,14 +45,14 @@ logger = logging.getLogger(__name__)
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 Megabytes
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 
-REQUIRED_ANALYZE_MODELS: List[Tuple[str, Path]] = [
+REQUIRED_ANALYZE_MODELS: list[tuple[str, Path]] = [
     ("match_scorer.joblib", MATCH_SCORER_PATH),
     ("tfidf_vectorizer.joblib", TFIDF_VECTORIZER_PATH),
     ("role_classifier.joblib", ROLE_CLASSIFIER_PATH),
     ("role_vectorizer.joblib", ROLE_VECTORIZER_PATH),
 ]
 
-REQUIRED_ROLE_MODELS: List[Tuple[str, Path]] = [
+REQUIRED_ROLE_MODELS: list[tuple[str, Path]] = [
     ("role_classifier.joblib", ROLE_CLASSIFIER_PATH),
     ("role_vectorizer.joblib", ROLE_VECTORIZER_PATH),
 ]
@@ -52,7 +67,7 @@ class PipelineError(Exception):
         self.status_code = status_code
 
 
-def verify_models_present(models: List[Tuple[str, Path]]) -> None:
+def verify_models_present(models: list[tuple[str, Path]]) -> None:
     """Ensure all required trained model artifacts exist on disk before inference.
 
     Raises:
@@ -63,14 +78,15 @@ def verify_models_present(models: List[Tuple[str, Path]]) -> None:
         missing_str = ", ".join(missing)
         logger.error("Missing required model artifacts in models/: %s", missing_str)
         raise PipelineError(
-            f"Required model artifact(s) missing from models/: {missing_str}. Please run model training before calling this endpoint.",
+            f"Required model artifact(s) missing from models/: {missing_str}. "
+            "Please run model training before calling this endpoint.",
             status_code=503,
         )
 
 
 def validate_and_extract_file(
-    content: Optional[bytes],
-    filename: Optional[str],
+    content: bytes | None,
+    filename: str | None,
 ) -> str:
     """Validate uploaded resume file size, extension, and extract clean text.
 
@@ -126,10 +142,18 @@ def validate_and_extract_file(
         raise PipelineError(
             f"Failed to extract text from '{filename}': The file could not be read or is corrupted.",
             status_code=400,
-        )
+        ) from exc
 
     cleaned_text = text.strip()
     if not cleaned_text:
+        if ext == ".pdf":
+            # pdfplumber only reads embedded text; a scanned or image-only PDF has none
+            raise PipelineError(
+                f"'{filename}' has no selectable text; it looks like a scanned image. "
+                "Please upload a text-based PDF (e.g. exported from Word or Google Docs) "
+                "or a DOCX file.",
+                status_code=400,
+            )
         raise PipelineError(
             f"Uploaded file '{filename}' contains no readable text.",
             status_code=400,
@@ -139,14 +163,19 @@ def validate_and_extract_file(
 
 
 def run_full_analysis(
-    resume_bytes: Optional[bytes] = None,
-    filename: Optional[str] = None,
-    resume_text: Optional[str] = None,
-    job_description: Optional[str] = None,
+    resume_bytes: bytes | None = None,
+    filename: str | None = None,
+    resume_text: str | None = None,
+    job_description: str | None = None,
     is_json: bool = False,
-    required_models: Optional[List[Tuple[str, Path]]] = None,
-) -> Dict[str, Any]:
+    required_models: list[tuple[str, Path]] | None = None,
+    student_mode: bool = False,
+    target_role: str | None = None,
+) -> dict[str, Any]:
     """Execute end-to-end resume-to-job match analysis.
+
+    The job description is optional: without one, the report is resume-only
+    (ATS check, role gap, skills inventory, editor) and job fields are empty.
 
     Validates inputs, extracts document text, verifies model presence, computes
     match score, generates actionable suggestions, and predicts role categories.
@@ -163,13 +192,12 @@ def run_full_analysis(
         Complete dictionary matching the AnalyzeResponse schema.
     """
     # 1. Validate & extract resume text
+    layout: LayoutInfo | None = None
     if is_json:
         if not resume_text or not str(resume_text).strip():
             raise PipelineError("resume_text must not be empty.", status_code=422)
-        if not job_description or not str(job_description).strip():
-            raise PipelineError("job_text must not be empty.", status_code=422)
         resume_content_text = str(resume_text).strip()
-        job_content_text = str(job_description).strip()
+        job_content_text = str(job_description or "").strip()
     else:
         if resume_bytes is None:
             raise PipelineError(
@@ -177,23 +205,126 @@ def run_full_analysis(
                 status_code=400,
             )
         resume_content_text = validate_and_extract_file(resume_bytes, filename)
-
-        if job_description is None or not str(job_description).strip():
-            raise PipelineError(
-                "job_description text must not be empty.",
-                status_code=400,
-            )
-        job_content_text = str(job_description).strip()
+        layout = inspect_layout(resume_bytes, filename)
+        job_content_text = str(job_description or "").strip()
 
     # 2. Verify all required models exist on disk
     models_to_check = required_models if required_models is not None else REQUIRED_ANALYZE_MODELS
     verify_models_present(models_to_check)
 
-    # 3. Compute match score & skill breakdown
-    match_result = match_resume_to_job(
-        resume_text=resume_content_text,
-        job_text=job_content_text,
+    return _analyze_text(
+        resume_content_text,
+        job_content_text,
+        parse_resume(resume_content_text),
+        layout,
+        student_mode=student_mode,
+        target_role=target_role,
     )
+
+
+def run_recheck(
+    resume: StructuredResume,
+    job_description: str = "",
+    student_mode: bool = False,
+    target_role: str | None = None,
+) -> dict[str, Any]:
+    """Analyze an edited, structured resume (as it would appear in the downloaded .docx)."""
+    job_content_text = str(job_description or "").strip()
+    resume_content_text = render_resume_text(resume)
+    if not resume_content_text.strip():
+        raise PipelineError("The resume is empty.", status_code=422)
+    verify_models_present(REQUIRED_ANALYZE_MODELS)
+    return _analyze_text(
+        resume_content_text, job_content_text, resume, layout=None, student_mode=student_mode, target_role=target_role
+    )
+
+
+def run_job_search(resume: StructuredResume | None, query: str, country: str, kind: str) -> dict[str, Any]:
+    """Live postings for a search, each scored against the resume when one is given."""
+    country = country.strip().upper()
+    if country != ANYWHERE and country not in COUNTRIES:
+        raise PipelineError("Unsupported country.", status_code=422)
+    resume_text = None
+    if resume is not None:
+        resume_text = render_resume_text(resume)
+        if not clean_text(resume_text):
+            raise PipelineError("The resume is empty.", status_code=422)
+    return search_jobs(resume_text, query, country, kind)
+
+
+def run_resume_parse(resume_bytes: bytes | None, filename: str | None) -> StructuredResume:
+    """An uploaded resume split into editable sections (for the resume builder)."""
+    return parse_resume(validate_and_extract_file(resume_bytes, filename))
+
+
+def run_learn(skills: list[str], known: list[str]) -> dict[str, Any]:
+    """A study plan for skills the student chose, skipping prerequisites they already know."""
+    resources = load_resources()
+    wanted = list(dict.fromkeys(s.strip().lower() for s in skills if s.strip()))
+    have = {s.strip().lower() for s in known if s.strip()} - set(wanted)
+    goals = [s for s in wanted if s in resources]
+    plan = build_learning_plan(goals, "", None, have=have, goal=True)
+    return {
+        "learning_plan": plan,
+        "project_picks": pick_projects(goals, have),
+        "unknown": [s for s in wanted if s not in resources],
+    }
+
+
+def learn_catalog() -> dict[str, Any]:
+    """Skills with a curated roadmap, and career paths (target roles) with their core skills."""
+    resources = load_resources()
+    roadmaps = role_roadmaps()
+    return {
+        "skills": [
+            {"skill": skill, "what": entry["what"], "hours": entry.get("hours", 0), "needs": entry.get("needs", [])}
+            for skill, entry in sorted(resources.items())
+        ],
+        "roles": [
+            {"role": role, "skills": [s for s in core if s in resources], "roadmap": roadmaps.get(role, "")}
+            for role, core in target_roles().items()
+        ],
+    }
+
+
+def run_role_gap(resume: StructuredResume, target_role: str, with_learning_plan: bool = True) -> dict[str, Any]:
+    """Role gap (and its learning plan) for an edited resume, without re-running the models."""
+    resume_skills = extract_skills(clean_text(render_resume_text(resume)))
+    role = resolve_role(target_role, [])
+    if role is None:
+        raise PipelineError("No target roles are available.", status_code=503)
+    gap = compare_with_role(resume_skills, role)
+    plan = build_learning_plan(gap.missing, "", None, role=role, have=resume_skills) if with_learning_plan else []
+    picks = pick_projects(gap.missing, resume_skills) if with_learning_plan else []
+    return {"role_gap": gap, "learning_plan": plan, "project_picks": picks}
+
+
+def _analyze_text(
+    resume_content_text: str,
+    job_content_text: str,
+    resume: StructuredResume,
+    layout: LayoutInfo | None,
+    student_mode: bool = False,
+    target_role: str | None = None,
+) -> dict[str, Any]:
+    """Full report for resume text, matched against a job when one is given."""
+    has_job = bool(job_content_text)
+    resume_skills = extract_skills(clean_text(resume_content_text))
+
+    # 3. Compute match score & skill breakdown (job mode only)
+    if has_job:
+        match_result = match_resume_to_job(resume_text=resume_content_text, job_text=job_content_text)
+    else:
+        match_result = {
+            "match_score": None,
+            "matched_skills": [],
+            "missing_skills": [],
+            "features": {},
+            "score_breakdown": {},
+            "score_warnings": [],
+            "resume_skills_count": len(resume_skills),
+            "required_skills_count": 0,
+        }
 
     # 4. Generate prioritized suggestions
     suggestions = generate_suggestions(
@@ -207,8 +338,44 @@ def run_full_analysis(
         top_n=3,
     )
 
+    # 6. ATS-friendliness report
+    ats = check_ats(
+        resume_content_text,
+        resume,
+        layout=layout,
+        job_skill_overlap=match_result["features"].get("skill_overlap_ratio") if has_job else None,
+        missing_skills=match_result["missing_skills"],
+        student_mode=student_mode,
+    )
+
+    # 7. Target-role gap; job insights; learning plan for the job's (or role's) gaps
+    role = resolve_role(target_role, roles)
+    role_gap = compare_with_role(resume_skills, role) if role else None
+    if has_job:
+        insights = decode_job(job_content_text, resume_skills)
+        learning_plan = build_learning_plan(
+            match_result["missing_skills"], job_content_text, insights, have=resume_skills
+        )
+        project_picks = pick_projects(match_result["missing_skills"], resume_skills, insights)
+    else:
+        insights = None
+        learning_plan = (
+            build_learning_plan(role_gap.missing, "", None, role=role, have=resume_skills) if role_gap else []
+        )
+        project_picks = pick_projects(role_gap.missing, resume_skills) if role_gap else []
+
     return {
         **match_result,
+        "mode": "job" if has_job else "resume_only",
+        "role_gap": role_gap,
+        "skills_inventory": build_inventory(resume_content_text),
+        "resume": resume,
+        "ats": ats,
+        "job_insights": insights,
+        "learning_plan": learning_plan,
+        "project_picks": project_picks,
+        "student_mode": student_mode,
+        "student_detected": looks_like_student(resume_content_text, resume, date.today().year),
         "suggested_roles": roles,
         "suggestions": suggestions,
         "confidence": confidence,
@@ -216,13 +383,13 @@ def run_full_analysis(
 
 
 def run_role_suggestion(
-    resume_bytes: Optional[bytes] = None,
-    filename: Optional[str] = None,
-    resume_text: Optional[str] = None,
+    resume_bytes: bytes | None = None,
+    filename: str | None = None,
+    resume_text: str | None = None,
     top_n: int = 3,
     is_json: bool = False,
-    required_models: Optional[List[Tuple[str, Path]]] = None,
-) -> Dict[str, Any]:
+    required_models: list[tuple[str, Path]] | None = None,
+) -> dict[str, Any]:
     """Predict job roles from an uploaded resume file or raw text.
 
     Args:

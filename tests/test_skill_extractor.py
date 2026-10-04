@@ -11,12 +11,9 @@ Tests cover:
 """
 
 import ast
-import json
-import os
+from pathlib import Path
 import sys
 import unittest
-from pathlib import Path
-from typing import Set
 
 # Ensure repository root is importable
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -32,12 +29,12 @@ from app.services.skill_extractor import (
     extract_skills,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def jaccard(a: Set[str], b: Set[str]) -> float:
+
+def jaccard(a: set[str], b: set[str]) -> float:
     """Compute Jaccard similarity between two sets."""
     if not a and not b:
         return 1.0
@@ -63,6 +60,7 @@ def _load_row(index: int) -> dict:
 # ---------------------------------------------------------------------------
 # Unit tests: word-boundary matching
 # ---------------------------------------------------------------------------
+
 
 class TestExtractSkillsUnit(unittest.TestCase):
     """Unit tests for extract_skills() matching logic."""
@@ -91,12 +89,11 @@ class TestExtractSkillsUnit(unittest.TestCase):
         wins and 'management' does NOT additionally fire inside that phrase."""
         text = "Demonstrated time management skills throughout the project."
         result = extract_skills(text)
-        self.assertIn("time management", result,
-                      "'time management' should be found as a phrase.")
+        self.assertIn("time management", result, "'time management' should be found as a phrase.")
         # 'management' on its own should NOT fire inside the already-masked span
-        self.assertNotIn("management", result,
-                         "'management' should not re-match inside the consumed "
-                         "'time management' span.")
+        self.assertNotIn(
+            "management", result, "'management' should not re-match inside the consumed 'time management' span."
+        )
 
     def test_short_skill_r_not_inside_word(self):
         """'r' should NOT match inside 'trainer', 'order', 'framework'."""
@@ -214,7 +211,9 @@ class TestExtractSkillsUnit(unittest.TestCase):
         """'spring' as calendar semester ('social psychology spring 2014') must NOT be extracted."""
         text = "group presentation social psychology spring 2014 collaborated with members"
         result = extract_skills(text)
-        self.assertNotIn("spring", result, "'spring' should not match calendar semesters without java/framework context.")
+        self.assertNotIn(
+            "spring", result, "'spring' should not match calendar semesters without java/framework context."
+        )
 
     def test_c_without_context_false_positive(self):
         """'c' as a letter grade ('course with c or above') must NOT be extracted."""
@@ -284,6 +283,7 @@ class TestExtractSkillsUnit(unittest.TestCase):
 # Integration tests: real dataset rows
 # ---------------------------------------------------------------------------
 
+
 class TestExtractSkillsIntegration(unittest.TestCase):
     """Integration tests against real rows from job_resume_fit_clean.csv.
 
@@ -300,8 +300,7 @@ class TestExtractSkillsIntegration(unittest.TestCase):
         csv_path = REPO_ROOT / "data" / "processed" / "job_resume_fit_clean.csv.gz"
         if not csv_path.exists():
             raise unittest.SkipTest(
-                f"Processed CSV not found at {csv_path}. "
-                "Run scripts/build_processed_data.py first."
+                f"Processed CSV not found at {csv_path}. Run scripts/build_processed_data.py first."
             )
 
         cls.rows = {}
@@ -321,24 +320,20 @@ class TestExtractSkillsIntegration(unittest.TestCase):
 
         # Print diagnostic info (visible with -v or on failure)
         print(f"\n[Row {row_idx}] category={category}")
-        print(f"  Dataset resume_skill_list ({len(dataset_skills)}): "
-              f"{sorted(dataset_skills)[:10]}")
-        print(f"  Extracted skills ({len(extracted)}): "
-              f"{sorted(extracted)[:15]}")
+        print(f"  Dataset resume_skill_list ({len(dataset_skills)}): {sorted(dataset_skills)[:10]}")
+        print(f"  Extracted skills ({len(extracted)}): {sorted(extracted)[:15]}")
         overlap = extracted & dataset_skills
         print(f"  Overlap ({len(overlap)}): {sorted(overlap)}")
         j = jaccard(extracted, dataset_skills)
         print(f"  Jaccard similarity: {j:.3f} (threshold >= {jaccard_threshold})")
 
-        self.assertGreater(
-            len(extracted), 0,
-            f"Row {row_idx}: extract_skills() returned no skills at all."
-        )
+        self.assertGreater(len(extracted), 0, f"Row {row_idx}: extract_skills() returned no skills at all.")
         self.assertGreaterEqual(
-            j, jaccard_threshold,
+            j,
+            jaccard_threshold,
             f"Row {row_idx} ({category}): Jaccard={j:.3f} below threshold "
             f"{jaccard_threshold}. Extracted: {sorted(extracted)[:10]}, "
-            f"Dataset: {sorted(dataset_skills)[:10]}"
+            f"Dataset: {sorted(dataset_skills)[:10]}",
         )
 
     def test_row_0_overlap_with_dataset(self):
@@ -376,6 +371,7 @@ class TestExtractSkillsIntegration(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Unit tests: compare_skills()
 # ---------------------------------------------------------------------------
+
 
 class TestCompareSkills(unittest.TestCase):
     """Tests for compare_skills() returning (matched, missing)."""
@@ -486,9 +482,7 @@ class TestBoundariesAndAliases(unittest.TestCase):
         skills = extract_skills(
             "Deployed on K8s with Postgres, built ReactJS + HTML5 UIs, used sklearn and Golang microservices."
         )
-        self.assertTrue(
-            {"kubernetes", "postgresql", "react", "html", "scikit-learn", "go"} <= skills, skills
-        )
+        self.assertTrue({"kubernetes", "postgresql", "react", "html", "scikit-learn", "go"} <= skills, skills)
 
     def test_ml_alias_needs_context(self):
         """'ML' counts as machine learning near AI/data words, but not as millilitres."""
@@ -500,8 +494,15 @@ class TestBoundariesAndAliases(unittest.TestCase):
             "Coursework in machine learning, deep learning, data structures and algorithms; "
             "object-oriented programming in Java; Agile/Scrum team projects."
         )
-        for skill in ["machine learning", "deep learning", "data structures", "algorithms",
-                      "object-oriented programming", "agile", "scrum"]:
+        for skill in [
+            "machine learning",
+            "deep learning",
+            "data structures",
+            "algorithms",
+            "object-oriented programming",
+            "agile",
+            "scrum",
+        ]:
             self.assertIn(skill, skills)
 
     def test_every_alias_targets_a_taxonomy_skill(self):

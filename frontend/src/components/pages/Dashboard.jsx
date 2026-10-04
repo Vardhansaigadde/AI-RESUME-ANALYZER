@@ -1,0 +1,141 @@
+import { motion } from 'framer-motion';
+import { ArrowRight, FilePenLine, GraduationCap, Sparkles } from 'lucide-react';
+import { reveal } from '../../lib/motion';
+import { KEYS, readStorage } from '../../lib/storage';
+import { templateById } from '../../lib/templates';
+import { TOOLS } from '../../lib/tools';
+import { formatSkill } from '../../utils/format';
+
+
+/** Things saved in this browser that the student can pick up again. */
+function resumeItems() {
+  const items = [];
+  const builder = readStorage(KEYS.builder);
+  if (builder?.resume && (builder.resume.name || builder.resume.experience?.length || builder.resume.projects?.length)) {
+    items.push({
+      icon: FilePenLine,
+      title: 'Continue your resume',
+      detail: `${builder.resume.name || 'Untitled'} · ${templateById(builder.template).name} template`,
+      path: '/build',
+    });
+  }
+  const progress = readStorage(KEYS.progress, {});
+  const started = Object.entries(progress).filter(([, ticks]) => (ticks || []).some(Boolean));
+  if (started.length) {
+    items.push({
+      icon: GraduationCap,
+      title: 'Keep learning',
+      detail: `In progress: ${started
+        .slice(0, 3)
+        .map(([skill]) => formatSkill(skill))
+        .join(', ')}`,
+      path: `/learn?skills=${encodeURIComponent(started.map(([skill]) => skill).slice(0, 8).join(','))}`,
+    });
+  }
+  return items;
+}
+
+const QUICK_STARTS = [
+  { label: 'Find internships in India', path: '/jobs?kind=internship' },
+  { label: 'Learn SQL', path: '/learn?skills=sql' },
+  { label: 'Become a Data Analyst', path: '/learn?role=Data%20Analyst' },
+  { label: 'Build a fresher resume', path: '/build?template=fresher&start=sample' },
+  { label: 'Check my resume against a job', path: '/check' },
+];
+
+/** Home: the student's toolkit. */
+export default function Dashboard({ onNavigate }) {
+  const continueItems = resumeItems();
+  const go = (path) => (e) => {
+    e.preventDefault();
+    onNavigate(path);
+  };
+
+  return (
+    <motion.main
+      initial="hidden"
+      animate="show"
+      exit={{ opacity: 0 }}
+      variants={{ show: { transition: { staggerChildren: 0.07 } } }}
+      className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6 sm:pt-14"
+    >
+      <motion.div variants={reveal} className="max-w-2xl">
+        <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
+          <Sparkles className="size-3.5" aria-hidden />
+          Free for students · no sign-up
+        </p>
+        <h1 className="font-display text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
+          Everything you need to land your <span className="marker px-1">first job</span>
+        </h1>
+        <p className="mt-4 text-lg text-muted">
+          Check and fix your resume, build a new one, find openings and learn the skills employers ask for, all in one place.
+        </p>
+      </motion.div>
+
+      {continueItems.length > 0 && (
+        <motion.section variants={reveal} className="mt-8">
+          <h2 className="mb-3 text-xs font-bold tracking-[0.14em] text-muted uppercase">Continue where you left off</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {continueItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.title}>
+                  <a
+                    href={item.path}
+                    onClick={go(item.path)}
+                    className="card group flex items-center gap-3 p-4 transition hover:border-ink/30"
+                  >
+                    <Icon className="size-5 shrink-0 text-accent" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">{item.title}</span>
+                      <span className="block truncate text-sm text-muted">{item.detail}</span>
+                    </span>
+                    <ArrowRight className="size-4 text-muted transition group-hover:translate-x-0.5" aria-hidden />
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </motion.section>
+      )}
+
+      <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+        {TOOLS.map((tool) => {
+          const Icon = tool.icon;
+          return (
+            <motion.li key={tool.id} variants={reveal} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+              <a href={tool.path} onClick={go(tool.path)} className="card group flex h-full flex-col p-6 hover:border-ink/30">
+                <span className={`grid size-12 place-items-center rounded-2xl ${tool.tone}`}>
+                  <Icon className="size-6" aria-hidden />
+                </span>
+                <h2 className="mt-4 font-display text-2xl font-semibold">{tool.label}</h2>
+                <p className="mt-1.5 flex-1 text-muted">{tool.description}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold">
+                  Open
+                  <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden />
+                </span>
+              </a>
+            </motion.li>
+          );
+        })}
+      </ul>
+
+      <motion.section variants={reveal} className="mt-8">
+        <h2 className="mb-3 text-xs font-bold tracking-[0.14em] text-muted uppercase">Quick start</h2>
+        <ul className="flex flex-wrap gap-2">
+          {QUICK_STARTS.map((q) => (
+            <li key={q.label}>
+              <a
+                href={q.path}
+                onClick={go(q.path)}
+                className="inline-flex rounded-full border border-line bg-card px-3.5 py-1.5 text-sm font-medium transition hover:border-ink/40"
+              >
+                {q.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </motion.section>
+    </motion.main>
+  );
+}

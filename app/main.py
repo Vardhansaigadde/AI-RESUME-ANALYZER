@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.rate_limit import RateLimitMiddleware
 from app.routers.analyze import router as analyze_router
 from app.services.pipeline import MAX_FILE_SIZE
 
@@ -29,6 +30,9 @@ docs_enabled = os.getenv("ENABLE_DOCS", "false").lower() in ("true", "1", "yes")
 # Whole request body cap: the 5MB resume plus job description text and
 # multipart overhead. Larger bodies are rejected before they are buffered.
 MAX_REQUEST_BODY_BYTES = MAX_FILE_SIZE + 1024 * 1024
+
+# POST requests (analyze, re-check, download) per client IP per minute; 0 disables
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "20"))
 
 
 def _warm_up_models() -> None:
@@ -156,14 +160,20 @@ if cors_origins_env.strip():
 else:
     allowed_origins = default_dev_origins
 
+# Middleware added last runs first. CORS must be outermost so that 413/429
+# responses from the inner middleware still carry CORS headers and the browser
+# can show their message.
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
+app.add_middleware(RateLimitMiddleware, limit=RATE_LIMIT_PER_MINUTE, window_seconds=60.0)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
+    # Lets the browser read the .docx filename on cross-origin downloads
+    expose_headers=["Content-Disposition"],
 )
-app.add_middleware(BodySizeLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 
 
 @app.exception_handler(Exception)

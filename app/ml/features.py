@@ -19,17 +19,11 @@ All inputs pass through app.services.data_cleaning.clean_text() so inference
 sees the same normalization the training CSVs were built with.
 """
 
-import json
 import logging
 from pathlib import Path
-import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
 
-# Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 import joblib
 import numpy as np
@@ -43,19 +37,19 @@ from app.services.skill_extractor import compare_skills, extract_skills
 logger = logging.getLogger(__name__)
 
 # Standard ordered 3 leakage-free feature columns used by downstream ML models
-FEATURE_COLUMNS: List[str] = [
+FEATURE_COLUMNS: list[str] = [
     "tfidf_similarity",
     "skill_overlap_ratio",
     "resume_word_count",
 ]
 
 DEFAULT_VECTORIZER_PATH: Path = REPO_ROOT / "models" / "tfidf_vectorizer.joblib"
-_CACHED_VECTORIZER: Optional[TfidfVectorizer] = None
+_CACHED_VECTORIZER: TfidfVectorizer | None = None
 
 
 def get_tfidf_vectorizer(
     model_path: Path = DEFAULT_VECTORIZER_PATH,
-) -> Optional[TfidfVectorizer]:
+) -> TfidfVectorizer | None:
     """Retrieve or load cached TF-IDF vectorizer artifact.
 
     Args:
@@ -82,7 +76,7 @@ def get_tfidf_vectorizer(
 def calculate_tfidf_similarity(
     resume_text: str,
     job_text: str,
-    vectorizer: Optional[TfidfVectorizer] = None,
+    vectorizer: TfidfVectorizer | None = None,
 ) -> float:
     """Compute cosine similarity between resume and job description using TF-IDF.
 
@@ -120,9 +114,9 @@ def calculate_tfidf_similarity(
 def build_features(
     resume_text: str,
     job_text: str,
-    vectorizer: Optional[TfidfVectorizer] = None,
+    vectorizer: TfidfVectorizer | None = None,
     as_dataframe: bool = True,
-) -> Union[pd.DataFrame, Dict[str, float]]:
+) -> pd.DataFrame | dict[str, float]:
     """Build feature vector for a single resume-job pair using 3 leakage-free features.
 
     Designed for real-time inference in FastAPI endpoints as well as offline
@@ -149,14 +143,12 @@ def build_features(
     resume_skills = extract_skills(res_clean)
     job_skills = extract_skills(job_clean)
     matched_skills, _ = compare_skills(resume_skills, job_skills)
-    skill_overlap_ratio = (
-        len(matched_skills) / len(job_skills) if job_skills else 0.0
-    )
+    skill_overlap_ratio = len(matched_skills) / len(job_skills) if job_skills else 0.0
 
     # 3. Resume Word Count
     resume_word_count = float(len(res_clean.split()))
 
-    feat_dict: Dict[str, float] = {
+    feat_dict: dict[str, float] = {
         "tfidf_similarity": float(tfidf_sim),
         "skill_overlap_ratio": float(skill_overlap_ratio),
         "resume_word_count": float(resume_word_count),
@@ -172,7 +164,7 @@ def build_feature_matrix_from_csv(
     output_csv: Path = REPO_ROOT / "data" / "processed" / "features.csv",
     vectorizer_path: Path = DEFAULT_VECTORIZER_PATH,
     print_every: int = 200,
-) -> Tuple[pd.DataFrame, pd.Series]:
+) -> tuple[pd.DataFrame, pd.Series]:
     """Batch feature generation pipeline for dataset.
 
     Extracts features for all rows in the processed CSV, saves the fitted
@@ -241,9 +233,9 @@ def build_feature_matrix_from_csv(
 
     t0 = time.time()
     skill_overlap_ratios = []
-    resume_skills_cache: Dict[str, List[str]] = {}
+    resume_skills_cache: dict[str, list[str]] = {}
 
-    for idx, (res_text, job_text) in enumerate(zip(res_texts, job_texts)):
+    for idx, (res_text, job_text) in enumerate(zip(res_texts, job_texts, strict=True)):
         if res_text not in resume_skills_cache:
             resume_skills_cache[res_text] = extract_skills(res_text)
         res_skills = resume_skills_cache[res_text]
@@ -257,7 +249,10 @@ def build_feature_matrix_from_csv(
         if row_num % print_every == 0 or row_num == total_rows:
             pct = (row_num / total_rows) * 100.0
             elapsed = time.time() - t0
-            print(f"  Processed {row_num:>4}/{total_rows:,} rows ({pct:>5.1f}%) - elapsed: {elapsed:>5.1f}s", flush=True)
+            print(
+                f"  Processed {row_num:>4}/{total_rows:,} rows ({pct:>5.1f}%) - elapsed: {elapsed:>5.1f}s",
+                flush=True,
+            )
 
     # 5. Assemble Feature Matrix & Target (3 leakage-free features)
     X = pd.DataFrame(

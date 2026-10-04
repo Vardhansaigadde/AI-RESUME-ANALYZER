@@ -3,7 +3,9 @@
 import json
 from pathlib import Path
 import unittest
+
 import pandas as pd
+
 from scripts.build_skills_taxonomy import SKILL_SYNONYMS, build_skills_taxonomy
 
 
@@ -12,11 +14,13 @@ class TestSkillsTaxonomy(unittest.TestCase):
         tmp_csv = Path("scratch_test_fit.csv")
         tmp_json = Path("scratch_test_skills.json")
 
-        df = pd.DataFrame({
-            "job_required_skills": ["['Python', 'SQL', 'Docker']"],
-            "resume_skill_list": ["['Python', 'FastAPI']"],
-            "ai_matched_skills": ["['Python']"],
-        })
+        df = pd.DataFrame(
+            {
+                "job_required_skills": ["['Python', 'SQL', 'Docker']"],
+                "resume_skill_list": ["['Python', 'FastAPI']"],
+                "ai_matched_skills": ["['Python']"],
+            }
+        )
         df.to_csv(tmp_csv, index=False)
 
         try:
@@ -29,7 +33,7 @@ class TestSkillsTaxonomy(unittest.TestCase):
             self.assertEqual(len(top_skills), 3)
             self.assertEqual(top_skills[0], "python")
 
-            with open(tmp_json, "r", encoding="utf-8") as f:
+            with open(tmp_json, encoding="utf-8") as f:
                 saved = json.load(f)
             self.assertEqual(saved, top_skills)
         finally:
@@ -42,11 +46,13 @@ class TestSkillsTaxonomy(unittest.TestCase):
         tmp_csv = Path("scratch_test_synonyms.csv")
         tmp_json = Path("scratch_test_synonyms.json")
 
-        df = pd.DataFrame({
-            "job_required_skills": ["['Microsoft Excel', 'Databases']"],
-            "resume_skill_list": ["['MS Excel', 'Database Systems']"],
-            "ai_matched_skills": ["['Excel', 'Database']"],
-        })
+        df = pd.DataFrame(
+            {
+                "job_required_skills": ["['Microsoft Excel', 'Databases']"],
+                "resume_skill_list": ["['MS Excel', 'Database Systems']"],
+                "ai_matched_skills": ["['Excel', 'Database']"],
+            }
+        )
         df.to_csv(tmp_csv, index=False)
 
         try:

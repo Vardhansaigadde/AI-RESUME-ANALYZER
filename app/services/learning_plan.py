@@ -1,0 +1,140 @@
+"""Turn missing job skills into a short learning plan.
+
+Uses the curated, link-checked app/data/learning_resources.json (built by
+scripts/build_learning_resources.py). Must-have skills come first, then
+nice-to-haves, then skills the posting only mentions. Each item quotes the
+line of the job posting that asks for the skill. Soft skills get advice on
+showing them with evidence instead of course links.
+
+When the resume's skills are known, the plan is also a study order: a skill's
+prerequisites (e.g. JavaScript before React) that the resume doesn't show are
+placed before it, as "prerequisite" items when the job didn't ask for them.
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+import json
+from pathlib import Path
+import re
+
+from app.schemas.insights import JobInsights, LearningItem, LearningResource
+from app.services.skill_extractor import extract_skills
+from app.services.suggestions import GENERIC_SOFT_SKILLS
+
+RESOURCES_PATH = Path(__file__).resolve().parent.parent / "data" / "learning_resources.json"
+MAX_ITEMS = 10
+
+
+@lru_cache(maxsize=1)
+def load_resources(path: Path = RESOURCES_PATH) -> dict[str, dict]:
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _job_line(job_text: str, skill: str) -> str:
+    """The first line or sentence of the posting that mentions the skill."""
+    for part in re.split(r"\n+|(?<=[.;])\s+(?=[A-Z])", job_text):
+        line = part.strip(" \t-•*·")
+        if line and skill in extract_skills(line):
+            return line if len(line) <= 220 else line[:217].rstrip() + "…"
+    return ""
+
+
+def build_learning_plan(
+    missing_skills: list[str],
+    job_text: str,
+    insights: JobInsights | None,
+    role: str | None = None,
+    have: set[str] | None = None,
+    goal: bool = False,
+) -> list[LearningItem]:
+    """Learning plan for missing skills, most important first, in study order.
+
+    With a job description, skills are ranked must-have > nice-to-have >
+    mentioned and quote the posting. Without one (``role`` given), the skills
+    are a target role's missing core skills, already in importance order.
+    ``have`` (the resume's skills) turns on prerequisites: missing ones are
+    inserted before the skills that need them. ``goal`` is for skills the
+    student chose to learn: their order is kept and they are marked "goal".
+    """
+    resources = load_resources()
+    must = set(insights.must_have) if insights else set()
+    nice = set(insights.nice_to_have) if insights else set()
+
+    def priority(skill: str) -> str:
+        if goal:
+            return "goal"
+        if role:
+            return "core-skill"
+        return "must-have" if skill in must else "nice-to-have" if skill in nice else "mentioned"
+
+    if role or goal:
+        # Keep the role's (or the student's) order; soft skills last
+        ranked = sorted(missing_skills, key=lambda s: s in GENERIC_SOFT_SKILLS)
+    else:
+        order = {"must-have": 0, "nice-to-have": 1, "mentioned": 2}
+        ranked = sorted(missing_skills, key=lambda s: (order[priority(s)], s in GENERIC_SOFT_SKILLS, s))
+
+    # Study order: each skill after its missing prerequisites
+    sequence: list[str] = []
+    needed_for: dict[str, list[str]] = {}
+    missing = set(missing_skills)
+
+    def place(skill: str, parent: str | None = None) -> None:
+        if parent and parent not in needed_for.setdefault(skill, []):
+            needed_for[skill].append(parent)
+        if skill in sequence:
+            return
+        if have is not None:
+            for need in resources.get(skill, {}).get("needs", []):
+                if need not in have:
+                    place(need, skill)
+        sequence.append(skill)
+
+    for skill in ranked:
+        if skill in resources or skill in GENERIC_SOFT_SKILLS:
+            place(skill)
+
+    plan: list[LearningItem] = []
+    for skill in sequence:
+        entry = resources.get(skill)
+        if entry:
+            item = LearningItem(
+                skill=skill,
+                what=entry["what"],
+                resources=[LearningResource(**res) for res in entry["resources"]],
+                project=entry["project"],
+                hours=entry.get("hours", 0),
+                done=entry.get("done", []),
+                roadmap=entry.get("roadmap", ""),
+            )
+        elif skill in GENERIC_SOFT_SKILLS:
+            item = LearningItem(
+                skill=skill,
+                what="A soft skill: recruiters look for evidence, not the word itself.",
+                project=f"Add a bullet that shows {skill} in action, e.g. a team project, event or "
+                "presentation you led, with a concrete result.",
+            )
+        else:
+            continue  # no curated resources for this skill yet
+        if skill in missing:
+            item.why = "" if goal else f"A core skill for {role} roles." if role else _job_line(job_text, skill)
+            item.priority = priority(skill)
+        else:
+            item.priority = "prerequisite"
+        item.needed_for = needed_for.get(skill, [])
+        plan.append(item)
+        if len(plan) >= MAX_ITEMS:
+            break
+
+    # After the cut, keep prerequisites only for skills still in the plan
+    while True:
+        kept = {item.skill for item in plan}
+        for item in plan:
+            item.needed_for = [s for s in item.needed_for if s in kept]
+        trimmed = [i for i in plan if i.priority != "prerequisite" or i.needed_for]
+        if len(trimmed) == len(plan):
+            return plan
+        plan = trimmed

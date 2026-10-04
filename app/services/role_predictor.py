@@ -9,15 +9,13 @@ The models/ artifacts are created by scripts/train_role_classifier.py.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
-import sys
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 import joblib
 import numpy as np
@@ -38,16 +36,19 @@ DEFAULT_MIN_WORD_COUNT = 100
 # Raw overlap counts beat size-normalized (cosine) overlap both on dataset
 # snippets and on short synthetic resumes, so normalization is off by default.
 DEFAULT_SIZE_NORMALIZED_OVERLAP = False
+# The API reports confidence="low" when the final top-1 probability (after any
+# blending) is below this value.
+REPORTED_CONFIDENCE_THRESHOLD = 0.5
 
-_CACHED_CLASSIFIER: Optional[object] = None
-_CACHED_VECTORIZER: Optional[object] = None
-_CACHED_ROLE_PROFILES: Optional[Dict[str, List[str]]] = None
+_CACHED_CLASSIFIER: object | None = None
+_CACHED_VECTORIZER: object | None = None
+_CACHED_ROLE_PROFILES: dict[str, list[str]] | None = None
 
 
 def is_low_confidence(
     probabilities: object,
     threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
-    word_count: Optional[int] = None,
+    word_count: int | None = None,
     min_word_count: int = DEFAULT_MIN_WORD_COUNT,
 ) -> bool:
     """Return True if top-1 predicted probability is below threshold OR word count is below min_word_count.
@@ -89,7 +90,7 @@ def is_low_confidence(
         if not prob_list:
             return True
         return float(max(prob_list)) < threshold
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return True
 
 
@@ -98,10 +99,10 @@ VERY_LOW_CONFIDENCE = 0.15
 
 def skill_overlap_distribution(
     classes: Sequence[str],
-    resume_skills: Set[str],
-    profiles: Dict[str, List[str]],
+    resume_skills: set[str],
+    profiles: dict[str, list[str]],
     size_normalized: bool = DEFAULT_SIZE_NORMALIZED_OVERLAP,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Distribution over roles from resume-skill overlap with each role profile.
 
     By default each role's score is the number of resume skills found in its
@@ -132,8 +133,8 @@ def skill_overlap_distribution(
 def blend_with_skill_overlap(
     ml_proba: np.ndarray,
     classes: Sequence[str],
-    resume_skills: Set[str],
-    profiles: Dict[str, List[str]],
+    resume_skills: set[str],
+    profiles: dict[str, list[str]],
     very_low_threshold: float = VERY_LOW_CONFIDENCE,
     size_normalized: bool = DEFAULT_SIZE_NORMALIZED_OVERLAP,
 ) -> np.ndarray:
@@ -143,22 +144,18 @@ def blend_with_skill_overlap(
     - otherwise: 50/50 average of ML probabilities and skill overlap.
     - no skill overlap at all: keep the ML probabilities unchanged.
     """
-    skill_proba = skill_overlap_distribution(
-        classes, set(resume_skills), profiles, size_normalized=size_normalized
-    )
+    skill_proba = skill_overlap_distribution(classes, set(resume_skills), profiles, size_normalized=size_normalized)
     if skill_proba is None:
         return ml_proba
     top_1_ml = float(np.max(ml_proba))
     if top_1_ml < very_low_threshold:
-        logger.info(
-            "predict_roles: very low ML confidence (%.1f%%); using skill overlap.", top_1_ml * 100
-        )
+        logger.info("predict_roles: very low ML confidence (%.1f%%); using skill overlap.", top_1_ml * 100)
         return skill_proba
     logger.info("predict_roles: low confidence; blending ML 50/50 with skill overlap.")
     return 0.5 * np.asarray(ml_proba) + 0.5 * skill_proba
 
 
-def _load_classifier(path: Path = DEFAULT_CLASSIFIER_PATH) -> Optional[object]:
+def _load_classifier(path: Path = DEFAULT_CLASSIFIER_PATH) -> object | None:
     """Load or return cached CalibratedClassifierCV model."""
     global _CACHED_CLASSIFIER
     if _CACHED_CLASSIFIER is not None:
@@ -173,7 +170,7 @@ def _load_classifier(path: Path = DEFAULT_CLASSIFIER_PATH) -> Optional[object]:
     return None
 
 
-def _load_vectorizer(path: Path = DEFAULT_VECTORIZER_PATH) -> Optional[object]:
+def _load_vectorizer(path: Path = DEFAULT_VECTORIZER_PATH) -> object | None:
     """Load or return cached TF-IDF vectorizer."""
     global _CACHED_VECTORIZER
     if _CACHED_VECTORIZER is not None:
@@ -188,14 +185,14 @@ def _load_vectorizer(path: Path = DEFAULT_VECTORIZER_PATH) -> Optional[object]:
     return None
 
 
-def _load_role_profiles(path: Path = DEFAULT_ROLE_PROFILES_PATH) -> Dict[str, List[str]]:
+def _load_role_profiles(path: Path = DEFAULT_ROLE_PROFILES_PATH) -> dict[str, list[str]]:
     """Load or return cached hand-curated role skill profiles."""
     global _CACHED_ROLE_PROFILES
     if _CACHED_ROLE_PROFILES is not None:
         return _CACHED_ROLE_PROFILES
     if path.exists():
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 _CACHED_ROLE_PROFILES = json.load(f)
             logger.info("Loaded role profiles from %s", path)
             return _CACHED_ROLE_PROFILES
@@ -221,15 +218,17 @@ def predict_roles(
     return_confidence: bool = False,
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
     min_word_count: int = DEFAULT_MIN_WORD_COUNT,
-) -> Union[List[Dict[str, Any]], Tuple[List[Dict[str, Any]], str]]:
+) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], str]:
     """Predict the top-N most likely job role categories for a resume.
 
     Uses the production CalibratedClassifierCV model trained on 2,484 resumes
     across 24 job categories. When the top-1 probability is below
     confidence_threshold OR the resume is shorter than min_word_count words, the
-    result is marked "low" confidence and blended with role-profile skill overlap
-    (see blend_with_skill_overlap): skill overlap alone below VERY_LOW_CONFIDENCE,
-    otherwise a 50/50 average. Confident predictions use the classifier directly.
+    probabilities are blended with role-profile skill overlap (see
+    blend_with_skill_overlap): skill overlap alone below VERY_LOW_CONFIDENCE,
+    otherwise a 50/50 average. Other predictions use the classifier directly.
+    The returned confidence is "low" when the final top-1 probability is below
+    REPORTED_CONFIDENCE_THRESHOLD.
 
     On dataset resumes the blend costs 1-2 points of accuracy, but on short,
     skill-list style resumes (students, freshers) it fixes most of the raw
@@ -285,7 +284,6 @@ def predict_roles(
             word_count=word_count,
             min_word_count=min_word_count,
         )
-        confidence_str = "low" if low_conf else "high"
 
         effective_proba = ml_proba
         if low_conf:
@@ -295,6 +293,11 @@ def predict_roles(
                 extract_skills(text),
                 _load_role_profiles(role_profiles_path),
             )
+
+        # Reported confidence depends on the final top probability, not on why the
+        # fallback ran: final top >= 50% was right ~70% of the time on held-out
+        # resumes and snippets, below 50% only ~34%.
+        confidence_str = "high" if float(np.max(effective_proba)) >= REPORTED_CONFIDENCE_THRESHOLD else "low"
 
         # Sort by descending effective probability and take top_n
         top_indices = np.argsort(effective_proba)[::-1][:top_n]
@@ -323,7 +326,7 @@ def predict_roles_with_confidence(
     role_profiles_path: Path = DEFAULT_ROLE_PROFILES_PATH,
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
     min_word_count: int = DEFAULT_MIN_WORD_COUNT,
-) -> Tuple[List[Dict[str, Any]], str]:
+) -> tuple[list[dict[str, Any]], str]:
     """Predict top-N roles and return (results, confidence), where confidence is 'high' or 'low'."""
     return predict_roles(
         resume_text=resume_text,
@@ -335,4 +338,3 @@ def predict_roles_with_confidence(
         confidence_threshold=confidence_threshold,
         min_word_count=min_word_count,
     )
-

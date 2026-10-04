@@ -20,11 +20,18 @@ from app.services.data_cleaning import clean_text
 from app.services.role_predictor import (
     DEFAULT_CONFIDENCE_THRESHOLD,
     DEFAULT_MIN_WORD_COUNT,
+    REPORTED_CONFIDENCE_THRESHOLD,
     clear_role_predictor_cache,
     is_low_confidence,
     predict_roles,
     predict_roles_with_confidence,
 )
+
+
+def expected_confidence(roles):
+    """Confidence the service should report for these results."""
+    top = roles[0]["match_percent"] / 100 if roles else 0.0
+    return "high" if top >= REPORTED_CONFIDENCE_THRESHOLD else "low"
 
 
 class TestRolePredictor(unittest.TestCase):
@@ -109,7 +116,7 @@ class TestRolePredictor(unittest.TestCase):
             "Built microservices and machine learning recommendation engines."
         )
         roles, confidence = predict_roles_with_confidence(resume, top_n=3)
-        self.assertEqual(confidence, "low")
+        self.assertEqual(confidence, expected_confidence(roles))
         self.assertGreaterEqual(len(roles), 3)
         self.assertEqual(roles[0]["role"], "INFORMATION-TECHNOLOGY")
         self.assertGreater(roles[0]["match_percent"], roles[1]["match_percent"])
@@ -117,7 +124,7 @@ class TestRolePredictor(unittest.TestCase):
     def test_hybrid_fallback_on_sparse_student_resume(self):
         """Short student resume is low-confidence and lands on a technical category."""
         roles, confidence = predict_roles_with_confidence(self.sparse_student_resume, top_n=3)
-        self.assertEqual(confidence, "low")
+        self.assertEqual(confidence, expected_confidence(roles))
         self.assertIn(roles[0]["role"], ["INFORMATION-TECHNOLOGY", "ENGINEERING"])
         self.assertNotIn("AVIATION", [r["role"] for r in roles[:2]])
 
@@ -125,6 +132,7 @@ class TestRolePredictor(unittest.TestCase):
         """A short resume with a non-trivial ML probability is blended 50/50 with skill overlap."""
         import joblib
         import numpy as np
+
         from app.services.role_predictor import (
             DEFAULT_CLASSIFIER_PATH,
             DEFAULT_VECTORIZER_PATH,
@@ -206,6 +214,7 @@ class TestRolePredictor(unittest.TestCase):
         through the actual service function as the raw model."""
         import joblib
         import numpy as np
+
         from app.services.role_predictor import (
             DEFAULT_CLASSIFIER_PATH,
             DEFAULT_VECTORIZER_PATH,
@@ -228,8 +237,8 @@ class TestRolePredictor(unittest.TestCase):
         )
 
     def test_synthetic_short_resumes_across_professions(self):
-        """Synthetic short resumes (20-40 words) across clear professions are low-confidence
-        (shorter than DEFAULT_MIN_WORD_COUNT) and return the right category."""
+        """Synthetic short resumes (20-40 words) across clear professions return the right
+        category, with confidence matching the final top probability."""
         benchmarks = [
             (
                 "Frontend Web Developer experienced in building responsive modern web applications with TypeScript, React, Next.js, Redux, HTML5, CSS3, Tailwind CSS, and RESTful API integration.",
@@ -263,12 +272,12 @@ class TestRolePredictor(unittest.TestCase):
             ),
         ]
 
-        for text, expected, acceptable in benchmarks:
+        for text, _expected, acceptable in benchmarks:
             wc = len(text.split())
             self.assertGreaterEqual(wc, 20)
             self.assertLessEqual(wc, 40)
             roles, confidence = predict_roles_with_confidence(text, top_n=3)
-            self.assertEqual(confidence, "low", f"Expected 'low' confidence for short resume ({wc} words): {text}")
+            self.assertEqual(confidence, expected_confidence(roles), text)
             self.assertGreaterEqual(len(roles), 1)
             top_role = roles[0]["role"]
             self.assertIn(
@@ -283,7 +292,8 @@ class TestRolePredictor(unittest.TestCase):
         The first model predicted ADVOCATE at ~48.7% with confidence='high', because the
         dataset's ADVOCATE category contains many patient-advocate resumes. Retraining with
         sublinear TF plus consistent text cleaning moved it to HEALTHCARE, but ADVOCATE stays
-        a close second, so this pins the ranking rather than claiming the overlap is solved.
+        a close second (38% vs 35%), so this pins the ranking and the low-confidence label
+        rather than claiming the overlap is solved.
         """
         text = (
             "Staff Registered Nurse (RN) with 6 years of intensive bedside clinical nursing experience in a busy hospital "
@@ -304,7 +314,9 @@ class TestRolePredictor(unittest.TestCase):
         self.assertEqual(wc, 206)
 
         roles, confidence = predict_roles_with_confidence(text, top_n=3)
-        self.assertEqual(confidence, "high")
+        # Right answer, but with ADVOCATE close behind the top probability is
+        # under 50%, so it is honestly reported as low confidence.
+        self.assertEqual(confidence, "low")
         self.assertEqual(roles[0]["role"], "HEALTHCARE")
         self.assertEqual(roles[1]["role"], "ADVOCATE")
 
@@ -325,4 +337,3 @@ class TestRolePredictor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -16,7 +16,6 @@ import json
 import logging
 from pathlib import Path
 import sys
-from typing import Dict, List, Optional
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -24,6 +23,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
+
 from app.services.data_cleaning import safe_parse_skills
 
 logging.basicConfig(
@@ -34,7 +34,7 @@ logger = logging.getLogger("build_skills_taxonomy")
 
 # Manual canonical synonym mapping dict covering duplicates and variants.
 # Applied BEFORE frequency counting so merged variants share one tally.
-SKILL_SYNONYMS: Dict[str, str] = {
+SKILL_SYNONYMS: dict[str, str] = {
     # Databases & Data systems
     "databases": "database",
     "database systems": "database",
@@ -80,7 +80,7 @@ SKILL_SYNONYMS: Dict[str, str] = {
 }
 
 
-def load_curated_skills(curated_json: Path, synonym_map: Dict[str, str]) -> List[str]:
+def load_curated_skills(curated_json: Path, synonym_map: dict[str, str]) -> list[str]:
     """Load and canonicalize the curated technical skills list.
 
     Applies the same SKILL_SYNONYMS mapping to curated entries to resolve
@@ -96,7 +96,7 @@ def load_curated_skills(curated_json: Path, synonym_map: Dict[str, str]) -> List
     if not curated_json.exists():
         raise FileNotFoundError(f"Curated skills file not found: {curated_json}")
 
-    with open(curated_json, "r", encoding="utf-8") as f:
+    with open(curated_json, encoding="utf-8") as f:
         raw_curated = json.load(f)
 
     # Normalize and canonicalize using the same mapping
@@ -126,11 +126,11 @@ def load_curated_skills(curated_json: Path, synonym_map: Dict[str, str]) -> List
 def build_skills_taxonomy(
     input_csv: Path,
     output_json: Path,
-    curated_json: Optional[Path] = None,
+    curated_json: Path | None = None,
     top_n: int = 300,
     print_top: int = 50,
-    synonym_map: Optional[Dict[str, str]] = None,
-) -> List[str]:
+    synonym_map: dict[str, str] | None = None,
+) -> list[str]:
     """Extract, canonicalize, merge with curated list, and compile skills.
 
     Process:
@@ -262,7 +262,7 @@ def build_skills_taxonomy(
             print(f"  MISSING: {s}")
     else:
         print(f"VERIFICATION PASSED: all {len(curated_skills_canonical)} curated skills")
-        print(f"  are present in the final skills_list.json.")
+        print("  are present in the final skills_list.json.")
 
     if curated_additions:
         print(f"\nNew technical skills added from curated list ({len(curated_additions)}):")
@@ -277,7 +277,7 @@ def build_skills_taxonomy(
 
 def audit_excluded_tech_reentry(
     input_csv: Path,
-    synonym_map: Dict[str, str],
+    synonym_map: dict[str, str],
     top_n: int = 300,
 ) -> None:
     """Check how many of the 59 previously excluded technical skills rank in top 300."""
@@ -299,9 +299,7 @@ def audit_excluded_tech_reentry(
     baseline_sorted = baseline_counter.most_common()
     baseline_300_800 = baseline_sorted[300:800]
     excluded_59 = [
-        skill
-        for rank, (skill, count) in enumerate(baseline_300_800, start=301)
-        if is_technical_skill(skill)
+        skill for rank, (skill, count) in enumerate(baseline_300_800, start=301) if is_technical_skill(skill)
     ]
 
     # Canonicalized counts

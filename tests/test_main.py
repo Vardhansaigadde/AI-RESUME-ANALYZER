@@ -1,6 +1,7 @@
 """Unit and integration tests for FastAPI endpoints."""
 
 import unittest
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -64,6 +65,7 @@ class TestEndpoints(unittest.TestCase):
 
     def test_unhandled_exception_returns_clean_500(self):
         """Unhandled exceptions return a sanitized 500 detail without leaking traces."""
+
         # Dynamically mount a test route that raises an unhandled exception
         @app.get("/api/test-trigger-unhandled-error")
         def trigger_error():
@@ -76,7 +78,6 @@ class TestEndpoints(unittest.TestCase):
         self.assertEqual(data, {"detail": "Something went wrong. Please try again."})
         self.assertNotIn("secret_token_123", response.text)
         self.assertNotIn("Traceback", response.text)
-
 
     def test_docs_disabled_by_default(self):
         """Interactive API documentation is disabled by default in production."""

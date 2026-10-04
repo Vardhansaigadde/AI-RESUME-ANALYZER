@@ -8,17 +8,14 @@ resume health (quantifiable numbers, dedicated projects section, resume length).
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from functools import lru_cache
 import json
 import logging
 from pathlib import Path
 import re
-import sys
-from typing import Dict, Iterable, List, Optional, Set
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +30,7 @@ MIN_RESUME_WORDS = 100
 # Generic soft skills to exclude from the strong "frequently required" framing.
 # These skills are too generic to act on meaningfully, so they always receive
 # neutral framing and lower priority than concrete technical tools/skills.
-GENERIC_SOFT_SKILLS: Set[str] = {
+GENERIC_SOFT_SKILLS: set[str] = {
     # Communication
     "communication",
     "communication skills",
@@ -89,7 +86,7 @@ GENERIC_SOFT_SKILLS: Set[str] = {
 
 
 @lru_cache(maxsize=1)
-def load_skill_rank_map(skills_path: Path = DEFAULT_SKILLS_PATH) -> Dict[str, int]:
+def load_skill_rank_map(skills_path: Path = DEFAULT_SKILLS_PATH) -> dict[str, int]:
     """Load skills taxonomy and return a dict mapping normalized skill -> 0-indexed frequency rank.
 
     Lower rank index indicates higher dataset frequency.
@@ -100,8 +97,8 @@ def load_skill_rank_map(skills_path: Path = DEFAULT_SKILLS_PATH) -> Dict[str, in
         return {}
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            skills: List[str] = json.load(f)
+        with open(path, encoding="utf-8") as f:
+            skills: list[str] = json.load(f)
         return {s.strip().lower(): rank for rank, s in enumerate(skills) if s.strip()}
     except Exception as exc:
         logger.error("Failed to load skills list from %s: %s", path, exc)
@@ -110,7 +107,7 @@ def load_skill_rank_map(skills_path: Path = DEFAULT_SKILLS_PATH) -> Dict[str, in
 
 def is_high_frequency_technical_skill(
     skill: str,
-    rank_map: Optional[Dict[str, int]] = None,
+    rank_map: dict[str, int] | None = None,
     frequency_threshold: int = DEFAULT_FREQUENCY_THRESHOLD,
 ) -> bool:
     """Determine whether a skill is high-frequency and concrete/technical (not generic soft skill)."""
@@ -125,7 +122,7 @@ def is_high_frequency_technical_skill(
     return rank is not None and rank < frequency_threshold
 
 
-def check_structural_issues(resume_text: str, min_words: int = MIN_RESUME_WORDS) -> List[str]:
+def check_structural_issues(resume_text: str, min_words: int = MIN_RESUME_WORDS) -> list[str]:
     """Perform structural health checks on the resume text.
 
     Checks:
@@ -134,14 +131,13 @@ def check_structural_issues(resume_text: str, min_words: int = MIN_RESUME_WORDS)
     3. Resume is too short (< min_words).
     """
     text = str(resume_text or "").strip()
-    suggestions: List[str] = []
+    suggestions: list[str] = []
 
     # 1. Resume too short (most fundamental structural issue)
     word_count = len(text.split())
     if word_count < min_words:
         suggestions.append(
-            "Your resume appears too short; expand on your work experience, "
-            "accomplishments, and core responsibilities."
+            "Your resume appears too short; expand on your work experience, accomplishments, and core responsibilities."
         )
 
     # 2. Missing numbers / metrics
@@ -154,21 +150,20 @@ def check_structural_issues(resume_text: str, min_words: int = MIN_RESUME_WORDS)
     # 3. No "projects" section
     if not re.search(r"\bprojects?\b", text, re.IGNORECASE):
         suggestions.append(
-            "Include a dedicated 'Projects' section to showcase practical, hands-on "
-            "applications of your skills."
+            "Include a dedicated 'Projects' section to showcase practical, hands-on applications of your skills."
         )
 
     return suggestions
 
 
 def generate_suggestions(
-    missing_skills: Optional[Iterable[str]] = None,
+    missing_skills: Iterable[str] | None = None,
     resume_text: str = "",
     frequency_threshold: int = DEFAULT_FREQUENCY_THRESHOLD,
     max_suggestions: int = MAX_SUGGESTIONS,
     max_structural_suggestions: int = DEFAULT_MAX_STRUCTURAL_SUGGESTIONS,
     skills_path: Path = DEFAULT_SKILLS_PATH,
-) -> List[str]:
+) -> list[str]:
     """Generate prioritized actionable suggestions for improving a resume.
 
     Cross-checks each missing skill against its dataset frequency rank in
@@ -198,8 +193,8 @@ def generate_suggestions(
     rank_map = load_skill_rank_map(skills_path)
 
     # Deduplicate missing skills while preserving first-seen capitalization
-    seen: Set[str] = set()
-    unique_skills: List[str] = []
+    seen: set[str] = set()
+    unique_skills: list[str] = []
     for s in missing_skills or []:
         if not s:
             continue
@@ -230,7 +225,7 @@ def generate_suggestions(
 
     sorted_skills = sorted(unique_skills, key=priority_key)
 
-    skill_suggestions: List[str] = []
+    skill_suggestions: list[str] = []
     for skill in sorted_skills:
         norm = skill.lower()
         rank = rank_map.get(norm, 9999)
@@ -240,14 +235,11 @@ def generate_suggestions(
         if is_high_tech:
             # Strong framing for commonly demanded concrete/technical skills
             skill_suggestions.append(
-                f"'{skill}': This is a commonly required skill across job postings — "
-                "strongly consider adding it."
+                f"'{skill}': This is a commonly required skill across job postings — strongly consider adding it."
             )
         else:
             # Neutral phrasing for soft skills, lower-frequency skills, or unknown skills
-            skill_suggestions.append(
-                f"Consider adding '{skill}' to better match the job requirements."
-            )
+            skill_suggestions.append(f"Consider adding '{skill}' to better match the job requirements.")
 
     # Structural resume checks
     structural_suggestions = check_structural_issues(resume_text)
