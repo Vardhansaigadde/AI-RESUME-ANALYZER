@@ -1,8 +1,9 @@
 # FitLens frontend
 
 React 19 + Vite + Tailwind CSS 4 single-page app for the Resume Analyzer. Upload a resume
-(PDF/DOCX) and a job description to get a match score with a per-factor breakdown, an ATS check,
-and an editor to fix the resume, re-check it and download an ATS-friendly `.docx`.
+(PDF/DOCX) and a job description to get a match score with a per-factor breakdown, a decoded view
+of the job, an ATS check (with a student / fresher checklist), a skill-gap learning plan, and an
+editor with a live bullet coach to fix the resume, re-check it and download an ATS-friendly `.docx`.
 
 Live: <https://resumefitlens.vercel.app>
 
@@ -65,22 +66,25 @@ src/
 ├── main.jsx, index.css          entry point; Tailwind theme tokens (light + dark) and base styles
 ├── lib/
 │   ├── api.js                   fetch wrappers, timeouts, error messages, .docx download
+│   ├── bulletCoach.js           instant rule-based feedback on resume bullets
 │   ├── demo.js                  demo payloads
 │   └── resume.js                editor draft helpers, score colours
 ├── hooks/                       useCountUp (number animation), useTheme (light/dark)
 ├── utils/format.js              display labels for skills, roles and score factors
 └── components/
     ├── layout/                  Header (logo, theme toggle), Footer
-    ├── ui/                      Button, Tabs (animated), Toast
-    ├── upload/UploadView.jsx    hero, resume drop zone, job description
+    ├── ui/                      Button, Switch, Tabs (animated), Toast
+    ├── upload/UploadView.jsx    hero, resume drop zone, job description, student-mode switch
     ├── AnalyzingView.jsx        loading state with a cold-start notice
     ├── results/
-    │   ├── ResultsView.jsx      summary + tabs, re-check/download actions
+    │   ├── ResultsView.jsx      summary + tabs, student mode, re-check/download actions
     │   ├── SummaryCards.jsx     match dial, ATS stamp, closest job category
-    │   ├── MatchTab.jsx         score breakdown, skills, suggestions, job categories
+    │   ├── MatchTab.jsx         job at a glance, score breakdown, skills, suggestions, categories
+    │   ├── JobInsightsCard.jsx  decoded job posting
     │   ├── AtsTab.jsx           ATS checklist with fixes
     │   ├── EditTab.jsx          section-by-section resume editor
-    │   └── edit/fields.jsx      text fields, skill tag input, list and entry editors
+    │   ├── LearnTab.jsx         skill-gap learning plan
+    │   └── edit/fields.jsx      fields, skill tag input, list/entry editors, bullet coach
     ├── pages/LegalPages.jsx     Privacy, Terms, 404
     └── ErrorBoundary.jsx
 ```

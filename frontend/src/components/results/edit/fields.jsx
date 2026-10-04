@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, Plus, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Plus, Sparkles, Trash2, TriangleAlert, X } from 'lucide-react';
 import { useId, useState } from 'react';
+import { coachBullet } from '../../../lib/bulletCoach';
 import { newId } from '../../../lib/resume';
 import { formatSkill } from '../../../utils/format';
 import Button from '../../ui/Button';
@@ -113,7 +114,7 @@ export function TagInput({ label, tags, onChange, placeholder, suggestions = [],
 }
 
 /** Editable list of one-line items (bullets, certifications, links...). */
-export function LineList({ label, items, onChange, placeholder, addLabel = 'Add', multiline = false }) {
+export function LineList({ label, items, onChange, placeholder, addLabel = 'Add', multiline = false, coach = false }) {
   const update = (i, value) => onChange(items.map((x, j) => (j === i ? value : x)));
   const Tag = multiline ? 'textarea' : 'input';
   return (
@@ -131,14 +132,17 @@ export function LineList({ label, items, onChange, placeholder, addLabel = 'Add'
               className="flex items-start gap-2"
             >
               {multiline && <span className="mt-3 size-1.5 shrink-0 rounded-full bg-ink/50" aria-hidden />}
-              <Tag
-                value={item}
-                rows={multiline ? 2 : undefined}
-                aria-label={`${label || addLabel} ${i + 1}`}
-                placeholder={placeholder}
-                onChange={(e) => update(i, e.target.value)}
-                className={`field ${multiline ? 'resize-y py-2 leading-relaxed' : 'py-2'}`}
-              />
+              <div className="min-w-0 flex-1">
+                <Tag
+                  value={item}
+                  rows={multiline ? 2 : undefined}
+                  aria-label={`${label || addLabel} ${i + 1}`}
+                  placeholder={placeholder}
+                  onChange={(e) => update(i, e.target.value)}
+                  className={`field ${multiline ? 'resize-y py-2 leading-relaxed' : 'py-2'}`}
+                />
+                {coach && <BulletFeedback text={item} />}
+              </div>
               <button
                 type="button"
                 onClick={() => onChange(items.filter((_, j) => j !== i))}
@@ -154,6 +158,45 @@ export function LineList({ label, items, onChange, placeholder, addLabel = 'Add'
       <Button variant="ghost" size="sm" icon={Plus} className="mt-2" onClick={() => onChange([...items, ''])}>
         {addLabel}
       </Button>
+    </div>
+  );
+}
+
+const LEVEL = {
+  strong: { label: 'Strong', icon: Sparkles, className: 'bg-ok-soft text-ok' },
+  ok: { label: 'Good', icon: Check, className: 'bg-accent-soft text-accent' },
+  weak: { label: 'Needs work', icon: TriangleAlert, className: 'bg-warn-soft text-warn' },
+};
+
+/** Live bullet-coach feedback shown under a bullet while it is edited. */
+function BulletFeedback({ text }) {
+  const result = coachBullet(text);
+  if (result.level === 'empty') return null;
+  const level = LEVEL[result.level];
+  const Icon = level.icon;
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs" aria-live="polite">
+      <motion.span
+        key={result.level}
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${level.className}`}
+      >
+        <Icon className="size-3" aria-hidden />
+        {level.label}
+      </motion.span>
+      {result.good.map((g) => (
+        <span key={g} className="text-ok">
+          ✓ {g}
+        </span>
+      ))}
+      {result.issues.map((issue) => (
+        <span key={issue} className="text-warn">
+          • {issue}
+        </span>
+      ))}
+      {result.tip && <span className="w-full text-muted">{result.tip}</span>}
     </div>
   );
 }
@@ -224,6 +267,7 @@ export function EntryList({ entries, onChange, titleLabel, subtitleLabel, titleP
                   multiline
                   placeholder="Start with a verb and add a number, e.g. Built a portal used by 300+ students"
                   addLabel="Add bullet"
+                  coach
                   onChange={(bullets) => update(entry._id, { bullets })}
                 />
               </div>

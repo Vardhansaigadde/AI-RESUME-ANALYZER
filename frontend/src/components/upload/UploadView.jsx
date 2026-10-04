@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, FileText, Gauge, PencilLine, ScanText, Sparkles, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Button from '../ui/Button';
+import Switch from '../ui/Switch';
 
 // Matches MAX_FILE_SIZE in app/services/pipeline.py
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -33,7 +34,7 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 24 } },
 };
 
-export default function UploadView({ file, setFile, jobText, setJobText, onAnalyze, onError }) {
+export default function UploadView({ file, setFile, jobText, setJobText, studentMode, setStudentMode, onAnalyze, onError }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const words = jobText.trim() ? jobText.trim().split(/\s+/).length : 0;
@@ -218,7 +219,15 @@ export default function UploadView({ file, setFile, jobText, setJobText, onAnaly
         </section>
       </motion.div>
 
-      <motion.div variants={item} className="mt-8 flex flex-col items-center gap-3">
+      <motion.div variants={item} className="mt-8 flex flex-col items-center gap-5">
+        <div className="card px-5 py-4">
+          <Switch
+            checked={studentMode}
+            onChange={setStudentMode}
+            label="I'm a student / fresher"
+            description="Adds a student checklist: projects, internships, CGPA, GitHub, one page."
+          />
+        </div>
         <Button id="analyze-fit-button" size="lg" icon={ArrowRight} disabled={!ready} onClick={onAnalyze}>
           Analyze my resume
         </Button>

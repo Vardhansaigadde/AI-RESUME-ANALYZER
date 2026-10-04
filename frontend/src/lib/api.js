@@ -43,20 +43,21 @@ async function errorMessage(response) {
 }
 
 /** Analyze an uploaded resume file against a job description. */
-export async function analyzeResume(file, jobDescription) {
+export async function analyzeResume(file, jobDescription, studentMode = false) {
   const form = new FormData();
   form.append('resume_file', file);
   form.append('job_description', jobDescription);
+  form.append('student_mode', studentMode ? 'true' : 'false');
   const response = await request('/api/analyze', { method: 'POST', body: form });
   return response.json();
 }
 
 /** Re-analyze an edited, structured resume. */
-export async function recheckResume(resume, jobDescription) {
+export async function recheckResume(resume, jobDescription, studentMode = false) {
   const response = await request('/api/recheck', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resume, job_description: jobDescription }),
+    body: JSON.stringify({ resume, job_description: jobDescription, student_mode: studentMode }),
   });
   return response.json();
 }

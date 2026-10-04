@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.insights import JobInsights, LearningItem
 from app.schemas.resume import AtsReport, StructuredResume
 
 
@@ -41,6 +42,10 @@ class AnalyzeResponse(BaseModel):
         description="The resume split into editable sections (best-effort parse).",
     )
     ats: AtsReport | None = Field(None, description="Rule-based ATS-friendliness estimate.")
+    job_insights: JobInsights | None = Field(None, description="Must-haves, level and coverage for the posting.")
+    learning_plan: list[LearningItem] = Field(default_factory=list, description="How to close the skill gaps.")
+    student_mode: bool = Field(False, description="Whether the student / fresher checklist was applied.")
+    student_detected: bool = Field(False, description="The resume looks like a student's or fresher's.")
 
 
 class SuggestRolesResponse(BaseModel):

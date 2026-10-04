@@ -31,6 +31,7 @@ export default function App() {
   const [page, setPage] = useState(currentPage);
   const [file, setFile] = useState(null);
   const [jobText, setJobText] = useState(() => (demoResult() ? DEMO_JOB : ''));
+  const [studentMode, setStudentMode] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   // `original` is the analysis of the upload; `result` changes after re-checks
   const [original, setOriginal] = useState(demoResult);
@@ -62,12 +63,12 @@ export default function App() {
     goHome();
   };
 
-  const analyze = async () => {
+  const analyze = async (mode = studentMode) => {
     setToast(null);
     setAnalyzing(true);
     window.scrollTo({ top: 0 });
     try {
-      const data = await analyzeResume(file, jobText);
+      const data = await analyzeResume(file, jobText, mode);
       setOriginal(data);
       setResult(data);
     } catch (err) {
@@ -91,6 +92,11 @@ export default function App() {
         jobText={jobText}
         onResult={setResult}
         onStartOver={startOver}
+        canReanalyze={Boolean(file)}
+        onReanalyze={(mode) => {
+          setStudentMode(mode);
+          analyze(mode);
+        }}
         notify={notify}
       />
     );
@@ -102,7 +108,9 @@ export default function App() {
         setFile={setFile}
         jobText={jobText}
         setJobText={setJobText}
-        onAnalyze={analyze}
+        studentMode={studentMode}
+        setStudentMode={setStudentMode}
+        onAnalyze={() => analyze()}
         onError={showError}
       />
     );

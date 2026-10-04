@@ -3,6 +3,7 @@ import { Check, Copy, Lightbulb, Plus, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { FEATURE_LABELS, formatRole, formatSkill } from '../../utils/format';
 import Button from '../ui/Button';
+import JobInsightsCard from './JobInsightsCard';
 
 const reveal = {
   hidden: { opacity: 0, y: 14 },
@@ -238,6 +239,7 @@ function Roles({ roles, confidence }) {
 export default function MatchTab({ result }) {
   return (
     <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.07 } } }} className="grid gap-5 lg:grid-cols-2">
+      <JobInsightsCard insights={result.job_insights} />
       <Breakdown breakdown={result.score_breakdown} warnings={result.score_warnings} />
       <Skills matched={result.matched_skills} missing={result.missing_skills} />
       <Suggestions suggestions={result.suggestions} />

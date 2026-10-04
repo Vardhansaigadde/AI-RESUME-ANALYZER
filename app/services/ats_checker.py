@@ -20,7 +20,7 @@ import re
 from app.schemas.resume import AtsCheck, AtsReport, StructuredResume
 from app.services.data_cleaning import clean_text
 from app.services.parser import LayoutInfo
-from app.services.resume_sections import BULLET_RE, EMAIL_RE
+from app.services.resume_sections import BULLET_RE, EMAIL_RE, section_order
 
 ACTION_VERBS = frozenset(
     """
@@ -62,7 +62,18 @@ WEIGHTS = {
     "action_verbs": 1,
     "special_characters": 1,
     "keywords": 3,
+    # Student / fresher mode
+    "education_first": 1,
+    "projects": 3,
+    "internship": 2,
+    "grades": 1,
+    "github": 1,
+    "one_page": 2,
 }
+GRADE_RE = re.compile(
+    r"\b(?:c?gpa|sgpa|cpi|percentage|grade)\b|\b\d{1,2}(?:\.\d{1,2})?\s*%|\b\d\.\d{1,2}\s*/\s*(?:10|4)\b", re.I
+)
+INTERNSHIP_RE = re.compile(r"\b(?:intern(?:ship)?|trainee|training|apprentice(?:ship)?|virtual experience)\b", re.I)
 STATUS_VALUE = {"pass": 1.0, "warn": 0.5, "fail": 0.0}
 
 
@@ -88,6 +99,7 @@ def check_ats(
     layout: LayoutInfo | None = None,
     job_skill_overlap: float | None = None,
     missing_skills: list[str] | None = None,
+    student_mode: bool = False,
 ) -> AtsReport:
     """Run all checks and return the ATS report.
 
@@ -99,6 +111,8 @@ def check_ats(
         job_skill_overlap: Share of the job's skills found in the resume (0-1), if a
             job description was given.
         missing_skills: Job skills not found in the resume, for the keyword tip.
+        student_mode: Add the student / fresher checklist (projects, internships,
+            grades, education first, one page).
     """
     checks: list[_Check] = []
     add = checks.append
@@ -451,8 +465,127 @@ def check_ats(
                 )
             )
 
+    if student_mode:
+        checks.extend(_student_checks(text, resume, words))
+
     scored = [c for c in checks if c.status != "skip"]
     total = sum(WEIGHTS[c.id] for c in scored)
     score = round(100 * sum(WEIGHTS[c.id] * STATUS_VALUE[c.status] for c in scored) / total, 1) if total else 0.0
     verdict = "ATS-friendly" if score >= 80 else "Needs a few fixes" if score >= 60 else "Needs work"
     return AtsReport(score=score, verdict=verdict, checks=[AtsCheck(**c.__dict__) for c in checks])
+
+
+def _student_checks(text: str, resume: StructuredResume, words: int) -> list[_Check]:
+    """Checklist for students and freshers, whose resumes are judged differently."""
+    out: list[_Check] = []
+
+    order = section_order(text)
+    if "education" in order and ("experience" not in order or order.index("education") < order.index("experience")):
+        out.append(
+            _Check("education_first", "student", "Education near the top", "pass", "Education comes before experience.")
+        )
+    elif "education" in order:
+        out.append(
+            _Check(
+                "education_first",
+                "student",
+                "Education near the top",
+                "warn",
+                "Education comes after experience.",
+                "As a student, put Education right after your summary; it's your strongest credential.",
+            )
+        )
+    else:
+        out.append(
+            _Check(
+                "education_first",
+                "student",
+                "Education near the top",
+                "fail",
+                "No Education section found.",
+                "Add your degree, college, years and CGPA.",
+            )
+        )
+
+    projects = len(resume.projects)
+    if projects >= 2:
+        out.append(_Check("projects", "student", "Projects", "pass", f"{projects} projects listed."))
+    else:
+        out.append(
+            _Check(
+                "projects",
+                "student",
+                "Projects",
+                "warn" if projects == 1 else "fail",
+                f"{projects} project(s) listed.",
+                "List 2–4 projects with the tech you used and a measurable result; they replace work experience.",
+            )
+        )
+
+    if resume.experience or INTERNSHIP_RE.search(text):
+        out.append(
+            _Check(
+                "internship",
+                "student",
+                "Internship or training",
+                "pass",
+                "Internship, training or work experience found.",
+            )
+        )
+    else:
+        out.append(
+            _Check(
+                "internship",
+                "student",
+                "Internship or training",
+                "warn",
+                "No internship, training or work experience found.",
+                "Add internships, virtual internships, freelance work, hackathons or a leadership role in a club.",
+            )
+        )
+
+    # Percentages elsewhere ("cut costs by 40%") are not grades: only look in Education
+    education_text = " ".join(f"{e.title} {e.subtitle} {' '.join(e.bullets)}" for e in resume.education)
+    if GRADE_RE.search(education_text) or re.search(r"\b(?:c?gpa|sgpa|cpi)\b", text, re.I):
+        out.append(_Check("grades", "student", "Grades", "pass", "CGPA / percentage found."))
+    else:
+        out.append(
+            _Check(
+                "grades",
+                "student",
+                "Grades",
+                "warn",
+                "No CGPA, GPA or percentage found.",
+                "Add your CGPA if it's good (around 7/10 or 3/4 and above), plus relevant coursework.",
+            )
+        )
+
+    links = " ".join(resume.links) + " " + text
+    if re.search(r"github\.com|gitlab\.com|portfolio|behance\.net|kaggle\.com", links, re.I):
+        out.append(_Check("github", "student", "GitHub / portfolio", "pass", "GitHub or portfolio link found."))
+    else:
+        out.append(
+            _Check(
+                "github",
+                "student",
+                "GitHub / portfolio",
+                "warn",
+                "No GitHub or portfolio link.",
+                "Link your GitHub (or Kaggle/Behance) so recruiters can see your projects.",
+            )
+        )
+
+    if words <= 650:
+        out.append(_Check("one_page", "student", "Fits on one page", "pass", f"{words} words, about one page."))
+    else:
+        out.append(
+            _Check(
+                "one_page",
+                "student",
+                "Fits on one page",
+                "warn" if words <= 900 else "fail",
+                f"{words} words, more than one page.",
+                "Freshers should keep it to one page: cut older school details and weaker points.",
+            )
+        )
+    return out

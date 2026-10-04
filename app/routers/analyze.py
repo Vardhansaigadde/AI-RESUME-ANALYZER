@@ -60,6 +60,13 @@ def _as_optional_text(value: Any, field: str) -> str | None:
     return value
 
 
+def _as_bool(value: Any) -> bool:
+    """Interpret form/JSON flags such as "true", "1", "on" or True."""
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def _validate_top_n(value: Any) -> int:
     """Coerce top_n to an int in [1, MAX_TOP_N] or raise a clean 422."""
     try:
@@ -104,6 +111,7 @@ async def analyze(
     file: UploadFile | None = File(None),
     job_description: str | None = Form(None),
     job_text: str | None = Form(None),
+    student_mode: str | None = Form(None),
 ) -> dict[str, Any]:
     """Compute match score between a resume and a job description.
 
@@ -124,6 +132,7 @@ async def analyze(
             job_description=raw_job,
             is_json=True,
             required_models=REQUIRED_ANALYZE_MODELS,
+            student_mode=_as_bool(body.get("student_mode")),
         )
 
     # 2. Multipart form data flow (file upload + job_description)
@@ -137,6 +146,7 @@ async def analyze(
         job_description=raw_job,
         is_json=False,
         required_models=REQUIRED_ANALYZE_MODELS,
+        student_mode=_as_bool(student_mode),
     )
 
 
@@ -187,7 +197,12 @@ async def recheck(payload: RecheckRequest) -> dict[str, Any]:
     The resume is analyzed as plain text rendered from its sections, i.e. as it
     would read in the downloaded ATS-friendly .docx.
     """
-    return await _run_pipeline(run_recheck, resume=payload.resume, job_description=payload.job_description)
+    return await _run_pipeline(
+        run_recheck,
+        resume=payload.resume,
+        job_description=payload.job_description,
+        student_mode=payload.student_mode,
+    )
 
 
 @router.post("/resume/docx")

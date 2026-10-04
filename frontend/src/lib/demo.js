@@ -14,7 +14,10 @@ const RESUME = {
     {
       title: 'Software Engineering Intern, Acme Labs',
       subtitle: 'May 2025 – Jul 2025',
-      bullets: ['Built 6 REST API endpoints in FastAPI used by 3 internal teams.', 'Cut report generation time by 40% with SQL query tuning.'],
+      bullets: [
+        'Built 6 REST API endpoints in FastAPI used by 3 internal teams.',
+        'Cut report generation time by 40% with SQL query tuning.',
+      ],
     },
   ],
   projects: [
@@ -24,13 +27,87 @@ const RESUME = {
       bullets: ['Built a portal used by 300+ students for college fest registrations.'],
     },
   ],
-  education: [{ title: 'B.Tech in Computer Science (AI & ML)', subtitle: 'State University · 2023 – 2027 · CGPA 8.6', bullets: [] }],
+  education: [
+    {
+      title: 'B.Tech in Computer Science (AI & ML)',
+      subtitle: 'State University · 2023 – 2027 · CGPA 8.6',
+      bullets: [],
+    },
+  ],
   certifications: ['Python for Everybody (Coursera)'],
   achievements: [],
   additional: [],
 };
 
 const check = (id, category, title, status, detail, tip = '') => ({ id, category, title, status, detail, tip });
+
+const JOB_INSIGHTS = {
+  level: 'Entry level',
+  entry_friendly: true,
+  years_min: 0,
+  years_max: 1,
+  degree_mentioned: true,
+  must_have: ['python', 'sql', 'git', 'docker', 'aws', 'rest api'],
+  nice_to_have: ['kubernetes'],
+  also_mentioned: ['ci/cd'],
+  must_have_covered: ['python', 'sql', 'git', 'docker', 'rest api'],
+  nice_to_have_covered: [],
+  lead_with: ['python', 'sql', 'rest api', 'docker', 'git'],
+};
+
+const LEARNING_PLAN = [
+  {
+    skill: 'aws',
+    what: "Amazon's cloud platform, the most widely used in industry.",
+    why: 'Deploy services on AWS and keep them running.',
+    resources: [
+      {
+        title: 'AWS Getting Started',
+        url: 'https://aws.amazon.com/getting-started/',
+        kind: 'tutorial',
+        time: '',
+      },
+      {
+        title: 'AWS Skill Builder (free courses)',
+        url: 'https://skillbuilder.aws/',
+        kind: 'course',
+        time: '',
+      },
+    ],
+    project: 'Deploy one of your apps on AWS (e.g. EC2 or Lambda + S3) using the free tier.',
+    priority: 'must-have',
+  },
+  {
+    skill: 'kubernetes',
+    what: 'Runs and scales containers across many machines.',
+    why: 'Kubernetes or another container orchestrator is a plus.',
+    resources: [
+      {
+        title: 'Kubernetes basics (official)',
+        url: 'https://kubernetes.io/docs/tutorials/kubernetes-basics/',
+        kind: 'tutorial',
+        time: '3 h',
+      },
+    ],
+    project: 'Deploy a containerized app to a local cluster (kind or minikube) with a Deployment and Service.',
+    priority: 'nice-to-have',
+  },
+  {
+    skill: 'ci/cd',
+    what: 'Automatically testing and deploying code on every change.',
+    why: 'Set up CI/CD pipelines for automated testing.',
+    resources: [
+      {
+        title: 'GitHub Actions documentation',
+        url: 'https://docs.github.com/en/actions',
+        kind: 'docs',
+        time: '3 h',
+      },
+    ],
+    project: 'Add a GitHub Actions workflow that runs your tests and deploys your project.',
+    priority: 'mentioned',
+  },
+];
 
 export const DEMO_HIGH_RESULT = {
   match_score: 82.86,
@@ -52,6 +129,10 @@ export const DEMO_HIGH_RESULT = {
     "Consider adding 'kubernetes' to better match the job requirements.",
   ],
   confidence: 'high',
+  student_mode: false,
+  student_detected: true,
+  job_insights: JOB_INSIGHTS,
+  learning_plan: LEARNING_PLAN,
   resume: RESUME,
   ats: {
     score: 86.4,
@@ -62,10 +143,30 @@ export const DEMO_HIGH_RESULT = {
       check('single_column', 'format', 'Single-column layout', 'pass', 'Text flows in a single column.'),
       check('no_images', 'format', 'No images or icons', 'pass', 'No images found.'),
       check('email', 'content', 'Email address', 'pass', 'Email address found.'),
-      check('standard_sections', 'content', 'Standard section headings', 'pass', 'Found Experience/Projects, Education and Skills sections.'),
+      check(
+        'standard_sections',
+        'content',
+        'Standard section headings',
+        'pass',
+        'Found Experience/Projects, Education and Skills sections.',
+      ),
       check('quantified', 'content', 'Measurable results', 'pass', '3 bullet points include numbers.'),
-      check('length', 'content', 'Resume length', 'warn', '232 words; 250–1,000 is typical.', 'Add detail to projects and experience.'),
-      check('keywords', 'keywords', 'Job keywords', 'pass', 'Your resume mentions 67% of the job’s skills.', 'Add the skills you genuinely have from the posting: aws, ci/cd, kubernetes.'),
+      check(
+        'length',
+        'content',
+        'Resume length',
+        'warn',
+        '232 words; 250–1,000 is typical.',
+        'Add detail to projects and experience.',
+      ),
+      check(
+        'keywords',
+        'keywords',
+        'Job keywords',
+        'pass',
+        'Your resume mentions 67% of the job’s skills.',
+        'Add the skills you genuinely have from the posting: aws, ci/cd, kubernetes.',
+      ),
     ],
   },
 };
@@ -88,11 +189,39 @@ export const DEMO_LOW_RESULT = {
     score: 52.6,
     verdict: 'Needs work',
     checks: [
-      check('no_tables', 'format', 'No tables', 'warn', 'Found 1 table(s). Many ATS read tables cell by cell and scramble the order.', 'Replace tables with plain lines.'),
-      check('single_column', 'format', 'Single-column layout', 'warn', 'The page looks like it has two columns.', 'Use a single-column layout.'),
+      check(
+        'no_tables',
+        'format',
+        'No tables',
+        'warn',
+        'Found 1 table(s). Many ATS read tables cell by cell and scramble the order.',
+        'Replace tables with plain lines.',
+      ),
+      check(
+        'single_column',
+        'format',
+        'Single-column layout',
+        'warn',
+        'The page looks like it has two columns.',
+        'Use a single-column layout.',
+      ),
       check('email', 'content', 'Email address', 'pass', 'Email address found.'),
-      check('quantified', 'content', 'Measurable results', 'fail', '0 bullet point(s) include numbers.', 'Show impact with numbers: users, %, time saved.'),
-      check('keywords', 'keywords', 'Job keywords', 'fail', 'Your resume mentions only 22% of the job’s skills.', 'Add the skills you genuinely have from the posting: aws, docker, sql.'),
+      check(
+        'quantified',
+        'content',
+        'Measurable results',
+        'fail',
+        '0 bullet point(s) include numbers.',
+        'Show impact with numbers: users, %, time saved.',
+      ),
+      check(
+        'keywords',
+        'keywords',
+        'Job keywords',
+        'fail',
+        'Your resume mentions only 22% of the job’s skills.',
+        'Add the skills you genuinely have from the posting: aws, docker, sql.',
+      ),
     ],
   },
 };

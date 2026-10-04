@@ -324,6 +324,34 @@ def _within_limits(resume: StructuredResume) -> StructuredResume:
     return StructuredResume.model_validate(data)
 
 
+def section_order(text: str) -> list[str]:
+    """Canonical sections in the order their headings appear in the text."""
+    order: list[str] = []
+    for line in re.split(r"\n|[ \t\u00a0\u200b]{4,}", str(text or "")):
+        heading = _match_heading(line)
+        if heading and heading[0] not in order:
+            order.append(heading[0])
+    return order
+
+
+STUDENT_RE = re.compile(
+    r"\b(?:student|fresher|undergraduate|pursuing|final[- ]year|(?:second|third|fourth|2nd|3rd|4th)[- ]year|"
+    r"expected (?:graduation|20\d{2})|class of 20\d{2}|b\.?\s?tech|b\.?\s?e\.?|b\.?\s?sc|bca|mca|internship)\b",
+    re.IGNORECASE,
+)
+
+
+def looks_like_student(text: str, resume: StructuredResume, current_year: int) -> bool:
+    """Heuristic: student wording, or an education end year that hasn't passed yet."""
+    if STUDENT_RE.search(text or ""):
+        return True
+    for entry in resume.education:
+        years = [int(y) for y in re.findall(r"\b(20\d{2})\b", f"{entry.title} {entry.subtitle}")]
+        if years and max(years) >= current_year:
+            return True
+    return False
+
+
 def _render_entries(entries: list[ResumeEntry]) -> list[str]:
     out: list[str] = []
     for entry in entries:

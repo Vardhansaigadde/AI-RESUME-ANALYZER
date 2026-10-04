@@ -49,7 +49,7 @@ AtsStatus = Literal["pass", "warn", "fail", "skip"]
 
 class AtsCheck(BaseModel):
     id: str
-    category: Literal["format", "content", "keywords"]
+    category: Literal["format", "content", "keywords", "student"]
     title: str
     status: AtsStatus
     detail: str
@@ -69,3 +69,4 @@ class RecheckRequest(BaseModel):
 
     resume: StructuredResume
     job_description: str = Field(..., min_length=1, max_length=20_000)
+    student_mode: bool = False

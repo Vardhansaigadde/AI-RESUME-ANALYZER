@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, Info, Plus, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
+import { weakBulletCount } from '../../lib/bulletCoach';
 import { newId } from '../../lib/resume';
 import { EntryList, LineList, TagInput, TextField } from './edit/fields';
 
@@ -21,6 +22,7 @@ function Section({ title, hint, children }) {
 
 export default function EditTab({ draft, setDraft, missingSkills, dirty, checking, downloading, onRecheck, onDownload, onReset }) {
   const set = (key) => (value) => setDraft((d) => ({ ...d, [key]: value }));
+  const weak = weakBulletCount(draft);
 
   return (
     <div className="pb-28">
@@ -58,6 +60,15 @@ export default function EditTab({ draft, setDraft, missingSkills, dirty, checkin
             suggestionsLabel="In the job but not in your resume. Only add the ones you really have:"
           />
         </Section>
+
+        {weak > 0 && (
+          <p className="rounded-2xl bg-warn-soft px-4 py-3 text-sm">
+            <span className="font-semibold">
+              {weak} bullet point{weak > 1 ? 's' : ''} need{weak > 1 ? '' : 's'} work.
+            </span>{' '}
+            The coach under each bullet shows what to change: start with an action verb and add a number.
+          </p>
+        )}
 
         <Section title="Experience" hint="Jobs and internships, most recent first.">
           <EntryList

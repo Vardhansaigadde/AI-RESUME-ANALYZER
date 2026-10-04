@@ -12,13 +12,18 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
+from datetime import date
+
 from app.ml.features import DEFAULT_VECTORIZER_PATH as TFIDF_VECTORIZER_PATH
 from app.schemas.resume import StructuredResume
 from app.services.ats_checker import check_ats
+from app.services.data_cleaning import clean_text
+from app.services.job_decoder import decode_job
+from app.services.learning_plan import build_learning_plan
 from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
 from app.services.matcher import match_resume_to_job
 from app.services.parser import LayoutInfo, extract_text_from_file, inspect_layout
-from app.services.resume_sections import parse_resume, render_resume_text
+from app.services.resume_sections import looks_like_student, parse_resume, render_resume_text
 from app.services.role_predictor import (
     DEFAULT_CLASSIFIER_PATH as ROLE_CLASSIFIER_PATH,
 )
@@ -28,6 +33,7 @@ from app.services.role_predictor import (
 from app.services.role_predictor import (
     predict_roles_with_confidence,
 )
+from app.services.skill_extractor import extract_skills
 from app.services.suggestions import generate_suggestions
 
 logger = logging.getLogger(__name__)
@@ -159,6 +165,7 @@ def run_full_analysis(
     job_description: str | None = None,
     is_json: bool = False,
     required_models: list[tuple[str, Path]] | None = None,
+    student_mode: bool = False,
 ) -> dict[str, Any]:
     """Execute end-to-end resume-to-job match analysis.
 
@@ -205,10 +212,12 @@ def run_full_analysis(
     models_to_check = required_models if required_models is not None else REQUIRED_ANALYZE_MODELS
     verify_models_present(models_to_check)
 
-    return _analyze_text(resume_content_text, job_content_text, parse_resume(resume_content_text), layout)
+    return _analyze_text(
+        resume_content_text, job_content_text, parse_resume(resume_content_text), layout, student_mode=student_mode
+    )
 
 
-def run_recheck(resume: StructuredResume, job_description: str) -> dict[str, Any]:
+def run_recheck(resume: StructuredResume, job_description: str, student_mode: bool = False) -> dict[str, Any]:
     """Analyze an edited, structured resume (as it would appear in the downloaded .docx)."""
     job_content_text = str(job_description or "").strip()
     if not job_content_text:
@@ -217,7 +226,7 @@ def run_recheck(resume: StructuredResume, job_description: str) -> dict[str, Any
     if not resume_content_text.strip():
         raise PipelineError("The resume is empty.", status_code=422)
     verify_models_present(REQUIRED_ANALYZE_MODELS)
-    return _analyze_text(resume_content_text, job_content_text, resume, layout=None)
+    return _analyze_text(resume_content_text, job_content_text, resume, layout=None, student_mode=student_mode)
 
 
 def _analyze_text(
@@ -225,6 +234,7 @@ def _analyze_text(
     job_content_text: str,
     resume: StructuredResume,
     layout: LayoutInfo | None,
+    student_mode: bool = False,
 ) -> dict[str, Any]:
     """Match score, suggestions, roles and ATS report for resume text vs a job."""
     # 3. Compute match score & skill breakdown
@@ -252,12 +262,21 @@ def _analyze_text(
         layout=layout,
         job_skill_overlap=match_result["features"].get("skill_overlap_ratio"),
         missing_skills=match_result["missing_skills"],
+        student_mode=student_mode,
     )
+
+    # 7. Job posting insights and a learning plan for the missing skills
+    insights = decode_job(job_content_text, extract_skills(clean_text(resume_content_text)))
+    learning_plan = build_learning_plan(match_result["missing_skills"], job_content_text, insights)
 
     return {
         **match_result,
         "resume": resume,
         "ats": ats,
+        "job_insights": insights,
+        "learning_plan": learning_plan,
+        "student_mode": student_mode,
+        "student_detected": looks_like_student(resume_content_text, resume, date.today().year),
         "suggested_roles": roles,
         "suggestions": suggestions,
         "confidence": confidence,

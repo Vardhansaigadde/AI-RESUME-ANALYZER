@@ -1,0 +1,1034 @@
+{
+  "python": {
+    "what": "General-purpose language used for backends, scripting, data and machine learning.",
+    "resources": [
+      {
+        "title": "The Python Tutorial (official)",
+        "url": "https://docs.python.org/3/tutorial/",
+        "kind": "docs",
+        "time": "6-8 h"
+      },
+      {
+        "title": "Kaggle Learn: Python",
+        "url": "https://www.kaggle.com/learn/python",
+        "kind": "course",
+        "time": "5 h"
+      }
+    ],
+    "project": "Write a CLI tool that solves a real chore (e.g. renames files or tracks expenses) and publish it on GitHub."
+  },
+  "java": {
+    "what": "Object-oriented language behind many enterprise backends and Android apps.",
+    "resources": [
+      {
+        "title": "Learn Java (dev.java, official)",
+        "url": "https://dev.java/learn/",
+        "kind": "docs",
+        "time": "10 h"
+      }
+    ],
+    "project": "Build a library-management console app with classes, collections and file storage."
+  },
+  "c++": {
+    "what": "Fast systems language used in games, embedded software and competitive programming.",
+    "resources": [
+      {
+        "title": "LearnCpp.com",
+        "url": "https://www.learncpp.com/",
+        "kind": "tutorial",
+        "time": "20 h"
+      }
+    ],
+    "project": "Implement a few data structures (vector, linked list, hash map) from scratch with tests."
+  },
+  "c": {
+    "what": "Low-level language used in operating systems, embedded devices and drivers.",
+    "resources": [
+      {
+        "title": "Learn-C.org interactive tutorial",
+        "url": "https://www.learn-c.org/",
+        "kind": "tutorial",
+        "time": "6 h"
+      },
+      {
+        "title": "CS50x (Harvard, free)",
+        "url": "https://cs50.harvard.edu/x/",
+        "kind": "course",
+        "time": "self-paced"
+      }
+    ],
+    "project": "Write a small shell or a text-file statistics tool in C."
+  },
+  "c#": {
+    "what": "Microsoft's main language for .NET backends, desktop apps and Unity games.",
+    "resources": [
+      {
+        "title": "C# documentation (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/dotnet/csharp/",
+        "kind": "docs",
+        "time": "8 h"
+      }
+    ],
+    "project": "Build a small ASP.NET Core web API with a database."
+  },
+  "javascript": {
+    "what": "The language of the web: interactive pages, frontends and Node.js backends.",
+    "resources": [
+      {
+        "title": "The Modern JavaScript Tutorial",
+        "url": "https://javascript.info/",
+        "kind": "tutorial",
+        "time": "15 h"
+      },
+      {
+        "title": "MDN JavaScript Guide",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
+        "kind": "docs",
+        "time": ""
+      }
+    ],
+    "project": "Make an interactive to-do or quiz app with plain JavaScript, then deploy it on GitHub Pages."
+  },
+  "typescript": {
+    "what": "JavaScript with types, now standard for larger frontend and Node.js codebases.",
+    "resources": [
+      {
+        "title": "TypeScript Handbook (official)",
+        "url": "https://www.typescriptlang.org/docs/handbook/intro.html",
+        "kind": "docs",
+        "time": "6 h"
+      }
+    ],
+    "project": "Convert one of your JavaScript projects to TypeScript and enable strict mode."
+  },
+  "go": {
+    "what": "Simple, fast language popular for cloud services and developer tools.",
+    "resources": [
+      {
+        "title": "A Tour of Go (official)",
+        "url": "https://go.dev/tour/",
+        "kind": "tutorial",
+        "time": "4 h"
+      }
+    ],
+    "project": "Build a URL shortener HTTP service in Go."
+  },
+  "rust": {
+    "what": "Memory-safe systems language used for performance-critical software.",
+    "resources": [
+      {
+        "title": "The Rust Programming Language (official book)",
+        "url": "https://doc.rust-lang.org/book/",
+        "kind": "book",
+        "time": "20 h"
+      }
+    ],
+    "project": "Write a command-line grep clone (the book's own project is a great start)."
+  },
+  "r": {
+    "what": "Language for statistics, data analysis and research visualisations.",
+    "resources": [
+      {
+        "title": "R for Data Science (free online book)",
+        "url": "https://r4ds.hadley.nz/",
+        "kind": "book",
+        "time": "15 h"
+      }
+    ],
+    "project": "Analyse a public dataset in R and publish the report with charts."
+  },
+  "php": {
+    "what": "Server-side language that powers WordPress and many web apps.",
+    "resources": [
+      {
+        "title": "PHP manual: getting started (official)",
+        "url": "https://www.php.net/manual/en/getting-started.php",
+        "kind": "docs",
+        "time": "4 h"
+      }
+    ],
+    "project": "Build a small blog with login and a MySQL database."
+  },
+  "ruby": {
+    "what": "Readable language best known for the Ruby on Rails web framework.",
+    "resources": [
+      {
+        "title": "Ruby in Twenty Minutes (official)",
+        "url": "https://www.ruby-lang.org/en/documentation/quickstart/",
+        "kind": "tutorial",
+        "time": "1 h"
+      }
+    ],
+    "project": "Build a simple CRUD web app with Rails."
+  },
+  "kotlin": {
+    "what": "Modern JVM language and the preferred language for Android apps.",
+    "resources": [
+      {
+        "title": "Kotlin: get started (official)",
+        "url": "https://kotlinlang.org/docs/getting-started.html",
+        "kind": "docs",
+        "time": "5 h"
+      }
+    ],
+    "project": "Make a simple Android notes app in Kotlin."
+  },
+  "swift": {
+    "what": "Apple's language for iOS and macOS apps.",
+    "resources": [
+      {
+        "title": "The Swift Programming Language (official book)",
+        "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/",
+        "kind": "book",
+        "time": "10 h"
+      }
+    ],
+    "project": "Build a small iOS app such as a habit tracker with SwiftUI."
+  },
+  "html": {
+    "what": "The structure of every web page.",
+    "resources": [
+      {
+        "title": "MDN: HTML basics",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTML",
+        "kind": "docs",
+        "time": "3 h"
+      },
+      {
+        "title": "freeCodeCamp Responsive Web Design",
+        "url": "https://www.freecodecamp.org/learn/2022/responsive-web-design/",
+        "kind": "course",
+        "time": "self-paced"
+      }
+    ],
+    "project": "Build your own portfolio page in semantic HTML."
+  },
+  "css": {
+    "what": "Styling and layout for web pages, including responsive design.",
+    "resources": [
+      {
+        "title": "web.dev: Learn CSS",
+        "url": "https://web.dev/learn/css",
+        "kind": "course",
+        "time": "8 h"
+      },
+      {
+        "title": "MDN CSS reference",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/CSS",
+        "kind": "docs",
+        "time": ""
+      }
+    ],
+    "project": "Make your portfolio responsive with Flexbox and Grid."
+  },
+  "react": {
+    "what": "The most widely used library for building web user interfaces.",
+    "resources": [
+      {
+        "title": "react.dev: Learn React (official)",
+        "url": "https://react.dev/learn",
+        "kind": "docs",
+        "time": "8 h"
+      }
+    ],
+    "project": "Build a React app that fetches data from a public API, with search and filters."
+  },
+  "angular": {
+    "what": "Full frontend framework by Google, common in enterprise apps.",
+    "resources": [
+      {
+        "title": "Angular tutorials (official)",
+        "url": "https://angular.dev/tutorials",
+        "kind": "tutorial",
+        "time": "6 h"
+      }
+    ],
+    "project": "Build a small Angular dashboard with routing and a form."
+  },
+  "vue": {
+    "what": "Approachable frontend framework for building interactive UIs.",
+    "resources": [
+      {
+        "title": "Vue.js guide (official)",
+        "url": "https://vuejs.org/guide/introduction.html",
+        "kind": "docs",
+        "time": "6 h"
+      }
+    ],
+    "project": "Build a Vue app such as a recipe finder with a public API."
+  },
+  "node.js": {
+    "what": "Runs JavaScript on the server to build APIs and tools.",
+    "resources": [
+      {
+        "title": "Node.js: Learn (official)",
+        "url": "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs",
+        "kind": "docs",
+        "time": "4 h"
+      }
+    ],
+    "project": "Build a REST API with Express and connect it to a database."
+  },
+  "django": {
+    "what": "Batteries-included Python web framework.",
+    "resources": [
+      {
+        "title": "Django tutorial (official)",
+        "url": "https://docs.djangoproject.com/en/stable/intro/tutorial01/",
+        "kind": "tutorial",
+        "time": "6 h"
+      }
+    ],
+    "project": "Build a blog or job board with Django, user login and an admin panel."
+  },
+  "flask": {
+    "what": "Lightweight Python web framework for APIs and small web apps.",
+    "resources": [
+      {
+        "title": "Flask tutorial (official)",
+        "url": "https://flask.palletsprojects.com/en/stable/tutorial/",
+        "kind": "tutorial",
+        "time": "4 h"
+      }
+    ],
+    "project": "Build a Flask REST API for a notes app with SQLite."
+  },
+  "spring": {
+    "what": "The standard Java framework (Spring Boot) for backend services.",
+    "resources": [
+      {
+        "title": "Spring quickstart (official)",
+        "url": "https://spring.io/quickstart",
+        "kind": "tutorial",
+        "time": "1 h"
+      },
+      {
+        "title": "Spring guides",
+        "url": "https://spring.io/guides",
+        "kind": "tutorial",
+        "time": ""
+      }
+    ],
+    "project": "Build a Spring Boot REST API with a database and tests."
+  },
+  ".net": {
+    "what": "Microsoft's platform for web APIs, desktop and cloud apps.",
+    "resources": [
+      {
+        "title": ".NET documentation (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/dotnet/",
+        "kind": "docs",
+        "time": "8 h"
+      }
+    ],
+    "project": "Build an ASP.NET Core minimal API and deploy it."
+  },
+  "rest api": {
+    "what": "The standard way web services expose data over HTTP (GET, POST, status codes, JSON).",
+    "resources": [
+      {
+        "title": "MDN: An overview of HTTP",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview",
+        "kind": "docs",
+        "time": "1 h"
+      },
+      {
+        "title": "FastAPI tutorial",
+        "url": "https://fastapi.tiangolo.com/tutorial/",
+        "kind": "tutorial",
+        "time": "4 h"
+      }
+    ],
+    "project": "Design and build a REST API for one of your projects, with docs and tests."
+  },
+  "graphql": {
+    "what": "Query language for APIs that lets clients ask for exactly the data they need.",
+    "resources": [
+      {
+        "title": "Learn GraphQL (official)",
+        "url": "https://graphql.org/learn/",
+        "kind": "docs",
+        "time": "3 h"
+      }
+    ],
+    "project": "Add a GraphQL endpoint to an existing API."
+  },
+  "git": {
+    "what": "Version control: tracking changes and collaborating on code.",
+    "resources": [
+      {
+        "title": "Pro Git book (official, free)",
+        "url": "https://git-scm.com/book/en/v2",
+        "kind": "book",
+        "time": "6 h"
+      },
+      {
+        "title": "Learn Git Branching (interactive)",
+        "url": "https://learngitbranching.js.org/",
+        "kind": "practice",
+        "time": "2 h"
+      }
+    ],
+    "project": "Keep all your projects on GitHub with clear commits, branches and pull requests."
+  },
+  "github": {
+    "what": "Hosting and collaboration platform for Git repositories.",
+    "resources": [
+      {
+        "title": "GitHub Docs: Get started",
+        "url": "https://docs.github.com/en/get-started",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "GitHub Skills (interactive)",
+        "url": "https://skills.github.com/",
+        "kind": "practice",
+        "time": ""
+      }
+    ],
+    "project": "Polish your GitHub profile: pinned projects, READMEs and a profile README."
+  },
+  "docker": {
+    "what": "Packages an app and its dependencies into containers that run the same everywhere.",
+    "resources": [
+      {
+        "title": "Docker: Get started (official)",
+        "url": "https://docs.docker.com/get-started/",
+        "kind": "docs",
+        "time": "3 h"
+      }
+    ],
+    "project": "Containerize one of your projects with a Dockerfile and docker compose, and mention it on your resume."
+  },
+  "kubernetes": {
+    "what": "Runs and scales containers across many machines.",
+    "resources": [
+      {
+        "title": "Kubernetes basics (official)",
+        "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/",
+        "kind": "tutorial",
+        "time": "3 h"
+      }
+    ],
+    "project": "Deploy a containerized app to a local cluster (kind or minikube) with a Deployment and Service."
+  },
+  "ci/cd": {
+    "what": "Automatically testing and deploying code on every change.",
+    "resources": [
+      {
+        "title": "GitHub Actions documentation",
+        "url": "https://docs.github.com/en/actions",
+        "kind": "docs",
+        "time": "3 h"
+      }
+    ],
+    "project": "Add a GitHub Actions workflow that runs your tests and deploys your project."
+  },
+  "jenkins": {
+    "what": "Widely used automation server for CI/CD pipelines.",
+    "resources": [
+      {
+        "title": "Jenkins tutorials (official)",
+        "url": "https://www.jenkins.io/doc/tutorials/",
+        "kind": "tutorial",
+        "time": "3 h"
+      }
+    ],
+    "project": "Set up a Jenkins pipeline that builds and tests one of your projects."
+  },
+  "terraform": {
+    "what": "Infrastructure as code: defining cloud resources in config files.",
+    "resources": [
+      {
+        "title": "Terraform tutorials (HashiCorp)",
+        "url": "https://developer.hashicorp.com/terraform/tutorials",
+        "kind": "tutorial",
+        "time": "4 h"
+      }
+    ],
+    "project": "Provision a small cloud setup (storage bucket + VM) with Terraform."
+  },
+  "ansible": {
+    "what": "Automates server configuration and deployments.",
+    "resources": [
+      {
+        "title": "Getting started with Ansible (official)",
+        "url": "https://docs.ansible.com/ansible/latest/getting_started/index.html",
+        "kind": "docs",
+        "time": "3 h"
+      }
+    ],
+    "project": "Write a playbook that sets up a web server on a Linux VM."
+  },
+  "linux": {
+    "what": "The operating system behind most servers and cloud machines.",
+    "resources": [
+      {
+        "title": "Linux Journey",
+        "url": "https://linuxjourney.com/",
+        "kind": "tutorial",
+        "time": "8 h"
+      },
+      {
+        "title": "OverTheWire: Bandit (practice)",
+        "url": "https://overthewire.org/wargames/bandit/",
+        "kind": "practice",
+        "time": ""
+      }
+    ],
+    "project": "Host one of your projects on a Linux VM and set it up from the command line."
+  },
+  "bash": {
+    "what": "The command-line shell and scripting language on Linux and macOS.",
+    "resources": [
+      {
+        "title": "LinuxCommand.org: Learning the shell",
+        "url": "https://linuxcommand.org/lc3_learning_the_shell.php",
+        "kind": "tutorial",
+        "time": "4 h"
+      }
+    ],
+    "project": "Automate a repetitive task (backups, log cleanup) with a Bash script."
+  },
+  "jira": {
+    "what": "Issue and project tracker used by most software teams.",
+    "resources": [
+      {
+        "title": "Jira guides (Atlassian)",
+        "url": "https://www.atlassian.com/software/jira/guides",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Plan a team project in Jira with epics, stories and a sprint board."
+  },
+  "aws": {
+    "what": "Amazon's cloud platform, the most widely used in industry.",
+    "resources": [
+      {
+        "title": "AWS Getting Started",
+        "url": "https://aws.amazon.com/getting-started/",
+        "kind": "tutorial",
+        "time": ""
+      },
+      {
+        "title": "AWS Skill Builder (free courses)",
+        "url": "https://skillbuilder.aws/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Deploy one of your apps on AWS (e.g. EC2 or Lambda + S3) using the free tier."
+  },
+  "azure": {
+    "what": "Microsoft's cloud platform, common in enterprises.",
+    "resources": [
+      {
+        "title": "Azure training (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/training/azure/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Deploy a web app to Azure App Service with the free tier."
+  },
+  "gcp": {
+    "what": "Google Cloud Platform, strong in data and machine learning services.",
+    "resources": [
+      {
+        "title": "Google Cloud: Get started",
+        "url": "https://cloud.google.com/docs/get-started",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Google Cloud Skills Boost",
+        "url": "https://www.cloudskillsboost.google/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Deploy a containerized app on Cloud Run."
+  },
+  "sql": {
+    "what": "The language for querying and managing relational databases.",
+    "resources": [
+      {
+        "title": "SQLBolt (interactive)",
+        "url": "https://sqlbolt.com/",
+        "kind": "practice",
+        "time": "3 h"
+      },
+      {
+        "title": "Kaggle Learn: Intro to SQL",
+        "url": "https://www.kaggle.com/learn/intro-to-sql",
+        "kind": "course",
+        "time": "3 h"
+      }
+    ],
+    "project": "Design a small database for a real use case (e.g. college events) and write 10 useful queries."
+  },
+  "mysql": {
+    "what": "Popular open-source relational database.",
+    "resources": [
+      {
+        "title": "MySQL tutorial (official manual)",
+        "url": "https://dev.mysql.com/doc/refman/8.4/en/tutorial.html",
+        "kind": "docs",
+        "time": "3 h"
+      }
+    ],
+    "project": "Back one of your web projects with a MySQL database."
+  },
+  "postgresql": {
+    "what": "Powerful open-source relational database, a default choice for new backends.",
+    "resources": [
+      {
+        "title": "PostgreSQL tutorial (official)",
+        "url": "https://www.postgresql.org/docs/current/tutorial.html",
+        "kind": "docs",
+        "time": "4 h"
+      }
+    ],
+    "project": "Move one of your projects to PostgreSQL and add indexes for its slow queries."
+  },
+  "mongodb": {
+    "what": "Document (NoSQL) database that stores JSON-like records.",
+    "resources": [
+      {
+        "title": "MongoDB University (free)",
+        "url": "https://learn.mongodb.com/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Build a small app that stores user profiles in MongoDB."
+  },
+  "redis": {
+    "what": "In-memory data store used for caching, queues and sessions.",
+    "resources": [
+      {
+        "title": "Redis docs: Get started",
+        "url": "https://redis.io/docs/latest/get-started/",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Add Redis caching to one of your APIs and measure the speed-up."
+  },
+  "machine learning": {
+    "what": "Building models that learn patterns from data to make predictions.",
+    "resources": [
+      {
+        "title": "Google Machine Learning Crash Course",
+        "url": "https://developers.google.com/machine-learning/crash-course",
+        "kind": "course",
+        "time": "15 h"
+      },
+      {
+        "title": "Kaggle Learn: Intro to Machine Learning",
+        "url": "https://www.kaggle.com/learn/intro-to-machine-learning",
+        "kind": "course",
+        "time": "3 h"
+      }
+    ],
+    "project": "Train and evaluate a model on a Kaggle dataset; write up what worked and why."
+  },
+  "deep learning": {
+    "what": "Neural-network models for images, text and audio.",
+    "resources": [
+      {
+        "title": "Practical Deep Learning for Coders (fast.ai)",
+        "url": "https://course.fast.ai/",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "Dive into Deep Learning (free book)",
+        "url": "https://d2l.ai/",
+        "kind": "book",
+        "time": ""
+      }
+    ],
+    "project": "Fine-tune an image classifier on your own small dataset and deploy a demo."
+  },
+  "tensorflow": {
+    "what": "Google's deep-learning framework.",
+    "resources": [
+      {
+        "title": "TensorFlow tutorials (official)",
+        "url": "https://www.tensorflow.org/tutorials",
+        "kind": "tutorial",
+        "time": "6 h"
+      }
+    ],
+    "project": "Build and train a TensorFlow/Keras model for a simple classification task."
+  },
+  "pytorch": {
+    "what": "The most popular deep-learning framework in research and industry.",
+    "resources": [
+      {
+        "title": "Learn the Basics (official PyTorch tutorial)",
+        "url": "https://docs.pytorch.org/tutorials/beginner/basics/intro.html",
+        "kind": "tutorial",
+        "time": "4 h"
+      }
+    ],
+    "project": "Train a small PyTorch model end to end and share the notebook."
+  },
+  "scikit-learn": {
+    "what": "Python's standard library for classic machine learning.",
+    "resources": [
+      {
+        "title": "scikit-learn: Getting started (official)",
+        "url": "https://scikit-learn.org/stable/getting_started.html",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Compare 3 models on one dataset with cross-validation and report the results."
+  },
+  "pandas": {
+    "what": "Python library for cleaning and analysing tabular data.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Pandas",
+        "url": "https://www.kaggle.com/learn/pandas",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "pandas: Getting started (official)",
+        "url": "https://pandas.pydata.org/docs/getting_started/index.html",
+        "kind": "docs",
+        "time": ""
+      }
+    ],
+    "project": "Clean and analyse a messy public dataset and summarise 5 findings."
+  },
+  "numpy": {
+    "what": "Python's foundation for fast numerical arrays.",
+    "resources": [
+      {
+        "title": "NumPy: the absolute basics for beginners",
+        "url": "https://numpy.org/doc/stable/user/absolute_beginners.html",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Implement linear regression from scratch with NumPy."
+  },
+  "data analysis": {
+    "what": "Turning raw data into answers: cleaning, summarising and interpreting.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Pandas",
+        "url": "https://www.kaggle.com/learn/pandas",
+        "kind": "course",
+        "time": "4 h"
+      },
+      {
+        "title": "Kaggle Learn: Data Cleaning",
+        "url": "https://www.kaggle.com/learn/data-cleaning",
+        "kind": "course",
+        "time": "4 h"
+      }
+    ],
+    "project": "Answer 3 concrete questions about a public dataset and present them with charts."
+  },
+  "data visualization": {
+    "what": "Presenting data clearly with charts and dashboards.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Data Visualization",
+        "url": "https://www.kaggle.com/learn/data-visualization",
+        "kind": "course",
+        "time": "4 h"
+      }
+    ],
+    "project": "Build a small dashboard (Tableau Public, Power BI or Python) for a dataset you care about."
+  },
+  "statistics": {
+    "what": "The maths behind data analysis: distributions, testing and inference.",
+    "resources": [
+      {
+        "title": "Khan Academy: Statistics and probability",
+        "url": "https://www.khanacademy.org/math/statistics-probability",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Run and explain an A/B-test style analysis on a public dataset."
+  },
+  "natural language processing": {
+    "what": "Teaching computers to understand and generate text.",
+    "resources": [
+      {
+        "title": "Hugging Face LLM Course (free)",
+        "url": "https://huggingface.co/learn/llm-course/chapter1/1",
+        "kind": "course",
+        "time": "self-paced"
+      }
+    ],
+    "project": "Build a text classifier (e.g. spam or sentiment) and deploy a demo."
+  },
+  "computer vision": {
+    "what": "Models that understand images and video.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Computer Vision",
+        "url": "https://www.kaggle.com/learn/computer-vision",
+        "kind": "course",
+        "time": "4 h"
+      }
+    ],
+    "project": "Train an image classifier on a small custom dataset."
+  },
+  "tableau": {
+    "what": "Popular business-intelligence tool for interactive dashboards.",
+    "resources": [
+      {
+        "title": "Tableau free training",
+        "url": "https://www.tableau.com/learn/training",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Publish a dashboard on Tableau Public and link it on your resume."
+  },
+  "power bi": {
+    "what": "Microsoft's business-intelligence and dashboard tool.",
+    "resources": [
+      {
+        "title": "Power BI training (Microsoft Learn)",
+        "url": "https://learn.microsoft.com/en-us/training/powerplatform/power-bi",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Build a Power BI report from a public dataset and share screenshots."
+  },
+  "excel": {
+    "what": "Spreadsheets for analysis, reporting and modelling.",
+    "resources": [
+      {
+        "title": "Excel help & learning (Microsoft)",
+        "url": "https://support.microsoft.com/en-us/excel",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "Excel Easy (free tutorial)",
+        "url": "https://www.excel-easy.com/",
+        "kind": "tutorial",
+        "time": ""
+      }
+    ],
+    "project": "Build a budget or sales tracker with formulas, pivot tables and charts."
+  },
+  "spark": {
+    "what": "Distributed engine for processing big data.",
+    "resources": [
+      {
+        "title": "Spark quick start (official)",
+        "url": "https://spark.apache.org/docs/latest/quick-start.html",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Process a large public dataset with PySpark and compare it with pandas."
+  },
+  "hadoop": {
+    "what": "Early big-data ecosystem for distributed storage and processing.",
+    "resources": [
+      {
+        "title": "Apache Hadoop documentation",
+        "url": "https://hadoop.apache.org/docs/stable/",
+        "kind": "docs",
+        "time": ""
+      }
+    ],
+    "project": "Run a word-count MapReduce job on a single-node Hadoop setup."
+  },
+  "kafka": {
+    "what": "Event-streaming platform for real-time data pipelines.",
+    "resources": [
+      {
+        "title": "Apache Kafka quickstart",
+        "url": "https://kafka.apache.org/quickstart",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Stream events between two small services through Kafka."
+  },
+  "airflow": {
+    "what": "Schedules and monitors data pipelines.",
+    "resources": [
+      {
+        "title": "Airflow tutorial (official)",
+        "url": "https://airflow.apache.org/docs/apache-airflow/stable/tutorial/index.html",
+        "kind": "tutorial",
+        "time": "3 h"
+      }
+    ],
+    "project": "Build a daily pipeline that fetches, cleans and stores data with Airflow."
+  },
+  "etl": {
+    "what": "Extract, transform, load: moving and cleaning data between systems.",
+    "resources": [
+      {
+        "title": "Kaggle Learn: Data Cleaning",
+        "url": "https://www.kaggle.com/learn/data-cleaning",
+        "kind": "course",
+        "time": "4 h"
+      }
+    ],
+    "project": "Build a small ETL script that loads a public API's data into a database every day."
+  },
+  "data structures": {
+    "what": "Arrays, lists, stacks, queues, trees, graphs, hash maps: how data is organised in code.",
+    "resources": [
+      {
+        "title": "CS50x (Harvard, free)",
+        "url": "https://cs50.harvard.edu/x/",
+        "kind": "course",
+        "time": "self-paced"
+      },
+      {
+        "title": "NeetCode roadmap (practice)",
+        "url": "https://neetcode.io/roadmap",
+        "kind": "practice",
+        "time": ""
+      }
+    ],
+    "project": "Solve 50+ problems on one platform and link your profile; mention the count on your resume."
+  },
+  "algorithms": {
+    "what": "Sorting, searching, recursion, dynamic programming and graph algorithms.",
+    "resources": [
+      {
+        "title": "CP-Algorithms",
+        "url": "https://cp-algorithms.com/",
+        "kind": "docs",
+        "time": ""
+      },
+      {
+        "title": "LeetCode Explore",
+        "url": "https://leetcode.com/explore/",
+        "kind": "practice",
+        "time": ""
+      }
+    ],
+    "project": "Take part in a few contests (LeetCode, Codeforces, CodeChef) and add your rating."
+  },
+  "object-oriented programming": {
+    "what": "Designing code with classes, objects, inheritance and encapsulation.",
+    "resources": [
+      {
+        "title": "Python tutorial: Classes (official)",
+        "url": "https://docs.python.org/3/tutorial/classes.html",
+        "kind": "docs",
+        "time": "2 h"
+      },
+      {
+        "title": "dev.java: Object-oriented programming concepts",
+        "url": "https://dev.java/learn/oop/",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Refactor one of your projects into well-designed classes and explain the design in the README."
+  },
+  "agile": {
+    "what": "Iterative way of building software in short cycles with frequent feedback.",
+    "resources": [
+      {
+        "title": "Atlassian Agile Coach",
+        "url": "https://www.atlassian.com/agile",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Run your next team project in sprints with a board and short retros; mention it in the bullet."
+  },
+  "scrum": {
+    "what": "The most common Agile framework: sprints, stand-ups, reviews and retrospectives.",
+    "resources": [
+      {
+        "title": "The Scrum Guide (official)",
+        "url": "https://scrumguides.org/scrum-guide.html",
+        "kind": "docs",
+        "time": "1 h"
+      }
+    ],
+    "project": "Use Scrum for a group project and describe your role (e.g. Scrum Master) on your resume."
+  },
+  "figma": {
+    "what": "Collaborative tool for UI design and prototypes.",
+    "resources": [
+      {
+        "title": "Figma Learn (official)",
+        "url": "https://help.figma.com/hc/en-us",
+        "kind": "docs",
+        "time": ""
+      }
+    ],
+    "project": "Redesign an app screen in Figma and add the prototype link to your portfolio."
+  },
+  "seo": {
+    "what": "Making websites easy to find in search engines.",
+    "resources": [
+      {
+        "title": "Google SEO Starter Guide",
+        "url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide",
+        "kind": "docs",
+        "time": "2 h"
+      }
+    ],
+    "project": "Improve the SEO of a site you built and measure the change with Search Console."
+  },
+  "google analytics": {
+    "what": "Measuring website traffic and user behaviour.",
+    "resources": [
+      {
+        "title": "Google Skillshop (free certification)",
+        "url": "https://skillshop.withgoogle.com/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Add analytics to your portfolio and report one insight it gave you."
+  },
+  "cybersecurity": {
+    "what": "Protecting systems, networks and data from attacks.",
+    "resources": [
+      {
+        "title": "TryHackMe (beginner paths)",
+        "url": "https://tryhackme.com/",
+        "kind": "practice",
+        "time": ""
+      },
+      {
+        "title": "Cisco Networking Academy",
+        "url": "https://www.netacad.com/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Complete a beginner path and write up a lab you solved."
+  },
+  "network security": {
+    "what": "Securing networks: firewalls, VPNs, monitoring and hardening.",
+    "resources": [
+      {
+        "title": "Cisco Networking Academy",
+        "url": "https://www.netacad.com/",
+        "kind": "course",
+        "time": ""
+      }
+    ],
+    "project": "Set up and document a small home-lab network with a firewall and VPN."
+  }
+}

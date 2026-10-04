@@ -11,6 +11,17 @@ Upload a resume (PDF or DOCX) and paste a job description. FitLens returns:
   ATS-friendly `.docx`,
 - the three **job categories** your resume most resembles, with a high/low confidence flag.
 
+Built for students and freshers:
+
+- **Job description decoder**: must-have vs nice-to-have skills, level, years asked, and which of
+  your skills to list first.
+- **Skill-gap learning plan**: for each missing skill, the line of the job that asks for it, free
+  link-checked resources and a small project that proves it.
+- **Student / fresher mode**: an extra checklist (education first, projects, internships, CGPA,
+  GitHub, one page), suggested automatically when a resume looks like a student's.
+- **Bullet coach**: instant feedback on every bullet in the editor (weak openers, missing numbers,
+  passive voice, length).
+
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
 
 ## How it works
@@ -30,7 +41,9 @@ FastAPI on Render (Docker)
     ├─ suggestions.py         rule-based, max 5 (2 slots reserved for structural issues)
     ├─ role_predictor.py      TF-IDF → calibrated LinearSVC (24 categories) + skill-overlap fallback
     ├─ resume_sections.py     resume text ↔ editable sections (contact, skills, experience…)
-    ├─ ats_checker.py         rule-based ATS-friendliness report
+    ├─ ats_checker.py         rule-based ATS-friendliness report (+ student checklist)
+    ├─ job_decoder.py         must-haves, nice-to-haves, level and years from the posting
+    ├─ learning_plan.py       missing skills → resources + project ideas (app/data/learning_resources.json)
     └─ resume_docx.py         sections → ATS-friendly .docx
 ```
 
@@ -85,6 +98,22 @@ lines are recognised; all 2,484 dataset resumes parse without errors). The UI sh
 editable form; **Re-check** analyzes the edited version (`POST /api/recheck`) and **Download**
 builds an ATS-friendly `.docx` (`POST /api/resume/docx`: one column, standard headings, real Word
 bullet lists, no tables, images or headers).
+
+### Student features
+
+- **Job decoder** (`job_decoder.py`) reads the posting line by line: skills under headings such as
+  "Requirements" are must-haves, those under "Nice to have" or in lines with "is a plus" /
+  "preferred" are nice-to-haves, and the rest are "also mentioned". It also extracts years of
+  experience, level (entry / mid / senior) and whether a degree is mentioned.
+- **Learning plan** (`learning_plan.py`) uses `app/data/learning_resources.json`: 75 common skills,
+  each with a one-line explanation, free resources from official docs and well-known free
+  platforms, and a project idea. `scripts/build_learning_resources.py` requests every link and
+  refuses to write the file if one is broken.
+- **Student mode** adds weighted checks to the ATS report: education before experience, 2+
+  projects, an internship or training, grades in the Education section, a GitHub/portfolio link and
+  one-page length. `student_detected` is true for resumes with student wording or a graduation year
+  that hasn't passed.
+- **Bullet coach** runs in the browser (`frontend/src/lib/bulletCoach.js`) so feedback is instant.
 
 ## Data
 
@@ -190,9 +219,11 @@ cd frontend && npm run lint && npm run build
 `POST /api/analyze` — multipart `resume_file` (PDF/DOCX, ≤ 5 MB) + `job_description`, or JSON
 `{"resume_text": "...", "job_text": "..."}`. Returns `match_score`, `score_breakdown`, `features`,
 `matched_skills`, `missing_skills` (sorted), `score_warnings`, `suggestions`, `suggested_roles`,
-`confidence`, `resume` (editable sections) and `ats` (score, verdict, checks).
+`confidence`, `resume` (editable sections), `ats` (score, verdict, checks), `job_insights`,
+`learning_plan`, `student_mode` and `student_detected`. Add `student_mode=true` (form field or
+JSON) for the student checklist.
 
-`POST /api/recheck` — JSON `{"resume": {...sections}, "job_description": "..."}`. Same response as
+`POST /api/recheck` — JSON `{"resume": {...sections}, "job_description": "...", "student_mode": false}`. Same response as
 `/api/analyze`, for the edited resume.
 
 `POST /api/resume/docx` — JSON resume sections; returns an ATS-friendly `.docx` download.
@@ -213,6 +244,7 @@ python -m app.ml.features                  # → data/processed/features.csv + m
 python scripts/train_match_scorer.py       # → match_scorer + feature_scaler, reports/match_scorer_metrics.json
 python scripts/train_role_classifier.py    # → role_classifier + role_vectorizer, reports/role_classifier_metrics.json
 python scripts/evaluate_pipeline.py        # → reports/evaluation_summary.md
+python scripts/build_learning_resources.py # checks every link → app/data/learning_resources.json
 ```
 
 `requirements.txt` pins scikit-learn to the version that pickled `models/*.joblib`. If you upgrade

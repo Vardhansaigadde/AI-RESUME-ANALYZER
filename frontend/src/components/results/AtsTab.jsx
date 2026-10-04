@@ -10,7 +10,7 @@ const STATUS = {
   pass: { icon: CircleCheck, color: 'text-ok', bg: 'bg-ok-soft', label: 'Good' },
   skip: { icon: CircleMinus, color: 'text-muted', bg: 'bg-sunken', label: 'Not checked' },
 };
-const CATEGORY = { format: 'Format & layout', content: 'Content', keywords: 'Job keywords' };
+const CATEGORY = { format: 'Format & layout', content: 'Content', keywords: 'Job keywords', student: 'Student checklist' };
 const ORDER = { fail: 0, warn: 1, pass: 2, skip: 3 };
 
 // "…from the posting: aws, ci/cd." -> "…from the posting: AWS, CI/CD."
