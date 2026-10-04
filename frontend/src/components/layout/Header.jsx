@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Moon, ScanSearch, Sun } from 'lucide-react';
 import { HOME, TOOLS } from '../../lib/tools';
+import UserMenu from '../auth/UserMenu';
 
 function Link({ path, onNavigate, className, children, ...props }) {
   return (
@@ -20,7 +21,7 @@ function Link({ path, onNavigate, className, children, ...props }) {
 }
 
 /** Top bar: logo, tool links (desktop) and the theme switch; a bottom tab bar on phones. */
-export default function Header({ dark, onToggleTheme, page, onNavigate }) {
+export default function Header({ dark, onToggleTheme, page, onNavigate, notify }) {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/80 backdrop-blur-md print:hidden">
@@ -64,6 +65,8 @@ export default function Header({ dark, onToggleTheme, page, onNavigate }) {
             })}
           </nav>
 
+          <div className="flex items-center gap-2">
+          <UserMenu onNavigate={onNavigate} notify={notify} />
           <motion.button
             type="button"
             onClick={onToggleTheme}
@@ -76,6 +79,7 @@ export default function Header({ dark, onToggleTheme, page, onNavigate }) {
               {dark ? <Moon className="size-4.5" /> : <Sun className="size-4.5" />}
             </motion.span>
           </motion.button>
+          </div>
         </div>
       </header>
 

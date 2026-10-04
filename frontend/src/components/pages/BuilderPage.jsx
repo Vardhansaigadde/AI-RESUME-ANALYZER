@@ -1,12 +1,29 @@
 import { motion } from 'framer-motion';
-import { Download, FilePlus2, FileText, FileUp, LayoutTemplate, LoaderCircle, Palette, RotateCcw, ScanSearch, Sparkles } from 'lucide-react';
+import {
+  Cloud,
+  CloudOff,
+  Download,
+  FilePlus2,
+  FileText,
+  FileUp,
+  FolderOpen,
+  LayoutTemplate,
+  LoaderCircle,
+  Palette,
+  RotateCcw,
+  ScanSearch,
+  Sparkles,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { downloadResumeDocx, parseResumeFile } from '../../lib/api';
+import { useAuth } from '../../lib/authContext';
+import { loadResume, saveResume } from '../../lib/cloud';
 import { snapshot, withIds } from '../../lib/resume';
 import { KEYS, readStorage, writeStorage } from '../../lib/storage';
 import { DEFAULT_TEMPLATE, EMPTY_RESUME, loadTemplateFonts, SAMPLE_RESUME, templateById, TEMPLATES } from '../../lib/templates';
 import PrintResume from '../resume/PrintResume';
 import ResumeForm from '../resume/ResumeForm';
+import ResumeLibrary from '../resume/ResumeLibrary';
 import ScaledPage from '../resume/ScaledPage';
 import TemplateGallery from '../resume/TemplateGallery';
 import Button from '../ui/Button';
@@ -50,6 +67,16 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
     return TEMPLATES.some((t) => t.id === fromUrl) ? fromUrl : saved?.template || DEFAULT_TEMPLATE;
   });
   const [accent, setAccent] = useState(() => saved?.accent || null);
+  // Signed in: the draft is also saved to the account (resumes table)
+  const fresh = Boolean(seed) || params.get('start') === 'sample';
+  const [cloudId, setCloudId] = useState(() => (fresh ? null : saved?.cloudId || null));
+  const [title, setTitle] = useState(() => (fresh ? 'My resume' : saved?.title || 'My resume'));
+  const [sync, setSync] = useState('idle'); // idle | pending | saving | saved | error
+  const [library, setLibrary] = useState(false);
+  const { user, enabled, openSignIn } = useAuth();
+  const cloudIdRef = useRef(cloudId);
+  const queue = useRef(Promise.resolve());
+  const lastSaved = useRef(null);
   const [gallery, setGallery] = useState(false);
   const [view, setView] = useState('edit');
   const [pages, setPages] = useState(1);
@@ -66,9 +93,64 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
   // Autosave in this browser
   useEffect(() => {
     if (!resume) return undefined;
-    const id = setTimeout(() => writeStorage(KEYS.builder, { resume: plain(resume), template, accent }), 400);
+    const id = setTimeout(() => writeStorage(KEYS.builder, { resume: plain(resume), template, accent, cloudId, title }), 400);
     return () => clearTimeout(id);
-  }, [resume, template, accent]);
+  }, [resume, template, accent, cloudId, title]);
+
+  // Autosave to the account when signed in. Saves run one at a time, so a new
+  // resume is created once; nothing is saved just for opening the page.
+  const saveKey = resume && user ? JSON.stringify([user.id, title, template, accent, snapshot(resume)]) : null;
+  useEffect(() => {
+    if (!saveKey || !hasContent(resume)) return undefined;
+    if (lastSaved.current === null && cloudIdRef.current) lastSaved.current = saveKey; // opened as it was
+    if (saveKey === lastSaved.current) return undefined;
+    setSync('pending');
+    const id = setTimeout(() => {
+      queue.current = queue.current.then(async () => {
+        setSync('saving');
+        try {
+          const row = await saveResume({ id: cloudIdRef.current, title, template, accent, data: plain(resume) });
+          cloudIdRef.current = row.id;
+          setCloudId(row.id);
+          lastSaved.current = saveKey;
+          setSync('saved');
+        } catch {
+          // Deleted on another device, or offline: the next edit saves it as a new resume
+          cloudIdRef.current = null;
+          setCloudId(null);
+          setSync('error');
+        }
+      });
+    }, 1500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveKey]);
+
+  const openSaved = async (id) => {
+    try {
+      const row = await loadResume(id);
+      const data = withIds({ ...EMPTY_RESUME, ...row.data });
+      cloudIdRef.current = row.id;
+      lastSaved.current = JSON.stringify([user.id, row.title, row.template, row.accent || null, snapshot(data)]);
+      setResume(data);
+      setTemplate(row.template);
+      setAccent(row.accent || null);
+      setTitle(row.title);
+      setCloudId(row.id);
+      setSync('saved');
+      setLibrary(false);
+    } catch (err) {
+      notify({ tone: 'error', message: err.message });
+    }
+  };
+
+  const saveAsNew = () => {
+    cloudIdRef.current = null;
+    setCloudId(null);
+    setTitle((x) => `${x} (copy)`.slice(0, 80));
+    setLibrary(false);
+    notify({ tone: 'success', message: 'Saving a new version. Rename it next to the title.' });
+  };
 
   const start = (data) => {
     setResume(withIds({ ...EMPTY_RESUME, ...data }));
@@ -119,6 +201,11 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
   const startOver = () => {
     if (!window.confirm('Start a new resume? Your current draft will be cleared from this browser.')) return;
     writeStorage(KEYS.builder, null);
+    cloudIdRef.current = null;
+    lastSaved.current = null;
+    setCloudId(null);
+    setTitle('My resume');
+    setSync('idle');
     setResume(null);
   };
 
@@ -149,6 +236,25 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
           <StartChoice icon={Sparkles} title="Start from a sample" text="A complete student resume you can edit into your own." onClick={() => start(SAMPLE_RESUME)} />
           <StartChoice icon={FilePlus2} title="Start blank" text="An empty resume with all the standard sections." onClick={() => start(EMPTY_RESUME)} />
         </div>
+        {user ? (
+          <Button variant="secondary" icon={FolderOpen} className="mt-4" onClick={() => setLibrary(true)}>
+            Open one of my saved resumes
+          </Button>
+        ) : (
+          enabled && (
+            <p className="mt-4 text-sm text-muted">
+              <button
+                type="button"
+                onClick={() => openSignIn('Sign in to keep your resumes in your account and edit them on any device.')}
+                className="cursor-pointer font-semibold text-accent hover:underline"
+              >
+                Sign in
+              </button>{' '}
+              to keep your resumes in your account.
+            </p>
+          )
+        )}
+        <ResumeLibrary open={library} onClose={() => setLibrary(false)} currentId={cloudId} onOpen={openSaved} onDuplicate={() => setLibrary(false)} notify={notify} />
         <input
           ref={fileInput}
           type="file"
@@ -223,11 +329,56 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
     >
       {/* Toolbar */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold tracking-tight">Resume builder</h1>
-          <p className="text-sm text-muted">Saved in this browser as you type.</p>
+          {user ? (
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+              <label htmlFor="resume-title" className="sr-only">
+                Resume name
+              </label>
+              <input
+                id="resume-title"
+                value={title}
+                maxLength={80}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-48 rounded-lg border border-transparent bg-transparent px-1.5 py-0.5 font-semibold hover:border-line focus:border-line"
+              />
+              <span className={`inline-flex items-center gap-1 text-xs ${sync === 'error' ? 'text-pen' : 'text-muted'}`} aria-live="polite">
+                {sync === 'error' ? <CloudOff className="size-3.5" aria-hidden /> : <Cloud className="size-3.5" aria-hidden />}
+                {sync === 'saving' || sync === 'pending'
+                  ? 'Saving…'
+                  : sync === 'error'
+                    ? 'Not saved to your account; will retry when you edit'
+                    : cloudId
+                      ? 'Saved to your account'
+                      : 'Edit to save to your account'}
+              </span>
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              Saved in this browser as you type.
+              {enabled && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={() => openSignIn('Sign in to keep your resumes in your account and edit them on any device.')}
+                    className="cursor-pointer font-semibold text-accent hover:underline"
+                  >
+                    Sign in
+                  </button>{' '}
+                  to save it to your account.
+                </>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {user && (
+            <Button variant="secondary" icon={FolderOpen} onClick={() => setLibrary(true)}>
+              My resumes
+            </Button>
+          )}
           <Button variant="secondary" icon={LayoutTemplate} onClick={() => setGallery(true)}>
             Templates
           </Button>
@@ -304,6 +455,7 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
         onSelect={setTemplate}
       />
       <PrintResume resume={resume} templateId={template} accent={accent} />
+      <ResumeLibrary open={library} onClose={() => setLibrary(false)} currentId={cloudId} onOpen={openSaved} onDuplicate={saveAsNew} notify={notify} />
     </motion.main>
   );
 }

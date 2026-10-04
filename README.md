@@ -11,6 +11,11 @@ A free career toolkit for students and freshers. The home page is a dashboard of
 | **Find jobs & internships** | `/jobs` | Live openings (scored when you've checked a resume), what they ask for, and prefilled searches on LinkedIn, Internshala, Unstop, Naukri, Indeed, foundit, Cutshort and Instahyre. |
 | **Learn a skill** | `/learn` | Pick skills or a career path; get the study roadmap (order, videos, docs, checklists, weekly schedule) and projects. |
 
+Signing in is optional (Google or an email link, via Supabase). With an account, resumes from the
+builder, roadmap progress and an **application tracker** (`/tracker`: Saved → Applied → Interview →
+Offer) are saved and follow you across devices; without one, everything still works and drafts stay
+in the browser.
+
 The resume report has five tabs:
 
 | Tab | What you get |
@@ -151,6 +156,23 @@ copy, so the text stays selectable) and the Word file (`resume_docx.py`: A4, dat
 with a tab stop). Every template stays ATS-safe: one column, standard headings, no tables, text
 boxes, icons or photos. Entries have a separate `date`; the parser moves a trailing date ("... |
 Jun 2024 - Present") into it.
+
+### Accounts (Supabase)
+
+The browser talks to Supabase directly with the public anon key; the backend is not involved.
+`supabase/schema.sql` creates three tables (`resumes`, `learning_progress`, `applications`) with
+row-level security so every user can only read and change their own rows, plus a
+`delete_my_account()` function behind "Delete account" (the rows go with the user via `on delete
+cascade`). Set it up once:
+
+1. Supabase → SQL Editor → paste `supabase/schema.sql` → Run.
+2. Authentication → URL Configuration: Site URL `https://resumefitlens.vercel.app`; redirect URLs
+   `https://resumefitlens.vercel.app/**` and `http://localhost:5173/**`.
+3. Authentication → Sign In / Providers → Google: the client ID and secret from Google Cloud
+   (redirect URI `https://<project>.supabase.co/auth/v1/callback`).
+4. Vercel → Environment Variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, then redeploy.
+   Locally, put them in `frontend/.env.local` (see `frontend/.env.example`). Without them, sign-in
+   is hidden.
 
 ### GitHub proof check
 
@@ -393,5 +415,6 @@ reports/            metrics JSON written by training + evaluation_summary.md
 notebooks/          exploratory data analysis
 tests/              pytest suite
 frontend/           React + Vite app (see frontend/README.md)
+supabase/schema.sql tables and row-level security for optional accounts
 .github/workflows/  CI (lint + tests + build) and the keep-awake ping
 ```

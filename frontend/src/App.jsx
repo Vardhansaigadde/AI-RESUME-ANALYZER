@@ -16,6 +16,7 @@ import { DEMO_HIGH_RESULT, DEMO_LOW_RESULT, DEMO_RESUME_ONLY_RESULT } from './li
 const BuilderPage = lazy(() => import('./components/pages/BuilderPage'));
 const JobsPage = lazy(() => import('./components/pages/JobsPage'));
 const LearnPage = lazy(() => import('./components/pages/LearnPage'));
+const TrackerPage = lazy(() => import('./components/pages/TrackerPage'));
 
 const PAGES = {
   '/': 'home',
@@ -24,6 +25,7 @@ const PAGES = {
   '/build': 'build',
   '/jobs': 'jobs',
   '/learn': 'learn',
+  '/tracker': 'tracker',
   '/privacy': 'privacy',
   '/terms': 'terms',
 };
@@ -128,6 +130,7 @@ export default function App() {
     );
   else if (page === 'jobs') content = <JobsPage key="jobs" resume={result?.resume || null} onNavigate={navigate} />;
   else if (page === 'learn') content = <LearnPage key="learn" notify={notify} onNavigate={navigate} />;
+  else if (page === 'tracker') content = <TrackerPage key="tracker" notify={notify} onNavigate={navigate} />;
   else if (page === 'privacy') content = <PrivacyPage key="privacy" onHome={goHome} />;
   else if (page === 'terms') content = <TermsPage key="terms" onHome={goHome} />;
   else if (page === 'not-found') content = <NotFoundPage key="404" onHome={goHome} />;
@@ -175,7 +178,7 @@ export default function App() {
       >
         Skip to content
       </a>
-      <Header dark={dark} onToggleTheme={toggle} page={page} onNavigate={navigate} />
+      <Header dark={dark} onToggleTheme={toggle} page={page} onNavigate={navigate} notify={notify} />
       <Toast toast={toast} onClose={clearToast} />
       <div id="main" className="flex-1">
         <Suspense fallback={<div className="min-h-[60vh]" aria-busy="true" />}>

@@ -15,8 +15,8 @@ import {
   PlayCircle,
   Quote,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { KEYS, readStorage, writeStorage } from '../../lib/storage';
+import { useMemo, useState } from 'react';
+import { useSyncedProgress } from '../../hooks/useSyncedProgress';
 import { formatSkill } from '../../utils/format';
 import ProjectPicks from './ProjectPicks';
 
@@ -245,12 +245,9 @@ function Step({ item, index, last, done, week, open, onToggle, ticks, onTick }) 
 
 /** The skill gaps as a study roadmap: order, time, resources, checklists and saved progress. */
 export default function LearnTab({ plan, projects, missingCount, role, roleRoadmap, roadmapRole, intro }) {
-  const [progress, setProgress] = useState(() => readStorage(KEYS.progress, {}));
-  const [hoursPerWeek, setHoursPerWeek] = useState(() => readStorage(KEYS.pace, 8));
+  const { progress, setProgress, pace: hoursPerWeek, setPace: setHoursPerWeek } = useSyncedProgress();
   const [openSkill, setOpenSkill] = useState(null);
 
-  useEffect(() => writeStorage(KEYS.progress, progress), [progress]);
-  useEffect(() => writeStorage(KEYS.pace, hoursPerWeek), [hoursPerWeek]);
 
   const steps = useMemo(() => plan || [], [plan]);
   const isDone = (item) => {
