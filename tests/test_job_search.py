@@ -164,6 +164,48 @@ class JobSearchServiceTests(unittest.TestCase):
     def test_soft_skills_left_out(self):
         self.assertEqual(job_search.rank_skills(["leadership", "sql", "python"]), ["python", "sql"])
 
+    def test_generic_domain_words_left_out(self):
+        # "accounting" is a real skill (a target role lists it); "reporting" is noise
+        self.assertEqual(job_search.rank_skills(["reporting", "accounting", "sql"]), ["sql", "accounting"])
+
+
+def _posting(matched, missing):
+    return job_search.JobPosting(
+        id=str(matched + missing),
+        title="t",
+        company="c",
+        url="https://example.com",
+        source="Himalayas",
+        fit_score=50,
+        matched_skills=matched,
+        missing_skills=missing,
+    )
+
+
+class SkillDemandTests(unittest.TestCase):
+    def test_counts_share_and_have(self):
+        jobs = [
+            _posting(["python"], ["sql", "aws"]),
+            _posting(["python"], ["sql"]),
+            _posting([], ["sql", "docker"]),
+            _posting(["python"], ["docker"]),
+        ]
+        demand = job_search.skill_demand(jobs)
+        self.assertEqual([(d.skill, d.count) for d in demand], [("python", 3), ("sql", 3), ("docker", 2)])
+        self.assertEqual(demand[0].share, 0.75)
+        self.assertTrue(demand[0].have)
+        self.assertFalse(demand[1].have)
+
+    def test_needs_enough_postings(self):
+        self.assertEqual(job_search.skill_demand([_posting(["python"], []), _posting(["python"], [])]), [])
+
+    def test_search_returns_demand(self):
+        job_search.CACHE.clear()
+        with mock.patch.object(job_search, "_http_get_json", side_effect=fake_get([])):
+            result = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
+        self.assertIn("skill_demand", result)  # two postings: too few to report
+        self.assertEqual(result["skill_demand"], [])
+
 
 class JobSearchEndpointTests(unittest.TestCase):
     def setUp(self):

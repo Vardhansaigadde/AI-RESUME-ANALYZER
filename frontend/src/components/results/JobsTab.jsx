@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, Building2, Clock, MapPin, RefreshCw, Search, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowUpRight, Building2, Check, Clock, MapPin, RefreshCw, Search, ShieldCheck, TrendingUp, Wallet } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { fetchJobOptions, searchJobs } from '../../lib/api';
 import { scoreTone } from '../../lib/resume';
@@ -160,6 +160,55 @@ function SkeletonCard() {
       <div className="mt-4 h-3 w-full rounded bg-sunken" />
       <div className="mt-2 h-3 w-5/6 rounded bg-sunken" />
     </li>
+  );
+}
+
+/** The skills these openings ask for most, with the ones the resume shows ticked. */
+function SkillDemand({ demand, total }) {
+  if (!demand?.length) return null;
+  const have = demand.filter((d) => d.have).length;
+  return (
+    <section className="card mb-5 p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <TrendingUp className="size-4.5 text-accent" aria-hidden />
+          What these {total} openings ask for
+        </h3>
+        <p className="text-sm text-muted">
+          You show <span className="font-semibold text-ink">{have}</span> of the top {demand.length}
+        </p>
+      </div>
+      <ul className="grid gap-x-8 gap-y-2 md:grid-cols-2">
+        {demand.map((d, i) => {
+          const pct = Math.round(d.share * 100);
+          return (
+            <li key={d.skill} className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-3 text-sm sm:grid-cols-[9rem_1fr_2.5rem]">
+              <span className="flex min-w-0 items-center gap-1.5">
+                {d.have ? (
+                  <Check className="size-3.5 shrink-0 text-ok" strokeWidth={3} aria-label="On your resume" />
+                ) : (
+                  <span className="size-3.5 shrink-0" aria-hidden />
+                )}
+                <span className={`truncate ${d.have ? 'font-medium' : 'font-semibold text-pen'}`}>{formatSkill(d.skill)}</span>
+              </span>
+              <span className="h-2 overflow-hidden rounded-full bg-sunken">
+                <motion.span
+                  className={`block h-full rounded-full ${d.have ? 'bg-ok' : 'bg-pen/70'}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.6, delay: i * 0.03, ease: 'easeOut' }}
+                />
+              </span>
+              <span className="text-right font-mono text-xs text-muted">{pct}%</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-3 text-xs text-muted">
+        Share of these postings that mention each skill. Red ones aren’t on your resume yet: if you have them, add them;
+        if not, they’re worth learning next.
+      </p>
+    </section>
   );
 }
 
@@ -334,6 +383,7 @@ export default function JobsTab({ resume, defaultQuery, studentMode, state, setS
 
         {!loading && !error && data && (
           <>
+            <SkillDemand demand={data.skill_demand} total={data.jobs.length} />
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm">
                 <span className="font-semibold">{jobs.length}</span>{' '}

@@ -49,9 +49,21 @@ class JobSource(BaseModel):
     note: str = ""
 
 
+class SkillDemand(BaseModel):
+    """How often a skill appears across the postings found."""
+
+    skill: str
+    count: int
+    share: float = Field(..., description="Share of postings that mention the skill (0-1).")
+    have: bool = Field(..., description="Whether the resume shows it.")
+
+
 class JobSearchResponse(BaseModel):
     query: str
     country: str
     kind: JobKind
     jobs: list[JobPosting]
     sources: list[JobSource]
+    skill_demand: list[SkillDemand] = Field(
+        default_factory=list, description="Most-requested skills across these postings, most common first."
+    )

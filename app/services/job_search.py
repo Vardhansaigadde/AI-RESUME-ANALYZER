@@ -18,9 +18,10 @@ source, which the frontend does.
 
 from __future__ import annotations
 
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from functools import lru_cache
 import html
 import json
 import logging
@@ -32,8 +33,9 @@ from typing import Any
 from urllib.parse import urlencode
 import urllib.request
 
-from app.schemas.jobs import JobPosting, JobSource
+from app.schemas.jobs import JobPosting, JobSource, SkillDemand
 from app.services.matcher import match_resume_to_job
+from app.services.role_gap import TARGET_ROLES_PATH
 from app.services.skills_inventory import DOMAIN_GROUP, SOFT_GROUP, group_of
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,8 @@ USER_AGENT = "FitLens/1.0 (+https://resumefitlens.vercel.app)"
 HTTP_TIMEOUT = 10  # seconds per request to a job site
 MAX_JOB_WORDS = 800  # longer postings are cut before scoring (keeps a search to a few seconds)
 RESULTS_PER_SOURCE = 20
+DEMAND_TOP = 12  # skills shown in "what these openings ask for"
+DEMAND_MIN_JOBS = 3  # fewer postings say little about demand
 
 # Countries offered in the UI. Adzuna covers only some of them.
 COUNTRIES = {
@@ -296,11 +300,28 @@ def _fetch_cached(name: str, query: str, country: str, kind: str) -> list[dict]:
 # --------------------------------------------------------------------------- search
 
 
+@lru_cache(maxsize=1)
+def _role_skills() -> frozenset[str]:
+    """Every core skill of a target role (app/data/target_roles.json)."""
+    roles = json.loads(TARGET_ROLES_PATH.read_text(encoding="utf-8"))["roles"] if TARGET_ROLES_PATH.exists() else {}
+    return frozenset(skill for skills in roles.values() for skill in skills)
+
+
+def is_relevant(skill: str) -> bool:
+    """Worth showing on a job card: no soft skills, and domain words only when a role lists them.
+
+    The catch-all domain group holds both real skills ("accounting", "seo") and words
+    that appear in almost any posting ("reporting", "research", "management").
+    """
+    group = group_of(skill)
+    if group == SOFT_GROUP:
+        return False
+    return group != DOMAIN_GROUP or skill in _role_skills()
+
+
 def rank_skills(skills: list[str]) -> list[str]:
-    """Technical skills first, then domain skills; soft skills are left out of the job cards."""
-    order = {DOMAIN_GROUP: 1, SOFT_GROUP: 2}
-    ranked = sorted(skills, key=lambda s: (order.get(group_of(s), 0), s))
-    return [s for s in ranked if group_of(s) != SOFT_GROUP]
+    """Technical skills first, then domain skills; generic and soft skills are left out."""
+    return sorted((s for s in skills if is_relevant(s)), key=lambda s: (group_of(s) == DOMAIN_GROUP, s))
 
 
 def _keep(posting: dict, kind: str) -> bool:
@@ -377,4 +398,25 @@ def search_jobs(resume_text: str, query: str, country: str, kind: str) -> dict[s
 
     order = list(SOURCES)
     sources.sort(key=lambda s: order.index(s.name))
-    return {"query": query, "country": country, "kind": kind, "jobs": jobs, "sources": sources}
+    return {
+        "query": query,
+        "country": country,
+        "kind": kind,
+        "jobs": jobs,
+        "sources": sources,
+        "skill_demand": skill_demand(jobs),
+    }
+
+
+def skill_demand(jobs: list[JobPosting], top: int = DEMAND_TOP) -> list[SkillDemand]:
+    """The skills these postings ask for most, and whether the resume has them."""
+    if len(jobs) < DEMAND_MIN_JOBS:
+        return []
+    counts: Counter[str] = Counter()
+    have: set[str] = set()
+    for job in jobs:
+        counts.update(set(job.matched_skills) | set(job.missing_skills))
+        have.update(job.matched_skills)
+    # Most common first; ties alphabetically so results are stable
+    common = sorted(((s, n) for s, n in counts.items() if n >= 2), key=lambda x: (-x[1], x[0]))[:top]
+    return [SkillDemand(skill=s, count=n, share=round(n / len(jobs), 3), have=s in have) for s, n in common]

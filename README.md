@@ -11,7 +11,7 @@ with students and freshers in mind. The report has five tabs:
 | **ATS check** | A 0–100 estimate of how well applicant tracking systems can read the resume (layout, sections, contact details, bullets, keywords), each problem with a fix. **Student mode** adds a fresher checklist (projects, internships, CGPA, GitHub, one page). |
 | **Edit & re-check** | The resume split into editable sections, a live **bullet coach** (weak openers, missing numbers, passive voice), one-click re-check, and download as an ATS-friendly `.docx`. |
 | **Skill plan** | **One or two portfolio projects** that close several gaps at once (steps and a ready resume bullet), then a study **roadmap** for the missing skills (from the job, or your target role when there's no job): in learning order with missing prerequisites first, hours and a week-by-week estimate at your pace, docs + a free course + a YouTube video for each skill, a "done when you can…" checklist with progress saved in the browser, a project that proves it, and roadmap.sh links. |
-| **Find jobs** | Live jobs and internships (search by role, country, and All / Internships / Entry-level), each with **your fit score**, the skills you have and miss, and a link to apply. |
+| **Find jobs** | Live jobs and internships (search by role, country, and All / Internships / Entry-level), each with **your fit score**, the skills you have and miss, and a link to apply; plus **what these openings ask for**: the most-requested skills across the results, with the ones you show ticked. |
 
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
 
@@ -162,6 +162,11 @@ the job sites. Remotive and Arbeitnow were considered and left out: Remotive's f
 returns only a handful of jobs, and Arbeitnow is almost all Germany. Skill extraction is cached by
 text, so scoring 20 postings takes about a second.
 
+The response also has `skill_demand`: the 12 skills mentioned most across the postings found (at
+least 3 postings, and a skill must appear in 2), with each one's share and whether the resume shows
+it. Soft skills and generic words from the extractor's catch-all domain group ("reporting",
+"research") are left out unless a target role lists them, so "accounting" or "SEO" still count.
+
 ## Data
 
 | File | Rows | Used for |
@@ -284,7 +289,7 @@ role-based `learning_plan` and `project_picks` without re-running the models.
 `POST /api/jobs` — JSON `{"resume": {...}, "query": "data analyst", "country": "IN", "kind": "internship"}`
 (`kind`: `all`, `internship` or `entry`; `country`: a code from `/api/jobs/options` or `ANY`). Returns
 `jobs` (each with `fit_score`, `matched_skills`, `missing_skills`, `url`, `source`), sorted by fit,
-and the status of each `sources` entry.
+the status of each `sources` entry, and `skill_demand`.
 
 `POST /api/github-check` — JSON `{"resume": {...}, "profile": {...}, "repos": [...]}` with the
 public GitHub profile and up to 100 repositories as GitHub's API returns them. Returns `proven`,
