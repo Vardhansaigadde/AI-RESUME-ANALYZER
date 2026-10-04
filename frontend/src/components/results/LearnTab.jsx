@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { formatSkill } from '../../utils/format';
+import ProjectPicks from './ProjectPicks';
 
 const KIND = {
   docs: { icon: FileText, label: 'Docs' },
@@ -262,7 +263,7 @@ function Step({ item, index, last, done, week, open, onToggle, ticks, onTick }) 
 }
 
 /** The skill gaps as a study roadmap: order, time, resources, checklists and saved progress. */
-export default function LearnTab({ plan, missingCount, role, roleRoadmap, roadmapRole }) {
+export default function LearnTab({ plan, projects, missingCount, role, roleRoadmap, roadmapRole }) {
   const [progress, setProgress] = useState(() => readStorage(PROGRESS_KEY, {}));
   const [hoursPerWeek, setHoursPerWeek] = useState(() => readStorage(PACE_KEY, 8));
   const [openSkill, setOpenSkill] = useState(null);
@@ -315,6 +316,7 @@ export default function LearnTab({ plan, missingCount, role, roleRoadmap, roadma
   const allDone = doneCount === steps.length;
   return (
     <div>
+      <ProjectPicks projects={projects} />
       <div className="card mb-6 p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

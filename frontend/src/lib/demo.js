@@ -196,6 +196,83 @@ const LEARNING_PLAN = [
   },
 ];
 
+const PROJECT_PICKS = [
+  {
+    id: 'k8s-deploy',
+    title: 'Deploy an app with CI/CD and Kubernetes',
+    summary: 'Every push is tested, built into an image and rolled out.',
+    level: 'intermediate',
+    hours: 30,
+    closes: ['kubernetes', 'ci/cd'],
+    uses: ['docker', 'git'],
+    also_learn: ['github', 'linux'],
+    steps: [
+      'Containerise one of your apps with a small Dockerfile',
+      'Write a GitHub Actions pipeline that tests and builds the image',
+      'Deploy it to a local or free Kubernetes cluster with a Deployment and Service',
+      'Add health checks and roll back a bad release on purpose',
+    ],
+    bullet:
+      'Set up a CI/CD pipeline with GitHub Actions that tests, builds and deploys a Dockerised app to Kubernetes with health checks.',
+  },
+  {
+    id: 'terraform-aws',
+    title: 'Infrastructure as code on AWS',
+    summary: 'Create a whole web stack on AWS from code, and destroy it with one command.',
+    level: 'intermediate',
+    hours: 30,
+    closes: ['aws'],
+    uses: [],
+    also_learn: ['terraform', 'linux', 'bash'],
+    steps: [
+      'Write Terraform for a VPC, an EC2 instance and an S3 bucket',
+      'Configure the server with a bash bootstrap script',
+      'Run terraform plan in CI on every pull request',
+      'Keep it on the free tier and document costs',
+    ],
+    bullet: 'Provisioned an AWS web stack (VPC, EC2, S3) with Terraform and added plan checks to the CI pipeline.',
+  },
+];
+
+const ROLE_PROJECT_PICKS = [
+  {
+    id: 'cpp-systems',
+    title: 'Mini database or shell in C/C++',
+    summary: 'A low-level project that proves you understand memory and data structures.',
+    level: 'advanced',
+    hours: 40,
+    closes: ['c++', 'data structures', 'linux', 'algorithms'],
+    uses: [],
+    also_learn: ['c'],
+    steps: [
+      'Implement a key-value store with a hash map or B-tree',
+      'Persist data to a file and reload it',
+      'Add a simple command-line interface',
+      'Write tests and measure performance',
+    ],
+    bullet:
+      'Implemented a persistent key-value store in C++ with a custom hash map and file storage, benchmarked at 1M operations.',
+  },
+  {
+    id: 'spring-library',
+    title: 'Library management REST service',
+    summary: 'Books, members and loans with due dates and fines.',
+    level: 'intermediate',
+    hours: 40,
+    closes: ['java'],
+    uses: ['sql', 'rest api', 'object-oriented programming', 'git'],
+    also_learn: ['spring', 'mysql'],
+    steps: [
+      'Design entities for books, members and loans with JPA',
+      'Build REST controllers and a service layer with validation',
+      'Add rules for due dates, renewals and fines',
+      'Write JUnit tests and document the API with OpenAPI',
+    ],
+    bullet:
+      'Built a library management service in Java and Spring Boot with MySQL, JPA and JUnit-tested business rules for loans and fines.',
+  },
+];
+
 const ROLE_GAP = {
   role: 'Software Engineer',
   have: ['object-oriented programming', 'python', 'git', 'sql', 'rest api', 'docker'],
@@ -272,6 +349,7 @@ export const DEMO_HIGH_RESULT = {
   student_detected: true,
   job_insights: JOB_INSIGHTS,
   learning_plan: LEARNING_PLAN,
+  project_picks: PROJECT_PICKS,
   resume: RESUME,
   ats: {
     score: 86.4,
@@ -378,6 +456,7 @@ export const DEMO_RESUME_ONLY_RESULT = {
   required_skills_count: 0,
   job_insights: null,
   suggestions: ["Include a dedicated 'Projects' section to showcase practical, hands-on applications of your skills."],
+  project_picks: ROLE_PROJECT_PICKS,
   learning_plan: DEMO_HIGH_RESULT.learning_plan.map((item) =>
     item.priority === 'prerequisite'
       ? item

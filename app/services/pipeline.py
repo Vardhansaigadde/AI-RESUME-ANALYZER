@@ -24,6 +24,7 @@ from app.services.learning_plan import build_learning_plan
 from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
 from app.services.matcher import match_resume_to_job
 from app.services.parser import LayoutInfo, extract_text_from_file, inspect_layout
+from app.services.project_picker import pick_projects
 from app.services.resume_sections import looks_like_student, parse_resume, render_resume_text
 from app.services.role_gap import compare_with_role, resolve_role
 from app.services.role_predictor import (
@@ -257,7 +258,8 @@ def run_role_gap(resume: StructuredResume, target_role: str, with_learning_plan:
         raise PipelineError("No target roles are available.", status_code=503)
     gap = compare_with_role(resume_skills, role)
     plan = build_learning_plan(gap.missing, "", None, role=role, have=resume_skills) if with_learning_plan else []
-    return {"role_gap": gap, "learning_plan": plan}
+    picks = pick_projects(gap.missing, resume_skills) if with_learning_plan else []
+    return {"role_gap": gap, "learning_plan": plan, "project_picks": picks}
 
 
 def _analyze_text(
@@ -317,11 +319,13 @@ def _analyze_text(
         learning_plan = build_learning_plan(
             match_result["missing_skills"], job_content_text, insights, have=resume_skills
         )
+        project_picks = pick_projects(match_result["missing_skills"], resume_skills, insights)
     else:
         insights = None
         learning_plan = (
             build_learning_plan(role_gap.missing, "", None, role=role, have=resume_skills) if role_gap else []
         )
+        project_picks = pick_projects(role_gap.missing, resume_skills) if role_gap else []
 
     return {
         **match_result,
@@ -332,6 +336,7 @@ def _analyze_text(
         "ats": ats,
         "job_insights": insights,
         "learning_plan": learning_plan,
+        "project_picks": project_picks,
         "student_mode": student_mode,
         "student_detected": looks_like_student(resume_content_text, resume, date.today().year),
         "suggested_roles": roles,

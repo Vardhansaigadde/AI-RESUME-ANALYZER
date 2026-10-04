@@ -10,7 +10,7 @@ with students and freshers in mind. The report has five tabs:
 | **Overview** | With a job: a **match score (0–100)** and why, plus the posting decoded (level, experience, must-have and nice-to-have skills you have or lack, which skills to list first). Always: a **resume strength** grade per section, your **target-role gap** (core skills of 25 job-title roles), the job categories your resume resembles, every **skill found**, and a **GitHub proof check** (which resume skills your public repos back up, which they don't, skills your repos show that the resume misses, and profile fixes). |
 | **ATS check** | A 0–100 estimate of how well applicant tracking systems can read the resume (layout, sections, contact details, bullets, keywords), each problem with a fix. **Student mode** adds a fresher checklist (projects, internships, CGPA, GitHub, one page). |
 | **Edit & re-check** | The resume split into editable sections, a live **bullet coach** (weak openers, missing numbers, passive voice), one-click re-check, and download as an ATS-friendly `.docx`. |
-| **Skill plan** | A study **roadmap** for the missing skills (from the job, or your target role when there's no job): in learning order with missing prerequisites first, hours and a week-by-week estimate at your pace, docs + a free course + a YouTube video for each skill, a "done when you can…" checklist with progress saved in the browser, a project that proves it, and roadmap.sh links. |
+| **Skill plan** | **One or two portfolio projects** that close several gaps at once (steps and a ready resume bullet), then a study **roadmap** for the missing skills (from the job, or your target role when there's no job): in learning order with missing prerequisites first, hours and a week-by-week estimate at your pace, docs + a free course + a YouTube video for each skill, a "done when you can…" checklist with progress saved in the browser, a project that proves it, and roadmap.sh links. |
 | **Find jobs** | Live jobs and internships (search by role, country, and All / Internships / Entry-level), each with **your fit score**, the skills you have and miss, and a link to apply. |
 
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
@@ -108,6 +108,12 @@ bullet lists, no tables, images or headers).
   YouTube's oEmbed endpoint (no API key; it also records the real title and channel), rejects
   prerequisite loops, and refuses to write the file if anything is broken. Target roles get a
   roadmap.sh link too (`app/data/role_roadmaps.json`).
+- **Project picker** (`project_picker.py`) chooses one or two projects from 36 student-sized ideas
+  in `app/data/project_ideas.json`. Each missing skill is weighted (must-have 3, nice-to-have 2,
+  mentioned 1; for a target role, by its importance order); a project scores the gaps it closes,
+  plus a little for reusing skills the student has, minus a little for unrelated new skills. The
+  second pick is scored only on gaps the first leaves open, and a project must close gaps worth at
+  least 2 points to be suggested.
 - **Student mode** adds weighted checks to the ATS report: education before experience, 2+
   projects, an internship or training, grades in the Education section, a GitHub/portfolio link and
   one-page length. `student_detected` is true for resumes with student wording or a graduation year
@@ -262,7 +268,7 @@ cd frontend && npm run lint && npm run build
 `{"resume_text": "...", "job_text": "..."}`. Returns `match_score`, `score_breakdown`, `features`,
 `matched_skills`, `missing_skills` (sorted), `score_warnings`, `suggestions`, `suggested_roles`,
 `confidence`, `resume` (editable sections), `ats` (score, verdict, checks), `job_insights`,
-`learning_plan`, `student_mode` and `student_detected`. Add `student_mode=true` (form field or
+`learning_plan`, `project_picks`, `student_mode` and `student_detected`. Add `student_mode=true` (form field or
 JSON) for the student checklist.
 
 `POST /api/recheck` — JSON `{"resume": {...sections}, "job_description": "...", "student_mode": false}`. Same response as
@@ -270,8 +276,8 @@ JSON) for the student checklist.
 
 `POST /api/resume/docx` — JSON resume sections; returns an ATS-friendly `.docx` download.
 
-`POST /api/role-gap` — JSON `{"resume": {...}, "target_role": "Data Analyst"}`; returns `role_gap` and a
-role-based `learning_plan` without re-running the models.
+`POST /api/role-gap` — JSON `{"resume": {...}, "target_role": "Data Analyst"}`; returns `role_gap`, a
+role-based `learning_plan` and `project_picks` without re-running the models.
 
 `job_description` is optional on `/api/analyze` and `/api/recheck`; both also accept `target_role`.
 

@@ -92,9 +92,13 @@ export default function ResultsView({
   const changeRole = async (role) => {
     setRoleLoading(true);
     try {
-      const { role_gap: roleGap, learning_plan: plan } = await fetchRoleGap(draft, role);
-      // Without a job, the learning plan follows the target role
-      onResult({ ...result, role_gap: roleGap, learning_plan: resumeOnly ? plan : result.learning_plan });
+      const { role_gap: roleGap, learning_plan: plan, project_picks: picks } = await fetchRoleGap(draft, role);
+      // Without a job, the learning plan and project picks follow the target role
+      onResult(
+        resumeOnly
+          ? { ...result, role_gap: roleGap, learning_plan: plan, project_picks: picks }
+          : { ...result, role_gap: roleGap },
+      );
     } catch (err) {
       notify({ tone: 'error', message: err.message });
     } finally {
@@ -229,6 +233,7 @@ export default function ResultsView({
             {tab === 'learn' && (
               <LearnTab
                 plan={result.learning_plan}
+                projects={result.project_picks || []}
                 missingCount={resumeOnly ? result.role_gap?.missing.length || 0 : result.missing_skills.length}
                 role={resumeOnly ? targetRole : null}
                 roleRoadmap={result.role_gap?.roadmap}

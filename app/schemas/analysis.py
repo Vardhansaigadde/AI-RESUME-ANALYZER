@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.insights import InventoryGroup, JobInsights, LearningItem, RoleGap
+from app.schemas.insights import InventoryGroup, JobInsights, LearningItem, ProjectPick, RoleGap
 from app.schemas.resume import AtsReport, StructuredResume
 
 
@@ -47,6 +47,9 @@ class AnalyzeResponse(BaseModel):
     ats: AtsReport | None = Field(None, description="Rule-based ATS-friendliness estimate.")
     job_insights: JobInsights | None = Field(None, description="Must-haves, level and coverage for the posting.")
     learning_plan: list[LearningItem] = Field(default_factory=list, description="How to close the skill gaps.")
+    project_picks: list[ProjectPick] = Field(
+        default_factory=list, description="Portfolio projects that close several gaps at once."
+    )
     student_mode: bool = Field(False, description="Whether the student / fresher checklist was applied.")
     student_detected: bool = Field(False, description="The resume looks like a student's or fresher's.")
     role_gap: RoleGap | None = Field(None, description="Core skills of the target role you have and lack.")

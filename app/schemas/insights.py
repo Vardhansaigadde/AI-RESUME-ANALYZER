@@ -52,6 +52,21 @@ class LearningItem(BaseModel):
     )
 
 
+class ProjectPick(BaseModel):
+    """A portfolio project that closes several skill gaps at once (app/data/project_ideas.json)."""
+
+    id: str
+    title: str
+    summary: str
+    level: Literal["beginner", "intermediate", "advanced"]
+    hours: int
+    closes: list[str] = Field(default_factory=list, description="Missing skills this project covers.")
+    uses: list[str] = Field(default_factory=list, description="Skills you already have that it builds on.")
+    also_learn: list[str] = Field(default_factory=list, description="Other skills it needs.")
+    steps: list[str] = Field(default_factory=list)
+    bullet: str = Field("", description="An example resume bullet once it's built.")
+
+
 class RoleGap(BaseModel):
     """Resume skills compared with a role's skill profile (app/data/role_profiles.json)."""
 
@@ -83,3 +98,4 @@ class RoleGapRequest(BaseModel):
 class RoleGapResponse(BaseModel):
     role_gap: RoleGap
     learning_plan: list[LearningItem]
+    project_picks: list[ProjectPick] = Field(default_factory=list)

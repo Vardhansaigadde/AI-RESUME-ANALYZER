@@ -1,0 +1,542 @@
+[
+  {
+    "id": "fullstack-task-manager",
+    "title": "Full-stack task manager",
+    "summary": "A Trello-style board where users sign up, create boards and drag tasks between columns.",
+    "level": "intermediate",
+    "hours": 40,
+    "skills": ["react", "node.js", "rest api", "mongodb", "javascript", "html", "css", "git"],
+    "steps": [
+      "Build a REST API in Node.js for users, boards and tasks, stored in MongoDB",
+      "Add sign-up and login with hashed passwords and tokens",
+      "Build the React front end with drag-and-drop between columns",
+      "Deploy the API and the front end, and link the live demo in the README"
+    ],
+    "bullet": "Built a full-stack task manager (React, Node.js, MongoDB) with auth and drag-and-drop boards, deployed with a live demo."
+  },
+  {
+    "id": "typescript-job-board",
+    "title": "Job board with search and filters",
+    "summary": "A typed full-stack job board with search, filters and saved jobs.",
+    "level": "intermediate",
+    "hours": 45,
+    "skills": ["typescript", "react", "node.js", "postgresql", "sql", "rest api", "docker", "git"],
+    "steps": [
+      "Design the PostgreSQL schema for companies, jobs and saved jobs",
+      "Write a typed REST API in Node.js with search and pagination",
+      "Build the React + TypeScript UI with filters kept in the URL",
+      "Run everything locally with Docker Compose and add a README with screenshots"
+    ],
+    "bullet": "Developed a TypeScript job board (React, Node.js, PostgreSQL) with full-text search and filters, containerised with Docker Compose."
+  },
+  {
+    "id": "flask-expense-api",
+    "title": "Expense tracker API with a dashboard",
+    "summary": "Track spending by category and see monthly charts.",
+    "level": "beginner",
+    "hours": 25,
+    "skills": ["python", "flask", "sql", "postgresql", "rest api", "docker", "git"],
+    "steps": [
+      "Model users, categories and expenses in PostgreSQL",
+      "Build CRUD endpoints in Flask with input validation",
+      "Add a monthly summary endpoint using SQL GROUP BY",
+      "Containerise the app with Docker and write API docs in the README"
+    ],
+    "bullet": "Built a REST API in Flask and PostgreSQL to track expenses with monthly SQL summaries, packaged with Docker."
+  },
+  {
+    "id": "django-store",
+    "title": "Online store with Django",
+    "summary": "Product catalogue, cart and order history with an admin panel.",
+    "level": "intermediate",
+    "hours": 40,
+    "skills": ["django", "python", "postgresql", "sql", "html", "css", "git"],
+    "steps": [
+      "Model products, carts and orders with Django's ORM",
+      "Build catalogue, cart and checkout pages with templates",
+      "Use the Django admin for managing products and orders",
+      "Write tests for the cart logic and deploy the site"
+    ],
+    "bullet": "Developed an online store in Django and PostgreSQL with cart, checkout and admin management, covered by unit tests."
+  },
+  {
+    "id": "spring-library",
+    "title": "Library management REST service",
+    "summary": "Books, members and loans with due dates and fines.",
+    "level": "intermediate",
+    "hours": 40,
+    "skills": ["java", "spring", "mysql", "sql", "rest api", "object-oriented programming", "git"],
+    "steps": [
+      "Design entities for books, members and loans with JPA",
+      "Build REST controllers and a service layer with validation",
+      "Add rules for due dates, renewals and fines",
+      "Write JUnit tests and document the API with OpenAPI"
+    ],
+    "bullet": "Built a library management service in Java and Spring Boot with MySQL, JPA and JUnit-tested business rules for loans and fines."
+  },
+  {
+    "id": "dotnet-inventory",
+    "title": "Inventory management API in .NET",
+    "summary": "Track stock, suppliers and low-stock alerts.",
+    "level": "intermediate",
+    "hours": 35,
+    "skills": [".net", "c#", "sql", "rest api", "azure", "git"],
+    "steps": [
+      "Create an ASP.NET Core Web API with Entity Framework Core",
+      "Model products, suppliers and stock movements",
+      "Add a low-stock report endpoint",
+      "Deploy to Azure App Service with a free database"
+    ],
+    "bullet": "Developed an inventory API in ASP.NET Core and C# with EF Core and low-stock reporting, deployed on Azure."
+  },
+  {
+    "id": "go-url-shortener",
+    "title": "URL shortener microservice in Go",
+    "summary": "Short links with click counts, cached for speed.",
+    "level": "intermediate",
+    "hours": 25,
+    "skills": ["go", "redis", "postgresql", "rest api", "docker", "git"],
+    "steps": [
+      "Write the HTTP service in Go with handlers for create and redirect",
+      "Store links in PostgreSQL and cache hot links in Redis",
+      "Count clicks and expose stats",
+      "Ship it as a small Docker image with a benchmark in the README"
+    ],
+    "bullet": "Built a URL shortener in Go with PostgreSQL storage and Redis caching, serving redirects from a Docker container."
+  },
+  {
+    "id": "realtime-chat",
+    "title": "Real-time chat app",
+    "summary": "Chat rooms with live messages, typing indicators and history.",
+    "level": "intermediate",
+    "hours": 35,
+    "skills": ["node.js", "javascript", "react", "redis", "mongodb", "git"],
+    "steps": [
+      "Set up a Node.js server with WebSockets for live messages",
+      "Store message history in MongoDB",
+      "Use Redis pub/sub so several server instances share messages",
+      "Build the React UI with rooms and typing indicators"
+    ],
+    "bullet": "Developed a real-time chat app (React, Node.js, WebSockets) with MongoDB history and Redis pub/sub for scaling."
+  },
+  {
+    "id": "graphql-api",
+    "title": "GraphQL API for a recipe app",
+    "summary": "Recipes, ingredients and favourites served over GraphQL.",
+    "level": "intermediate",
+    "hours": 25,
+    "skills": ["graphql", "node.js", "typescript", "postgresql", "sql", "git"],
+    "steps": [
+      "Design the GraphQL schema for recipes, ingredients and users",
+      "Write resolvers backed by PostgreSQL",
+      "Avoid N+1 queries with batching",
+      "Add a small client page that runs queries and mutations"
+    ],
+    "bullet": "Designed a GraphQL API in TypeScript and PostgreSQL for a recipe app, with batched resolvers to avoid N+1 queries."
+  },
+  {
+    "id": "angular-dashboard",
+    "title": "Admin dashboard in Angular",
+    "summary": "Tables, charts and forms over a public API.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["angular", "typescript", "rest api", "html", "css", "git"],
+    "steps": [
+      "Scaffold an Angular app with routing and lazy-loaded pages",
+      "Fetch data from a public API through services",
+      "Build sortable tables, charts and reactive forms",
+      "Add unit tests for a component and a service"
+    ],
+    "bullet": "Built an Angular and TypeScript admin dashboard with routing, reactive forms and charts over a REST API."
+  },
+  {
+    "id": "vue-weather",
+    "title": "Weather and air-quality app in Vue",
+    "summary": "Search a city to see the forecast and air quality.",
+    "level": "beginner",
+    "hours": 15,
+    "skills": ["vue", "javascript", "rest api", "html", "css", "git"],
+    "steps": [
+      "Call a free weather API and a geocoding API",
+      "Build components for search, current weather and a 5-day forecast",
+      "Save favourite cities in the browser",
+      "Deploy on Netlify or Vercel"
+    ],
+    "bullet": "Created a Vue.js weather app that combines two public REST APIs, with saved cities and a responsive design."
+  },
+  {
+    "id": "portfolio-site",
+    "title": "Personal portfolio website",
+    "summary": "A fast, accessible site that shows your projects and resume.",
+    "level": "beginner",
+    "hours": 15,
+    "skills": ["html", "css", "javascript", "figma", "git", "seo", "google analytics"],
+    "steps": [
+      "Design the layout in Figma first",
+      "Build it with semantic HTML and responsive CSS",
+      "Add meta tags for SEO and set up Google Analytics",
+      "Host it on GitHub Pages with your own domain"
+    ],
+    "bullet": "Designed in Figma and built a responsive, accessible portfolio site with SEO and analytics, hosted on GitHub Pages."
+  },
+  {
+    "id": "php-blog",
+    "title": "Blog with comments in PHP",
+    "summary": "Posts, comments and an admin login.",
+    "level": "beginner",
+    "hours": 25,
+    "skills": ["php", "mysql", "sql", "html", "css", "git"],
+    "steps": [
+      "Model posts, comments and users in MySQL",
+      "Build pages with PHP and PDO prepared statements",
+      "Add an admin login with sessions",
+      "Protect forms against SQL injection and XSS"
+    ],
+    "bullet": "Built a blog in PHP and MySQL with an admin area, using prepared statements to prevent SQL injection."
+  },
+  {
+    "id": "android-habit-tracker",
+    "title": "Habit tracker mobile app",
+    "summary": "Daily habits with streaks, reminders and cloud sync.",
+    "level": "intermediate",
+    "hours": 35,
+    "skills": ["kotlin", "firebase", "object-oriented programming", "sql", "git"],
+    "steps": [
+      "Build the Android app in Kotlin with a list and detail screen",
+      "Store habits locally in a SQLite database (Room)",
+      "Sync data and sign in with Firebase",
+      "Add daily reminder notifications and publish the APK on GitHub"
+    ],
+    "bullet": "Developed an Android habit tracker in Kotlin with local SQLite storage, Firebase sync and daily reminders."
+  },
+  {
+    "id": "ios-expense-app",
+    "title": "iOS budget app",
+    "summary": "Log spending and see where your money goes.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["swift", "object-oriented programming", "rest api", "git"],
+    "steps": [
+      "Build the screens in SwiftUI",
+      "Persist entries on the device",
+      "Fetch exchange rates from a public REST API",
+      "Add charts by category and share a demo video in the README"
+    ],
+    "bullet": "Built an iOS budgeting app in Swift and SwiftUI with on-device storage, currency conversion and category charts."
+  },
+  {
+    "id": "sales-dashboard",
+    "title": "Sales performance dashboard",
+    "summary": "Turn a public sales dataset into a one-page dashboard with insights.",
+    "level": "beginner",
+    "hours": 20,
+    "skills": ["sql", "excel", "power bi", "data analysis", "data visualization"],
+    "steps": [
+      "Load a public sales dataset into a SQL database and clean it",
+      "Answer 5 business questions with SQL queries",
+      "Build a Power BI dashboard with slicers by region and month",
+      "Write a one-page summary of findings and recommendations"
+    ],
+    "bullet": "Analysed 50k+ sales records with SQL and built a Power BI dashboard that surfaced the top regions and products by growth."
+  },
+  {
+    "id": "tableau-story",
+    "title": "Data story in Tableau Public",
+    "summary": "An interactive story about a topic you care about, from raw data to insights.",
+    "level": "beginner",
+    "hours": 15,
+    "skills": ["tableau", "sql", "data visualization", "data analysis"],
+    "steps": [
+      "Pick an open dataset (cricket, air quality, housing...) and clean it",
+      "Explore it with SQL or Excel to find 3 clear insights",
+      "Build a Tableau story with one chart per insight",
+      "Publish to Tableau Public and link it on your resume"
+    ],
+    "bullet": "Published an interactive Tableau story on open data that explains three key trends, viewed by N people on Tableau Public."
+  },
+  {
+    "id": "eda-report",
+    "title": "Exploratory data analysis report",
+    "summary": "A notebook that cleans a messy dataset and answers real questions.",
+    "level": "beginner",
+    "hours": 20,
+    "skills": ["python", "pandas", "numpy", "data analysis", "data visualization", "statistics"],
+    "steps": [
+      "Clean a messy public dataset with pandas (missing values, types, outliers)",
+      "Summarise it with descriptive statistics",
+      "Test one hypothesis and explain the result in plain words",
+      "Publish the notebook on GitHub or Kaggle with clear charts"
+    ],
+    "bullet": "Cleaned and analysed a 100k-row dataset in Python (pandas, NumPy), tested a hypothesis and published the findings with charts."
+  },
+  {
+    "id": "excel-financial-model",
+    "title": "Financial model and budget forecast",
+    "summary": "A three-statement model or a startup budget with scenarios.",
+    "level": "beginner",
+    "hours": 20,
+    "skills": ["excel", "financial modeling", "forecasting", "budgeting", "financial analysis"],
+    "steps": [
+      "Take a listed company's annual report or a sample startup",
+      "Build income statement, balance sheet and cash flow links in Excel",
+      "Forecast 3 years with best, base and worst scenarios",
+      "Summarise the valuation or runway in a one-page memo"
+    ],
+    "bullet": "Built a three-statement financial model in Excel with scenario-based forecasts and summarised the results in an investment memo."
+  },
+  {
+    "id": "r-stats-report",
+    "title": "Statistical report in R",
+    "summary": "A reproducible analysis with regression and clear charts.",
+    "level": "intermediate",
+    "hours": 20,
+    "skills": ["r", "statistics", "data visualization", "data analysis"],
+    "steps": [
+      "Import and tidy a public dataset with dplyr",
+      "Visualise relationships with ggplot2",
+      "Fit and interpret a regression model",
+      "Knit the analysis into an R Markdown report"
+    ],
+    "bullet": "Produced a reproducible R Markdown report with ggplot2 charts and a regression model explaining the key drivers in the data."
+  },
+  {
+    "id": "house-price-ml",
+    "title": "House price predictor with an API",
+    "summary": "Train a model, explain it, and serve predictions over HTTP.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["python", "machine learning", "scikit-learn", "pandas", "flask", "docker", "statistics"],
+    "steps": [
+      "Clean the data and engineer features with pandas",
+      "Compare linear and tree models with cross-validation in scikit-learn",
+      "Explain the model's most important features",
+      "Serve predictions with a Flask API in a Docker container"
+    ],
+    "bullet": "Trained and cross-validated scikit-learn models to predict house prices (R² 0.85) and served them through a Dockerised Flask API."
+  },
+  {
+    "id": "sentiment-analysis",
+    "title": "Review sentiment analyser",
+    "summary": "Classify product or movie reviews and show why.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["natural language processing", "python", "machine learning", "scikit-learn", "pandas"],
+    "steps": [
+      "Collect a labelled review dataset and clean the text",
+      "Train a TF-IDF + logistic regression baseline",
+      "Fine-tune a small pretrained transformer and compare",
+      "Build a demo page that highlights the words driving each prediction"
+    ],
+    "bullet": "Built a review sentiment classifier (TF-IDF baseline vs fine-tuned transformer, 91% F1) with an explainable web demo."
+  },
+  {
+    "id": "image-classifier",
+    "title": "Image classifier web app",
+    "summary": "Recognise plants, waste types or X-rays from a photo.",
+    "level": "advanced",
+    "hours": 40,
+    "skills": ["deep learning", "computer vision", "pytorch", "python", "flask", "docker"],
+    "steps": [
+      "Collect or download a labelled image dataset",
+      "Fine-tune a pretrained CNN with PyTorch and data augmentation",
+      "Evaluate with a confusion matrix and fix the worst classes",
+      "Serve it from a Flask app where users upload a photo"
+    ],
+    "bullet": "Fine-tuned a CNN in PyTorch to classify 10 image classes at 94% accuracy and deployed it as a Dockerised web app."
+  },
+  {
+    "id": "tensorflow-forecast",
+    "title": "Time-series forecaster with TensorFlow",
+    "summary": "Predict energy use, sales or traffic from past data.",
+    "level": "advanced",
+    "hours": 35,
+    "skills": ["tensorflow", "deep learning", "python", "pandas", "numpy", "data visualization"],
+    "steps": [
+      "Prepare windows of past values with pandas and NumPy",
+      "Train a baseline, then an LSTM in TensorFlow/Keras",
+      "Compare errors and plot predictions against reality",
+      "Save the model and write up what worked"
+    ],
+    "bullet": "Built an LSTM forecaster in TensorFlow that cut forecast error 30% over a seasonal baseline on public energy data."
+  },
+  {
+    "id": "etl-pipeline",
+    "title": "Daily ETL pipeline with Airflow",
+    "summary": "Pull data from an API every day, clean it and load it into a warehouse.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["airflow", "etl", "python", "sql", "postgresql", "docker"],
+    "steps": [
+      "Extract data daily from a public API (weather, prices, transport)",
+      "Clean and validate it in Python",
+      "Load it into PostgreSQL with idempotent upserts",
+      "Schedule and monitor the DAG in Airflow running in Docker"
+    ],
+    "bullet": "Built a daily ETL pipeline orchestrated by Airflow that loads cleaned API data into PostgreSQL, running in Docker."
+  },
+  {
+    "id": "streaming-pipeline",
+    "title": "Streaming analytics with Kafka and Spark",
+    "summary": "Process live events (clicks, rides, tweets) as they arrive.",
+    "level": "advanced",
+    "hours": 40,
+    "skills": ["kafka", "spark", "python", "sql", "etl", "docker"],
+    "steps": [
+      "Write a producer that streams events into Kafka",
+      "Aggregate them in near real time with Spark Structured Streaming",
+      "Store results and query them with SQL",
+      "Run the whole stack with Docker Compose"
+    ],
+    "bullet": "Built a streaming pipeline with Kafka and Spark Structured Streaming that aggregates live events in near real time."
+  },
+  {
+    "id": "big-data-batch",
+    "title": "Big-data batch analysis",
+    "summary": "Analyse a dataset too big for pandas.",
+    "level": "intermediate",
+    "hours": 25,
+    "skills": ["spark", "hadoop", "sql", "python", "snowflake"],
+    "steps": [
+      "Pick a multi-GB public dataset (taxi trips, logs, Wikipedia)",
+      "Store it in HDFS or cloud storage",
+      "Transform and aggregate it with PySpark and Spark SQL",
+      "Load the results into a warehouse such as Snowflake's free trial"
+    ],
+    "bullet": "Processed a 10 GB dataset with PySpark and Spark SQL and loaded aggregates into a cloud data warehouse."
+  },
+  {
+    "id": "k8s-deploy",
+    "title": "Deploy an app with CI/CD and Kubernetes",
+    "summary": "Every push is tested, built into an image and rolled out.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["docker", "kubernetes", "ci/cd", "github", "linux", "git"],
+    "steps": [
+      "Containerise one of your apps with a small Dockerfile",
+      "Write a GitHub Actions pipeline that tests and builds the image",
+      "Deploy it to a local or free Kubernetes cluster with a Deployment and Service",
+      "Add health checks and roll back a bad release on purpose"
+    ],
+    "bullet": "Set up a CI/CD pipeline with GitHub Actions that tests, builds and deploys a Dockerised app to Kubernetes with health checks."
+  },
+  {
+    "id": "terraform-aws",
+    "title": "Infrastructure as code on AWS",
+    "summary": "Create a whole web stack on AWS from code, and destroy it with one command.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["terraform", "aws", "ci/cd", "linux", "bash"],
+    "steps": [
+      "Write Terraform for a VPC, an EC2 instance and an S3 bucket",
+      "Configure the server with a bash bootstrap script",
+      "Run terraform plan in CI on every pull request",
+      "Keep it on the free tier and document costs"
+    ],
+    "bullet": "Provisioned an AWS web stack (VPC, EC2, S3) with Terraform and added plan checks to the CI pipeline."
+  },
+  {
+    "id": "server-automation",
+    "title": "Server setup automation",
+    "summary": "Turn a fresh Linux VM into a ready web server with one command.",
+    "level": "intermediate",
+    "hours": 25,
+    "skills": ["ansible", "linux", "bash", "jenkins", "nginx"],
+    "steps": [
+      "Write an Ansible playbook that hardens a Linux server and installs nginx",
+      "Use roles, variables and handlers",
+      "Trigger the playbook from a Jenkins pipeline",
+      "Test it on two fresh VMs and document the steps"
+    ],
+    "bullet": "Automated Linux server provisioning with Ansible roles (hardening, nginx) triggered from a Jenkins pipeline."
+  },
+  {
+    "id": "security-home-lab",
+    "title": "Security home lab and write-ups",
+    "summary": "Attack and defend your own small network, and document it.",
+    "level": "intermediate",
+    "hours": 35,
+    "skills": ["cybersecurity", "network security", "linux", "penetration testing", "firewall", "python"],
+    "steps": [
+      "Set up attacker and target VMs on an isolated virtual network",
+      "Scan and exploit an intentionally vulnerable machine",
+      "Harden it with firewall rules and patching, then re-test",
+      "Publish write-ups of each step and a small Python scanning script"
+    ],
+    "bullet": "Built a virtual security lab, exploited and then hardened a vulnerable host, and published write-ups and a Python port-scanning tool."
+  },
+  {
+    "id": "dsa-visualizer",
+    "title": "Algorithm visualizer",
+    "summary": "Animate sorting, searching and graph algorithms step by step.",
+    "level": "intermediate",
+    "hours": 30,
+    "skills": ["data structures", "algorithms", "javascript", "react", "html", "css"],
+    "steps": [
+      "Implement 4 sorting algorithms and BFS/DFS from scratch",
+      "Record each step so it can be replayed",
+      "Animate the steps in a React UI with speed controls",
+      "Show time and space complexity next to each algorithm"
+    ],
+    "bullet": "Built a React app that animates sorting and graph algorithms step by step, implemented from scratch with complexity notes."
+  },
+  {
+    "id": "cpp-systems",
+    "title": "Mini database or shell in C/C++",
+    "summary": "A low-level project that proves you understand memory and data structures.",
+    "level": "advanced",
+    "hours": 40,
+    "skills": ["c++", "c", "data structures", "linux", "algorithms"],
+    "steps": [
+      "Implement a key-value store with a hash map or B-tree",
+      "Persist data to a file and reload it",
+      "Add a simple command-line interface",
+      "Write tests and measure performance"
+    ],
+    "bullet": "Implemented a persistent key-value store in C++ with a custom hash map and file storage, benchmarked at 1M operations."
+  },
+  {
+    "id": "ux-case-study",
+    "title": "UX case study: redesign a real app",
+    "summary": "Find a real usability problem and fix it, end to end.",
+    "level": "beginner",
+    "hours": 25,
+    "skills": ["figma", "user research", "wireframing", "prototyping"],
+    "steps": [
+      "Interview 5 users of an app you use (college portal, food delivery...)",
+      "Map their pain points and pick one to solve",
+      "Wireframe and prototype the fix in Figma",
+      "Test the prototype and write the case study with before/after"
+    ],
+    "bullet": "Ran 5 user interviews, prototyped a redesign in Figma and cut task time in usability tests; published as a case study."
+  },
+  {
+    "id": "marketing-analytics",
+    "title": "Grow a small site or page",
+    "summary": "Run real SEO and content experiments and report the numbers.",
+    "level": "beginner",
+    "hours": 20,
+    "skills": ["seo", "google analytics", "digital marketing", "content creation", "a/b testing"],
+    "steps": [
+      "Start a blog or help a local business / college club with its site",
+      "Do keyword research and publish optimised posts",
+      "Track traffic and conversions in Google Analytics",
+      "Run one A/B test and report the results"
+    ],
+    "bullet": "Grew organic traffic to a club website by 3x in 8 weeks through keyword research and SEO content, tracked in Google Analytics."
+  },
+  {
+    "id": "agile-team-project",
+    "title": "Team project run with Scrum",
+    "summary": "Build anything as a team of 3-4, but run it like a real software team.",
+    "level": "beginner",
+    "hours": 30,
+    "skills": ["agile", "scrum", "jira", "git", "github"],
+    "steps": [
+      "Write user stories and plan two-week sprints in Jira",
+      "Work on branches with pull requests and code reviews on GitHub",
+      "Hold stand-ups, a review and a retrospective each sprint",
+      "Document the process and your own role in the README"
+    ],
+    "bullet": "Led a 4-person team through 3 Scrum sprints in Jira, shipping a web app with pull-request reviews on GitHub."
+  }
+]
