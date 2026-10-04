@@ -3,7 +3,8 @@
 React 19 + Vite + Tailwind CSS 4 single-page app for the Resume Analyzer. Upload a resume
 (PDF/DOCX), with or without a job description (sample postings included), to get a match score with a per-factor breakdown, a decoded view
 of the job, an ATS check (with a student / fresher checklist), a skill-gap learning plan, and an
-editor with a live bullet coach to fix the resume, re-check it and download an ATS-friendly `.docx`.
+editor with a live bullet coach to fix the resume, re-check it and download an ATS-friendly `.docx`,
+and live jobs and internships with a fit score on each.
 
 Live: <https://resumefitlens.vercel.app>
 
@@ -47,6 +48,7 @@ instance can take close to a minute to wake up):
 | Re-check the edited resume | `POST /api/recheck` (JSON) |
 | Change the target role | `POST /api/role-gap` (JSON) |
 | Download the edited resume | `POST /api/resume/docx` (JSON → `.docx`) |
+| Find jobs and internships | `POST /api/jobs`, `GET /api/jobs/options` |
 
 | Environment | `VITE_API_BASE_URL` | Requests go to |
 | --- | --- | --- |
@@ -89,6 +91,7 @@ src/
     │   ├── AtsTab.jsx           ATS checklist with fixes
     │   ├── EditTab.jsx          section-by-section resume editor
     │   ├── LearnTab.jsx         skill-gap learning plan
+    │   ├── JobsTab.jsx          live jobs and internships with a fit score on each
     │   └── edit/fields.jsx      fields, skill tag input, list/entry editors, bullet coach
     ├── pages/LegalPages.jsx     Privacy, Terms, 404
     └── ErrorBoundary.jsx

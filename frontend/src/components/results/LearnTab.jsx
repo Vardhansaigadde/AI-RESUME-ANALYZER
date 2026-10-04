@@ -109,7 +109,7 @@ export default function LearnTab({ plan, missingCount, role }) {
     <div>
       <p className="mb-5 text-sm text-muted">
         {role
-          ? `Core ${role} skills your resume doesn’t show yet, most important first. Change the target role in the Profile tab.`
+          ? `Core ${role} skills your resume doesn’t show yet, most important first. Change the target role in the Overview tab.`
           : 'Free resources for the skills this job asks for that your resume doesn’t show yet, most important first.'}{' '}
         Learn them, build the small project, then add it to your resume.
       </p>

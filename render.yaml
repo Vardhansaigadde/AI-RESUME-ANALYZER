@@ -19,3 +19,9 @@ services:
       # origin must be allowed here.
       - key: CORS_ORIGINS
         value: "https://resumefitlens.vercel.app"
+      # Optional: free Adzuna developer key for on-site jobs in the job search
+      # (https://developer.adzuna.com). Without it, only remote jobs are shown.
+      - key: ADZUNA_APP_ID
+        sync: false
+      - key: ADZUNA_APP_KEY
+        sync: false

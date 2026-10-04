@@ -19,6 +19,7 @@ from app.schemas.resume import StructuredResume
 from app.services.ats_checker import check_ats
 from app.services.data_cleaning import clean_text
 from app.services.job_decoder import decode_job
+from app.services.job_search import ANYWHERE, COUNTRIES, search_jobs
 from app.services.learning_plan import build_learning_plan
 from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
 from app.services.matcher import match_resume_to_job
@@ -235,6 +236,17 @@ def run_recheck(
     return _analyze_text(
         resume_content_text, job_content_text, resume, layout=None, student_mode=student_mode, target_role=target_role
     )
+
+
+def run_job_search(resume: StructuredResume, query: str, country: str, kind: str) -> dict[str, Any]:
+    """Live postings for a search, each scored against the (possibly edited) resume."""
+    country = country.strip().upper()
+    if country != ANYWHERE and country not in COUNTRIES:
+        raise PipelineError("Unsupported country.", status_code=422)
+    resume_text = render_resume_text(resume)
+    if not clean_text(resume_text):
+        raise PipelineError("The resume is empty.", status_code=422)
+    return search_jobs(resume_text, query, country, kind)
 
 
 def run_role_gap(resume: StructuredResume, target_role: str, with_learning_plan: bool = True) -> dict[str, Any]:

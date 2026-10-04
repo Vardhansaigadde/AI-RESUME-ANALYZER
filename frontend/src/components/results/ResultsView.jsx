@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { GraduationCap, LayoutDashboard, Lightbulb, PencilLine, RotateCcw, ScanText } from 'lucide-react';
+import { Briefcase, GraduationCap, LayoutDashboard, Lightbulb, PencilLine, RotateCcw, ScanText } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { downloadResumeDocx, fetchRoleGap, recheckResume } from '../../lib/api';
 import { snapshot, withIds } from '../../lib/resume';
@@ -8,6 +8,7 @@ import Switch from '../ui/Switch';
 import Tabs from '../ui/Tabs';
 import AtsTab from './AtsTab';
 import EditTab from './EditTab';
+import JobsTab from './JobsTab';
 import LearnTab from './LearnTab';
 import OverviewTab from './OverviewTab';
 import SummaryCards from './SummaryCards';
@@ -31,6 +32,7 @@ export default function ResultsView({
   const [downloading, setDownloading] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
   const [addJobOpen, setAddJobOpen] = useState(false);
+  const [jobSearch, setJobSearch] = useState({ loading: false, error: null, params: null, data: null });
 
   const studentMode = Boolean(result.student_mode);
   const targetRole = result.role_gap?.role || null;
@@ -121,6 +123,7 @@ export default function ResultsView({
     { id: 'ats', label: 'ATS check', short: 'ATS', icon: ScanText, badge: issues || null },
     { id: 'edit', label: 'Edit & re-check', short: 'Edit', icon: PencilLine },
     { id: 'learn', label: 'Skill plan', short: 'Learn', icon: Lightbulb, badge: planSize || null },
+    { id: 'jobs', label: 'Find jobs', short: 'Jobs', icon: Briefcase },
   ];
 
   return (
@@ -214,6 +217,15 @@ export default function ResultsView({
                 plan={result.learning_plan}
                 missingCount={resumeOnly ? result.role_gap?.missing.length || 0 : result.missing_skills.length}
                 role={resumeOnly ? targetRole : null}
+              />
+            )}
+            {tab === 'jobs' && (
+              <JobsTab
+                resume={draft}
+                defaultQuery={targetRole}
+                studentMode={studentMode}
+                state={jobSearch}
+                setState={setJobSearch}
               />
             )}
           </motion.div>

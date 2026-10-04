@@ -1,0 +1,386 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight, Building2, Clock, MapPin, RefreshCw, Search, ShieldCheck, Wallet } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { fetchJobOptions, searchJobs } from '../../lib/api';
+import { scoreTone } from '../../lib/resume';
+import { formatSkill } from '../../utils/format';
+import Button from '../ui/Button';
+
+const KINDS = [
+  { id: 'all', label: 'All jobs' },
+  { id: 'internship', label: 'Internships' },
+  { id: 'entry', label: 'Entry-level' },
+];
+
+const FALLBACK_COUNTRIES = [{ code: 'IN', name: 'India', onsite: false }];
+
+// Fetched once per page load
+let optionsRequest = null;
+const jobOptions = () => (optionsRequest ??= fetchJobOptions().catch(() => (optionsRequest = null)));
+
+const SORTS = {
+  fit: (a, b) => b.fit_score - a.fit_score,
+  new: (a, b) => (b.posted || '').localeCompare(a.posted || ''),
+};
+
+function postedAgo(iso) {
+  if (!iso) return '';
+  const days = Math.floor((Date.now() - new Date(`${iso}T00:00:00Z`).getTime()) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? '1 month ago' : `${months} months ago`;
+}
+
+function FitBadge({ score }) {
+  const tone = scoreTone(score);
+  return (
+    <div className={`grid size-14 shrink-0 place-items-center rounded-2xl ${tone.bg} ${tone.text}`} title="How well your resume fits this posting">
+      <div className="text-center leading-none">
+        <div className="font-mono text-lg font-bold">{Math.round(score)}</div>
+        <div className="mt-0.5 text-[9px] font-bold tracking-[0.15em]">FIT</div>
+      </div>
+    </div>
+  );
+}
+
+function Meta({ icon: Icon, children }) {
+  if (!children) return null;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Icon className="size-3.5 shrink-0" aria-hidden />
+      {children}
+    </span>
+  );
+}
+
+function JobCard({ job, index }) {
+  const have = job.matched_skills.slice(0, 4);
+  const missing = job.missing_skills.slice(0, 3);
+  const tags = [job.employment_type, job.level].filter((t, i, all) => t && all.indexOf(t) === i);
+  return (
+    <motion.li
+      layout
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 24, delay: Math.min(index, 8) * 0.04 }}
+      className="card flex flex-col p-4 sm:p-5"
+    >
+      <div className="flex gap-4">
+        <FitBadge score={job.fit_score} />
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-2 font-display text-lg leading-snug font-semibold" title={job.title}>
+            {job.title}
+          </h3>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
+            <Meta icon={Building2}>{job.company}</Meta>
+            <Meta icon={MapPin}>{job.location}</Meta>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        {tags.map((tag) => (
+          <span key={tag} className="rounded-full bg-sunken px-2 py-0.5 font-semibold">
+            {tag}
+          </span>
+        ))}
+        {job.salary && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-ok-soft px-2 py-0.5 font-semibold text-ok">
+            <Wallet className="size-3" aria-hidden />
+            {job.salary}
+          </span>
+        )}
+        {job.posted && (
+          <span className="inline-flex items-center gap-1 px-1 text-muted">
+            <Clock className="size-3" aria-hidden />
+            {postedAgo(job.posted)}
+          </span>
+        )}
+      </div>
+
+      {job.excerpt && <p className="mt-3 line-clamp-2 text-sm text-muted">{job.excerpt}</p>}
+
+      {(have.length > 0 || missing.length > 0) && (
+        <div className="mt-3 space-y-1.5 text-sm">
+          {have.length > 0 && (
+            <p>
+              <span className="font-semibold">You have </span>
+              {have.map((s) => (
+                <span key={s} className="mr-1 rounded bg-highlight/70 px-1.5 py-0.5 font-medium dark:bg-highlight/50">
+                  {formatSkill(s)}
+                </span>
+              ))}
+            </p>
+          )}
+          {missing.length > 0 && (
+            <p>
+              <span className="font-semibold">Missing </span>
+              {missing.map((s, i) => (
+                <span key={s} className="font-medium text-pen">
+                  {formatSkill(s)}
+                  {i < missing.length - 1 && ', '}
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-4">
+        <span className="text-xs text-muted">
+          via {job.source}
+          {job.short_description && ' · scored from a short preview'}
+        </span>
+        <a
+          href={job.url}
+          target="_blank"
+          rel="noreferrer"
+          className="group inline-flex items-center gap-1 rounded-xl bg-ink px-3 py-1.5 text-sm font-semibold text-paper transition hover:bg-ink/90"
+        >
+          View &amp; apply
+          <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+        </a>
+      </div>
+    </motion.li>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <li className="card animate-pulse p-5" aria-hidden>
+      <div className="flex gap-4">
+        <div className="size-14 rounded-2xl bg-sunken" />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className="h-4 w-3/4 rounded bg-sunken" />
+          <div className="h-3 w-1/2 rounded bg-sunken" />
+        </div>
+      </div>
+      <div className="mt-4 h-3 w-full rounded bg-sunken" />
+      <div className="mt-2 h-3 w-5/6 rounded bg-sunken" />
+    </li>
+  );
+}
+
+function Sources({ sources }) {
+  if (!sources?.length) return null;
+  return (
+    <p className="mt-6 text-center text-xs text-muted">
+      Jobs from{' '}
+      {sources
+        .filter((s) => s.status !== 'off')
+        .map((s, i, list) => (
+          <span key={s.name}>
+            <a href={s.url} target="_blank" rel="noreferrer" className="font-semibold underline-offset-2 hover:underline">
+              {s.name}
+            </a>
+            {s.status === 'unavailable' && ' (unavailable right now)'}
+            {i < list.length - 2 ? ', ' : i === list.length - 2 ? ' and ' : ''}
+          </span>
+        ))}
+      . Listings refresh every few hours; always check the posting before applying.
+    </p>
+  );
+}
+
+/**
+ * Live jobs and internships with your fit score on each.
+ * `state` lives in ResultsView so results survive switching tabs.
+ */
+export default function JobsTab({ resume, defaultQuery, studentMode, state, setState }) {
+  const id = useId();
+  const [form, setForm] = useState(
+    () => state.params || { query: defaultQuery || 'Software Engineer', country: 'IN', kind: studentMode ? 'internship' : 'all' },
+  );
+  const [countries, setCountries] = useState(FALLBACK_COUNTRIES);
+  const [sort, setSort] = useState('fit');
+
+  const run = async (params = form) => {
+    const query = params.query.trim();
+    if (query.length < 2) return;
+    // Only the latest search may update the results
+    const requestId = `${Date.now()}-${Math.random()}`;
+    setState((s) => ({ ...s, loading: true, error: null, params, requestId }));
+    try {
+      const data = await searchJobs(resume, { ...params, query });
+      setState((s) => (s.requestId === requestId ? { loading: false, error: null, params, data } : s));
+    } catch (err) {
+      setState((s) => (s.requestId === requestId ? { ...s, loading: false, error: err.message } : s));
+    }
+  };
+
+  const started = useRef(false);
+
+  useEffect(() => {
+    let live = true;
+    jobOptions().then((opts) => live && opts?.countries?.length && setCountries(opts.countries));
+    // First visit: search right away with the target role (once, even under StrictMode)
+    if (!started.current && !state.data && !state.loading) {
+      started.current = true;
+      run();
+    }
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const searchWith = (changes) => {
+    const next = { ...form, ...changes };
+    setForm(next);
+    run(next);
+  };
+
+  const { data, loading, error } = state;
+  const jobs = data ? [...data.jobs].sort(SORTS[sort]) : [];
+  const onsiteOff = data?.sources?.find((s) => s.name === 'Adzuna' && s.status === 'off');
+
+  return (
+    <div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          run();
+        }}
+        className="card p-4 sm:p-5"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <label htmlFor={`${id}-q`} className="sr-only">
+              Role or keywords
+            </label>
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" aria-hidden />
+            <input
+              id={`${id}-q`}
+              value={form.query}
+              onChange={(e) => set('query')(e.target.value)}
+              maxLength={80}
+              placeholder="Role or keywords, e.g. data analyst"
+              className="field w-full pl-9"
+            />
+          </div>
+          <div className="flex gap-3">
+            <label htmlFor={`${id}-c`} className="sr-only">
+              Where
+            </label>
+            <select
+              id={`${id}-c`}
+              value={form.country}
+              onChange={(e) => set('country')(e.target.value)}
+              className="field flex-1 cursor-pointer sm:w-44 sm:flex-none"
+            >
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+              <option value="ANY">Anywhere (remote)</option>
+            </select>
+            <Button type="submit" variant="accent" icon={Search} loading={loading}>
+              Search
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div role="radiogroup" aria-label="Job type" className="inline-flex rounded-xl bg-sunken p-1">
+            {KINDS.map((k) => (
+              <button
+                key={k.id}
+                type="button"
+                role="radio"
+                aria-checked={form.kind === k.id}
+                onClick={() => searchWith({ kind: k.id })}
+                className={`relative cursor-pointer rounded-lg px-3 py-1 text-sm font-semibold transition ${
+                  form.kind === k.id ? 'text-ink' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {form.kind === k.id && (
+                  <motion.span layoutId={`${id}-kind`} className="absolute inset-0 rounded-lg bg-card shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                )}
+                <span className="relative">{k.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="flex items-center gap-1.5 text-xs text-muted">
+            <ShieldCheck className="size-3.5 text-ok" aria-hidden />
+            Only your search words go to job sites, never your resume.
+          </p>
+        </div>
+      </form>
+
+      <div className="mt-5" aria-live="polite">
+        {error && !loading && (
+          <div className="card flex flex-col items-center gap-3 p-8 text-center">
+            <p className="text-sm text-muted">{error}</p>
+            <Button variant="secondary" icon={RefreshCw} onClick={() => run()}>
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {loading && (
+          <>
+            <p className="mb-3 text-sm text-muted">Finding openings and scoring your resume against each one…</p>
+            <ul className="grid gap-4 lg:grid-cols-2">
+              {[0, 1, 2, 3].map((i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </ul>
+          </>
+        )}
+
+        {!loading && !error && data && (
+          <>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm">
+                <span className="font-semibold">{jobs.length}</span>{' '}
+                <span className="text-muted">
+                  {jobs.length === 1 ? 'opening' : 'openings'} for “{data.query}”
+                  {onsiteOff && data.country !== 'ANY' && ' · remote roles'}
+                </span>
+              </p>
+              {jobs.length > 1 && (
+                <label className="flex items-center gap-2 text-sm text-muted">
+                  Sort by
+                  <select value={sort} onChange={(e) => setSort(e.target.value)} className="cursor-pointer rounded-lg border border-line bg-card px-2 py-1 text-sm text-ink">
+                    <option value="fit">Best fit</option>
+                    <option value="new">Newest</option>
+                  </select>
+                </label>
+              )}
+            </div>
+
+            {jobs.length === 0 ? (
+              <div className="card p-8 text-center">
+                <h3 className="font-display text-xl font-semibold">No openings found</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+                  Try a broader search such as “developer” or “analyst”, switch to All jobs, or choose Anywhere (remote).
+                </p>
+              </div>
+            ) : (
+              <ul className="grid gap-4 lg:grid-cols-2">
+                <AnimatePresence>
+                  {jobs.map((job, i) => (
+                    <JobCard key={job.id} job={job} index={i} />
+                  ))}
+                </AnimatePresence>
+              </ul>
+            )}
+            {jobs.length < 5 && data.country !== 'ANY' && (
+              <p className="mt-4 text-center text-sm text-muted">
+                Few matches here.{' '}
+                <button type="button" onClick={() => searchWith({ country: 'ANY' })} className="cursor-pointer font-semibold text-accent hover:underline">
+                  Search remote jobs anywhere
+                </button>
+              </p>
+            )}
+            <Sources sources={data.sources} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

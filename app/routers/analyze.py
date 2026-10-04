@@ -7,6 +7,8 @@ Provides:
   POST /api/recheck       -- Re-analyze an edited, structured resume.
   POST /api/resume/docx   -- Download a structured resume as an ATS-friendly .docx.
   POST /api/role-gap      -- Compare a resume with a target job role.
+  POST /api/jobs          -- Live jobs and internships, each with the resume's fit score.
+  GET  /api/jobs/options  -- Countries and job sources the search supports.
   POST /api/suggest-roles -- Standalone top-N role predictions from an uploaded
                              resume file or resume text.
 """
@@ -23,13 +25,16 @@ from starlette.concurrency import run_in_threadpool
 
 from app.schemas import AnalyzeResponse, SuggestRolesResponse
 from app.schemas.insights import RoleGapRequest, RoleGapResponse
+from app.schemas.jobs import JobSearchRequest, JobSearchResponse
 from app.schemas.resume import RecheckRequest, StructuredResume
+from app.services.job_search import ADZUNA_COUNTRIES, COUNTRIES, adzuna_keys
 from app.services.pipeline import (
     MAX_FILE_SIZE,
     REQUIRED_ANALYZE_MODELS,
     REQUIRED_ROLE_MODELS,
     PipelineError,
     run_full_analysis,
+    run_job_search,
     run_recheck,
     run_role_gap,
     run_role_suggestion,
@@ -216,6 +221,30 @@ async def recheck(payload: RecheckRequest) -> dict[str, Any]:
 async def role_gap(payload: RoleGapRequest) -> dict[str, Any]:
     """Compare a (possibly edited) resume with another target role, without re-running the models."""
     return await _run_pipeline(run_role_gap, resume=payload.resume, target_role=payload.target_role)
+
+
+@router.post("/jobs", response_model=JobSearchResponse)
+async def jobs(payload: JobSearchRequest) -> dict[str, Any]:
+    """Search live jobs and internships and score the resume against each posting.
+
+    Only the query, country and job type are sent to the job sites.
+    """
+    return await _run_pipeline(
+        run_job_search, resume=payload.resume, query=payload.query, country=payload.country, kind=payload.kind
+    )
+
+
+@router.get("/jobs/options")
+async def job_options() -> dict[str, Any]:
+    """Countries for the job search, and which ones also have on-site jobs."""
+    onsite = adzuna_keys() is not None
+    return {
+        "countries": [
+            {"code": code, "name": name, "onsite": onsite and code in ADZUNA_COUNTRIES}
+            for code, name in COUNTRIES.items()
+        ],
+        "onsite_enabled": onsite,
+    }
 
 
 @router.post("/resume/docx")

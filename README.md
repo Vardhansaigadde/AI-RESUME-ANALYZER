@@ -3,7 +3,7 @@
 [![CI](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml/badge.svg)](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml)
 
 Upload a resume (PDF or DOCX) and, optionally, paste a job description (or pick a sample). Built
-with students and freshers in mind. The report has four tabs:
+with students and freshers in mind. The report has five tabs:
 
 | Tab | What you get |
 | --- | --- |
@@ -11,6 +11,7 @@ with students and freshers in mind. The report has four tabs:
 | **ATS check** | A 0–100 estimate of how well applicant tracking systems can read the resume (layout, sections, contact details, bullets, keywords), each problem with a fix. **Student mode** adds a fresher checklist (projects, internships, CGPA, GitHub, one page). |
 | **Edit & re-check** | The resume split into editable sections, a live **bullet coach** (weak openers, missing numbers, passive voice), one-click re-check, and download as an ATS-friendly `.docx`. |
 | **Skill plan** | For each missing skill (from the job, or your target role when there's no job): why it matters, free link-checked resources and a small project that proves it. |
+| **Find jobs** | Live jobs and internships (search by role, country, and All / Internships / Entry-level), each with **your fit score**, the skills you have and miss, and a link to apply. |
 
 Live app: <https://resumefitlens.vercel.app> · Backend: FastAPI on Render · Frontend: React + Vite on Vercel
 
@@ -117,6 +118,24 @@ order of importance, plus a default role for each classifier category. They are 
 classifier's 24 dataset categories because those are broad (the dataset's IT category is mostly
 infrastructure resumes) and would give a software student misleading gaps. The resume strength
 report is computed in the browser (`frontend/src/lib/strength.js`) so it updates while editing.
+
+### Live job search
+
+`POST /api/jobs` (`app/services/job_search.py`) fetches current postings and scores the resume
+against each one with the same match model, so they can be sorted by fit. Only the search words,
+country and job type are sent to the job sites; the resume stays on the server.
+
+- **[Himalayas](https://himalayas.app/api)** — remote jobs, including India-only and internship
+  roles. Free, no key. Its data refreshes daily, so results are cached for 6 hours.
+- **[Adzuna](https://developer.adzuna.com)** — on-site jobs in India and six other countries.
+  Optional: set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` (free developer key). Adzuna returns only a
+  snippet of each posting, so those scores are rougher (the card says so). Cached for 1 hour.
+
+Both ask that listings link back to them and name them as the source, which every card does.
+Results are cached in memory by (source, query, country, type), so popular searches rarely reach
+the job sites. Remotive and Arbeitnow were considered and left out: Remotive's free API now
+returns only a handful of jobs, and Arbeitnow is almost all Germany. Skill extraction is cached by
+text, so scoring 20 postings takes about a second.
 
 ## Data
 
@@ -237,6 +256,13 @@ role-based `learning_plan` without re-running the models.
 
 `job_description` is optional on `/api/analyze` and `/api/recheck`; both also accept `target_role`.
 
+`POST /api/jobs` — JSON `{"resume": {...}, "query": "data analyst", "country": "IN", "kind": "internship"}`
+(`kind`: `all`, `internship` or `entry`; `country`: a code from `/api/jobs/options` or `ANY`). Returns
+`jobs` (each with `fit_score`, `matched_skills`, `missing_skills`, `url`, `source`), sorted by fit,
+and the status of each `sources` entry.
+
+`GET /api/jobs/options` — countries for the job search and whether on-site jobs are enabled.
+
 `POST /api/suggest-roles` — a resume file or `resume_text`, optional `top_n` (1–24).
 
 `GET /` (or `HEAD /`) — health check.
@@ -272,8 +298,9 @@ mirrors them for recreating it as a Blueprint. Environment variables (set in the
 | --- | --- | --- |
 | `CORS_ORIGINS` | localhost dev origins | comma-separated origins allowed to call the API; must include `https://resumefitlens.vercel.app` |
 | `ENABLE_DOCS` | `false` | expose `/docs` and `/openapi.json` |
-| `RATE_LIMIT_PER_MINUTE` | `20` | POST requests (analyze, re-check, download) per client IP per minute (`0` disables) |
+| `RATE_LIMIT_PER_MINUTE` | `20` | POST requests (analyze, re-check, download, job search) per client IP per minute (`0` disables) |
 | `LOG_LEVEL` | `INFO` | log level |
+| `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | unset | free [Adzuna](https://developer.adzuna.com) key; switches on on-site jobs in the job search |
 
 On the free plan the service sleeps after ~15 minutes idle. The `Keep backend awake` GitHub Actions
 workflow pings the health check every 10 minutes from 07:30 to 00:30 IST (~510 of the 750 free
@@ -292,7 +319,7 @@ same backend.
 ## Project structure
 
 ```text
-app/                FastAPI app (main.py, rate_limit.py), routers, schemas (analysis, resume), services, ml/, data/*.json
+app/                FastAPI app (main.py, rate_limit.py), routers, schemas (analysis, resume, insights, jobs), services, ml/, data/*.json
 data/raw/           source datasets (.csv.gz)
 data/processed/     cleaned datasets and features.csv (generated)
 models/             serialized models (~5.2 MB total)

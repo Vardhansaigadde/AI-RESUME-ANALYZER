@@ -96,3 +96,19 @@ export async function downloadResumeDocx(resume) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Live jobs and internships, each scored against the resume. Only the search words reach the job sites. */
+export async function searchJobs(resume, { query, country, kind }) {
+  const response = await request('/api/jobs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resume, query, country, kind }),
+  });
+  return response.json();
+}
+
+/** Countries the job search supports, and whether on-site jobs are switched on. */
+export async function fetchJobOptions() {
+  const response = await request('/api/jobs/options', { method: 'GET' });
+  return response.json();
+}

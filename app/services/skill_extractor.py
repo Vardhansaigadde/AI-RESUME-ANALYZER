@@ -417,6 +417,10 @@ def extract_skills(text: str) -> set[str]:
 def extract_skill_counts(text: str) -> dict[str, int]:
     """Like extract_skills(), but also count how often each skill appears.
 
+    Results are cached by text: scoring a resume against many postings (the job
+    search) or building features calls this with the same resume text again
+    and again. Returns a fresh dict, so callers may modify it.
+
     Returns:
         {canonical_skill: number_of_mentions}. For context-dependent skills
         only mentions with valid context are counted; aliases count toward
@@ -424,7 +428,15 @@ def extract_skill_counts(text: str) -> dict[str, int]:
     """
     if not text or not isinstance(text, str):
         return {}
+    return dict(_extract_skill_counts_cached(text))
 
+
+@lru_cache(maxsize=256)
+def _extract_skill_counts_cached(text: str) -> tuple[tuple[str, int], ...]:
+    return tuple(_extract_skill_counts(text).items())
+
+
+def _extract_skill_counts(text: str) -> dict[str, int]:
     patterns = _load_skill_patterns()
     counts: dict[str, int] = {}
 

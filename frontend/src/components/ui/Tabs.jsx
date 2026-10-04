@@ -16,7 +16,7 @@ export default function Tabs({ tabs, active, onChange, idPrefix = 'tab' }) {
   };
 
   return (
-    <div role="tablist" aria-label="Result views" className="flex gap-1 rounded-2xl border border-line bg-card p-1.5" onKeyDown={onKeyDown}>
+    <div role="tablist" aria-label="Result views" className="flex gap-0.5 rounded-2xl border border-line bg-card p-1 sm:gap-1 sm:p-1.5" onKeyDown={onKeyDown}>
       {tabs.map(({ id, label, short, icon: Icon, badge }) => {
         const selected = id === active;
         return (
@@ -29,7 +29,7 @@ export default function Tabs({ tabs, active, onChange, idPrefix = 'tab' }) {
             aria-controls={`${idPrefix}-panel-${id}`}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(id)}
-            className={`relative flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-2.5 py-2.5 text-sm font-semibold sm:px-4 whitespace-nowrap transition-colors ${
+            className={`relative flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-1 py-2.5 text-[13px] font-semibold whitespace-nowrap sm:px-4 sm:text-sm transition-colors ${
               selected ? 'text-ink' : 'text-muted hover:text-ink'
             }`}
           >
@@ -40,12 +40,12 @@ export default function Tabs({ tabs, active, onChange, idPrefix = 'tab' }) {
                 transition={{ type: 'spring', stiffness: 420, damping: 32 }}
               />
             )}
-            <span className="relative flex items-center gap-2">
+            <span className="relative flex items-center gap-1 sm:gap-2">
               {Icon && <Icon className="hidden size-4 sm:block" aria-hidden />}
               <span className="sm:hidden">{short || label}</span>
               <span className="hidden sm:inline">{label}</span>
               {badge != null && (
-                <span className="rounded-full bg-ink/8 px-1.5 py-0.5 font-mono text-[11px] dark:bg-white/10">{badge}</span>
+                <span className="rounded-full bg-ink/8 px-1 py-0.5 font-mono text-[10px] sm:px-1.5 sm:text-[11px] dark:bg-white/10">{badge}</span>
               )}
             </span>
           </button>
