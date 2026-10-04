@@ -57,7 +57,13 @@ export function PrivacyPage({ onHome }) {
           nothing is kept afterwards.
         </li>
         <li>
-          <strong>No database, no accounts, no history.</strong> We do not store resumes, job descriptions or results.
+          <strong>Without an account, nothing is stored.</strong> We do not keep resumes, job descriptions or results.
+        </li>
+        <li>
+          <strong>If you sign in</strong> (optional, with Google or an email link), we store your name, email and profile
+          photo from the sign-in, plus what you choose to save: resumes from the builder, learning progress and tracked job
+          applications. This data is stored with Supabase and only you can access it. Delete your account from the account menu
+          to erase all of it permanently.
         </li>
         <li>
           <strong>Not in our logs.</strong> Server logs record operational details such as request paths, status codes and

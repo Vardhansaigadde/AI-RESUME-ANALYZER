@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, FilePenLine, GraduationCap, Sparkles } from 'lucide-react';
+import { ArrowRight, ClipboardList, FilePenLine, GraduationCap, Sparkles } from 'lucide-react';
+import { useApplications } from '../../hooks/useApplications';
+import { firstName, useAuth } from '../../lib/authContext';
+import { STAGES } from '../../lib/cloud';
 import { reveal } from '../../lib/motion';
 import { KEYS, readStorage } from '../../lib/storage';
 import { templateById } from '../../lib/templates';
@@ -44,7 +47,45 @@ const QUICK_STARTS = [
 ];
 
 /** Home: the student's toolkit. */
+/** Signed in: applications by stage, linking to the tracker. */
+function ApplicationsSummary({ onNavigate }) {
+  const { items } = useApplications();
+  const counts = STAGES.map((s) => ({ ...s, n: items.filter((x) => x.status === s.id).length }));
+  return (
+    <motion.section variants={reveal} className="mt-8">
+      <h2 className="mb-3 text-xs font-bold tracking-[0.14em] text-muted uppercase">Your applications</h2>
+      <a
+        href="/tracker"
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate('/tracker');
+        }}
+        className="card group flex flex-wrap items-center gap-x-6 gap-y-3 p-4 hover:border-ink/30 sm:p-5"
+      >
+        <ClipboardList className="size-6 text-accent" aria-hidden />
+        {items.length === 0 ? (
+          <span className="flex-1 text-sm text-muted">Nothing tracked yet. Save jobs from Find jobs to follow them here.</span>
+        ) : (
+          <ul className="flex flex-1 flex-wrap gap-x-6 gap-y-2">
+            {counts.map((s) => (
+              <li key={s.id} className="text-sm">
+                <span className="font-display text-2xl font-semibold">{s.n}</span>{' '}
+                <span className="text-muted">{s.label.toLowerCase()}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <span className="inline-flex items-center gap-1 text-sm font-semibold">
+          Open tracker
+          <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden />
+        </span>
+      </a>
+    </motion.section>
+  );
+}
+
 export default function Dashboard({ onNavigate }) {
+  const { user } = useAuth();
   const continueItems = resumeItems();
   const go = (path) => (e) => {
     e.preventDefault();
@@ -62,7 +103,7 @@ export default function Dashboard({ onNavigate }) {
       <motion.div variants={reveal} className="max-w-2xl">
         <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
           <Sparkles className="size-3.5" aria-hidden />
-          Free for students · no sign-up
+          {user ? `Welcome back, ${firstName(user)}` : 'Free for students · no sign-up needed'}
         </p>
         <h1 className="font-display text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
           Everything you need to land your <span className="marker px-1">first job</span>
@@ -71,6 +112,8 @@ export default function Dashboard({ onNavigate }) {
           Check and fix your resume, build a new one, find openings and learn the skills employers ask for, all in one place.
         </p>
       </motion.div>
+
+      {user && <ApplicationsSummary onNavigate={onNavigate} />}
 
       {continueItems.length > 0 && (
         <motion.section variants={reveal} className="mt-8">

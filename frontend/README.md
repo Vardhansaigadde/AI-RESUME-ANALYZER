@@ -57,6 +57,10 @@ instance can take close to a minute to wake up):
 | Vercel (production) | `https://ai-resume-analyzer-xb45.onrender.com` (Vercel env var) | the Render backend directly; it allows this origin via `CORS_ORIGINS` |
 | Vercel without the env var | unset | `/api/*` → `vercel.json` rewrite → the same Render backend |
 
+Optional accounts use Supabase directly from the browser: set `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` (Vercel env vars, or `.env.local` from `.env.example`). Without them the
+Sign in button is hidden and everything else works.
+
 ## Demo mode
 
 Open `/?demo=high`, `/?demo=low` or `/?demo=resume` (no job description) to see the results page with sample data (same shape as a real
@@ -74,19 +78,24 @@ src/
 │   ├── templates.js             resume templates (resumeTemplates.json), fonts, sample resume
 │   ├── jobSites.js              prefilled searches on LinkedIn, Internshala, Unstop, Naukri…
 │   ├── storage.js               browser storage helpers (draft, roadmap progress)
+│   ├── supabase.js              Supabase client (null when not configured)
+│   ├── authContext.js           useAuth() and the auth context
+│   ├── cloud.js                 saved resumes, learning progress, applications
 │   ├── tools.js                 the dashboard's tools and routes
 │   ├── demo.js                  demo payloads (?demo=high, ?demo=low, ?demo=resume)
 │   ├── sampleJobs.js            sample job postings
 │   ├── strength.js              resume strength grades (live, from the editor draft)
 │   ├── motion.js                shared animation presets
 │   └── resume.js                editor draft helpers, score colours
-├── hooks/                       useCountUp (number animation), useTheme (light/dark)
+├── hooks/                       useCountUp, useTheme, useApplications (tracker), useSyncedProgress
 ├── utils/format.js              display labels for skills, roles and score factors
 └── components/
     ├── layout/                  Header (tool nav, theme toggle, phone tab bar), Footer
-    ├── pages/                   Dashboard, BuilderPage, JobsPage, LearnPage, LegalPages
+    ├── auth/                    AuthProvider (session, sign-in dialog), UserMenu
+    ├── pages/                   Dashboard, BuilderPage, JobsPage, LearnPage, TrackerPage, LegalPages
     ├── resume/                  ResumeForm (editor), ResumeDocument (template renderer),
-    │                            ScaledPage (preview), TemplateGallery, PrintResume (PDF)
+    │                            ScaledPage (preview), TemplateGallery, PrintResume (PDF),
+    │                            ResumeLibrary (saved resumes)
     ├── ui/                      Button, Switch, Tabs (animated), Toast
     ├── upload/UploadView.jsx    headline, resume drop zone, optional job (+ samples), student switch
     ├── AnalyzingView.jsx        loading state with a cold-start notice

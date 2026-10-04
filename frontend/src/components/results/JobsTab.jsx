@@ -1,7 +1,22 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, Building2, Check, Clock, MapPin, RefreshCw, Search, ShieldCheck, TrendingUp, Wallet } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Bookmark,
+  BookmarkCheck,
+  Building2,
+  Check,
+  Clock,
+  MapPin,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { fetchJobOptions, searchJobs } from '../../lib/api';
+import { useApplications } from '../../hooks/useApplications';
+import { useAuth } from '../../lib/authContext';
 import { jobSiteLinks } from '../../lib/jobSites';
 import { scoreTone } from '../../lib/resume';
 import { formatSkill } from '../../utils/format';
@@ -37,7 +52,10 @@ function postedAgo(iso) {
 function FitBadge({ score }) {
   const tone = scoreTone(score);
   return (
-    <div className={`grid size-14 shrink-0 place-items-center rounded-2xl ${tone.bg} ${tone.text}`} title="How well your resume fits this posting">
+    <div
+      className={`grid size-14 shrink-0 place-items-center rounded-2xl ${tone.bg} ${tone.text}`}
+      title="How well your resume fits this posting"
+    >
       <div className="text-center leading-none">
         <div className="font-mono text-lg font-bold">{Math.round(score)}</div>
         <div className="mt-0.5 text-[9px] font-bold tracking-[0.15em]">FIT</div>
@@ -56,7 +74,7 @@ function Meta({ icon: Icon, children }) {
   );
 }
 
-function JobCard({ job, index }) {
+function JobCard({ job, index, saved, onSave }) {
   const have = job.matched_skills.slice(0, 4);
   const scored = job.fit_score != null;
   const missing = job.missing_skills.slice(0, scored ? 3 : 6);
@@ -135,15 +153,34 @@ function JobCard({ job, index }) {
           via {job.source}
           {job.short_description && ' · scored from a short preview'}
         </span>
-        <a
-          href={job.url}
-          target="_blank"
-          rel="noreferrer"
-          className="group inline-flex items-center gap-1 rounded-xl bg-ink px-3 py-1.5 text-sm font-semibold text-paper transition hover:bg-ink/90"
-        >
-          View &amp; apply
-          <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
-        </a>
+        <span className="flex items-center gap-2">
+          {onSave && (
+            <button
+              type="button"
+              onClick={() => onSave(job)}
+              disabled={saved}
+              aria-label={saved ? 'Saved to your applications' : 'Save to your applications'}
+              title={saved ? 'In your applications' : 'Save to your applications'}
+              className={`grid size-9 cursor-pointer place-items-center rounded-xl border transition disabled:cursor-default ${
+                saved ? 'border-ok/40 bg-ok-soft text-ok' : 'border-line hover:border-ink/40'
+              }`}
+            >
+              {saved ? <BookmarkCheck className="size-4" aria-hidden /> : <Bookmark className="size-4" aria-hidden />}
+            </button>
+          )}
+          <a
+            href={job.url}
+            target="_blank"
+            rel="noreferrer"
+            className="group inline-flex items-center gap-1 rounded-xl bg-ink px-3 py-1.5 text-sm font-semibold text-paper transition hover:bg-ink/90"
+          >
+            View &amp; apply
+            <ArrowUpRight
+              className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              aria-hidden
+            />
+          </a>
+        </span>
       </div>
     </motion.li>
   );
@@ -187,14 +224,19 @@ function SkillDemand({ demand, total, scored }) {
         {demand.map((d, i) => {
           const pct = Math.round(d.share * 100);
           return (
-            <li key={d.skill} className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-3 text-sm sm:grid-cols-[9rem_1fr_2.5rem]">
+            <li
+              key={d.skill}
+              className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-3 text-sm sm:grid-cols-[9rem_1fr_2.5rem]"
+            >
               <span className="flex min-w-0 items-center gap-1.5">
                 {d.have ? (
                   <Check className="size-3.5 shrink-0 text-ok" strokeWidth={3} aria-label="On your resume" />
                 ) : (
                   <span className="size-3.5 shrink-0" aria-hidden />
                 )}
-                <span className={`truncate ${scored && !d.have ? 'font-semibold text-pen' : 'font-medium'}`}>{formatSkill(d.skill)}</span>
+                <span className={`truncate ${scored && !d.have ? 'font-semibold text-pen' : 'font-medium'}`}>
+                  {formatSkill(d.skill)}
+                </span>
               </span>
               <span className="h-2 overflow-hidden rounded-full bg-sunken">
                 <motion.span
@@ -228,7 +270,12 @@ function Sources({ sources }) {
         .filter((s) => s.status !== 'off')
         .map((s, i, list) => (
           <span key={s.name}>
-            <a href={s.url} target="_blank" rel="noreferrer" className="font-semibold underline-offset-2 hover:underline">
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold underline-offset-2 hover:underline"
+            >
               {s.name}
             </a>
             {s.status === 'unavailable' && ' (unavailable right now)'}
@@ -282,7 +329,10 @@ function SiteLinks({ query, kind, countryName }) {
             >
               <span className="flex items-center justify-between gap-1 font-semibold">
                 {site.name}
-                <ArrowUpRight className="size-3.5 text-muted transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+                <ArrowUpRight
+                  className="size-3.5 text-muted transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                  aria-hidden
+                />
               </span>
               <span className="text-xs text-muted">{site.note}</span>
             </a>
@@ -344,6 +394,19 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
   };
 
   const { data, loading, error } = state;
+  const { user, enabled, openSignIn } = useAuth();
+  const applications = useApplications();
+  const saveJob = async (job) => {
+    if (!user) {
+      openSignIn('Sign in to save jobs and track your applications.');
+      return;
+    }
+    try {
+      await applications.save(job);
+    } catch {
+      // A failed save leaves the button as it was; the tracker page shows errors
+    }
+  };
   const jobs = data ? [...data.jobs].sort(SORTS[sort]) : [];
   const onsiteOff = data?.sources?.find((s) => s.name === 'Adzuna' && s.status === 'off');
 
@@ -361,7 +424,10 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
             <label htmlFor={`${id}-q`} className="sr-only">
               Role or keywords
             </label>
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" aria-hidden />
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
+              aria-hidden
+            />
             <input
               id={`${id}-q`}
               value={form.query}
@@ -408,7 +474,11 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
                 }`}
               >
                 {form.kind === k.id && (
-                  <motion.span layoutId={`${id}-kind`} className="absolute inset-0 rounded-lg bg-card shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                  <motion.span
+                    layoutId={`${id}-kind`}
+                    className="absolute inset-0 rounded-lg bg-card shadow-sm"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
                 )}
                 <span className="relative">{k.label}</span>
               </button>
@@ -462,7 +532,11 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
               {jobs.length > 1 && (
                 <label className="flex items-center gap-2 text-sm text-muted">
                   Sort by
-                  <select value={sort} onChange={(e) => setSort(e.target.value)} className="cursor-pointer rounded-lg border border-line bg-card px-2 py-1 text-sm text-ink">
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="cursor-pointer rounded-lg border border-line bg-card px-2 py-1 text-sm text-ink"
+                  >
                     <option value="fit">Best fit</option>
                     <option value="new">Newest</option>
                   </select>
@@ -474,14 +548,21 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
               <div className="card p-8 text-center">
                 <h3 className="font-display text-xl font-semibold">No openings found</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-                  Try a broader search such as “developer” or “analyst”, switch to All jobs, or choose Anywhere (remote).
+                  Try a broader search such as “developer” or “analyst”, switch to All jobs, or choose Anywhere
+                  (remote).
                 </p>
               </div>
             ) : (
               <ul className="grid gap-4 lg:grid-cols-2">
                 <AnimatePresence>
                   {jobs.map((job, i) => (
-                    <JobCard key={job.id} job={job} index={i} />
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      index={i}
+                      saved={applications.savedUrls.has(job.url)}
+                      onSave={enabled ? saveJob : undefined}
+                    />
                   ))}
                 </AnimatePresence>
               </ul>
@@ -489,7 +570,11 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
             {jobs.length < 5 && data.country !== 'ANY' && (
               <p className="mt-4 text-center text-sm text-muted">
                 Few matches here.{' '}
-                <button type="button" onClick={() => searchWith({ country: 'ANY' })} className="cursor-pointer font-semibold text-accent hover:underline">
+                <button
+                  type="button"
+                  onClick={() => searchWith({ country: 'ANY' })}
+                  className="cursor-pointer font-semibold text-accent hover:underline"
+                >
                   Search remote jobs anywhere
                 </button>
               </p>
