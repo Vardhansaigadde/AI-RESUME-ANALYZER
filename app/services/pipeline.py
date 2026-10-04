@@ -20,13 +20,13 @@ from app.services.ats_checker import check_ats
 from app.services.data_cleaning import clean_text
 from app.services.job_decoder import decode_job
 from app.services.job_search import ANYWHERE, COUNTRIES, search_jobs
-from app.services.learning_plan import build_learning_plan
+from app.services.learning_plan import build_learning_plan, load_resources
 from app.services.matcher import DEFAULT_MODEL_PATH as MATCH_SCORER_PATH
 from app.services.matcher import match_resume_to_job
 from app.services.parser import LayoutInfo, extract_text_from_file, inspect_layout
 from app.services.project_picker import pick_projects
 from app.services.resume_sections import looks_like_student, parse_resume, render_resume_text
-from app.services.role_gap import compare_with_role, resolve_role
+from app.services.role_gap import compare_with_role, resolve_role, role_roadmaps, target_roles
 from app.services.role_predictor import (
     DEFAULT_CLASSIFIER_PATH as ROLE_CLASSIFIER_PATH,
 )
@@ -239,15 +239,52 @@ def run_recheck(
     )
 
 
-def run_job_search(resume: StructuredResume, query: str, country: str, kind: str) -> dict[str, Any]:
-    """Live postings for a search, each scored against the (possibly edited) resume."""
+def run_job_search(resume: StructuredResume | None, query: str, country: str, kind: str) -> dict[str, Any]:
+    """Live postings for a search, each scored against the resume when one is given."""
     country = country.strip().upper()
     if country != ANYWHERE and country not in COUNTRIES:
         raise PipelineError("Unsupported country.", status_code=422)
-    resume_text = render_resume_text(resume)
-    if not clean_text(resume_text):
-        raise PipelineError("The resume is empty.", status_code=422)
+    resume_text = None
+    if resume is not None:
+        resume_text = render_resume_text(resume)
+        if not clean_text(resume_text):
+            raise PipelineError("The resume is empty.", status_code=422)
     return search_jobs(resume_text, query, country, kind)
+
+
+def run_resume_parse(resume_bytes: bytes | None, filename: str | None) -> StructuredResume:
+    """An uploaded resume split into editable sections (for the resume builder)."""
+    return parse_resume(validate_and_extract_file(resume_bytes, filename))
+
+
+def run_learn(skills: list[str], known: list[str]) -> dict[str, Any]:
+    """A study plan for skills the student chose, skipping prerequisites they already know."""
+    resources = load_resources()
+    wanted = list(dict.fromkeys(s.strip().lower() for s in skills if s.strip()))
+    have = {s.strip().lower() for s in known if s.strip()} - set(wanted)
+    goals = [s for s in wanted if s in resources]
+    plan = build_learning_plan(goals, "", None, have=have, goal=True)
+    return {
+        "learning_plan": plan,
+        "project_picks": pick_projects(goals, have),
+        "unknown": [s for s in wanted if s not in resources],
+    }
+
+
+def learn_catalog() -> dict[str, Any]:
+    """Skills with a curated roadmap, and career paths (target roles) with their core skills."""
+    resources = load_resources()
+    roadmaps = role_roadmaps()
+    return {
+        "skills": [
+            {"skill": skill, "what": entry["what"], "hours": entry.get("hours", 0), "needs": entry.get("needs", [])}
+            for skill, entry in sorted(resources.items())
+        ],
+        "roles": [
+            {"role": role, "skills": [s for s in core if s in resources], "roadmap": roadmaps.get(role, "")}
+            for role, core in target_roles().items()
+        ],
+    }
 
 
 def run_role_gap(resume: StructuredResume, target_role: str, with_learning_plan: bool = True) -> dict[str, Any]:

@@ -33,6 +33,11 @@ def role_roadmaps() -> dict[str, str]:
     return json.loads(ROLE_ROADMAPS_PATH.read_text(encoding="utf-8"))
 
 
+def target_roles() -> dict[str, list[str]]:
+    """Target roles and their core skills, most important first."""
+    return dict(_load()["roles"])
+
+
 def available_roles() -> list[str]:
     return list(_load()["roles"])
 

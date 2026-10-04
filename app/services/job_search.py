@@ -34,8 +34,10 @@ from urllib.parse import urlencode
 import urllib.request
 
 from app.schemas.jobs import JobPosting, JobSource, SkillDemand
+from app.services.data_cleaning import clean_text
 from app.services.matcher import match_resume_to_job
 from app.services.role_gap import TARGET_ROLES_PATH
+from app.services.skill_extractor import extract_skills
 from app.services.skills_inventory import DOMAIN_GROUP, SOFT_GROUP, group_of
 
 logger = logging.getLogger(__name__)
@@ -333,7 +335,7 @@ def _keep(posting: dict, kind: str) -> bool:
     return True
 
 
-def search_jobs(resume_text: str, query: str, country: str, kind: str) -> dict[str, Any]:
+def search_jobs(resume_text: str | None, query: str, country: str, kind: str) -> dict[str, Any]:
     """Fetch live postings from every enabled source and score the resume against each one."""
     query = " ".join(query.split())
     country = country.upper()
@@ -384,7 +386,12 @@ def search_jobs(resume_text: str, query: str, country: str, kind: str) -> dict[s
     jobs = []
     for posting in postings:
         job_text = " ".join(f"{posting['title']}\n{posting['text']}".split(" ")[:MAX_JOB_WORDS])
-        scored = match_resume_to_job(resume_text=resume_text, job_text=job_text)
+        if resume_text:
+            scored = match_resume_to_job(resume_text=resume_text, job_text=job_text)
+        else:
+            # No resume: list the skills the posting asks for
+            asked = sorted(extract_skills(clean_text(job_text)))
+            scored = {"match_score": None, "matched_skills": [], "missing_skills": asked}
         jobs.append(
             JobPosting(
                 **{k: v for k, v in posting.items() if k != "text"},
@@ -394,7 +401,10 @@ def search_jobs(resume_text: str, query: str, country: str, kind: str) -> dict[s
                 missing_skills=rank_skills(scored["missing_skills"]),
             )
         )
-    jobs.sort(key=lambda j: (-j.fit_score, j.title))
+    if resume_text:
+        jobs.sort(key=lambda j: (-(j.fit_score or 0), j.title))
+    else:
+        jobs.sort(key=lambda j: j.posted, reverse=True)
 
     order = list(SOURCES)
     sources.sort(key=lambda s: order.index(s.name))
@@ -404,6 +414,7 @@ def search_jobs(resume_text: str, query: str, country: str, kind: str) -> dict[s
         "kind": kind,
         "jobs": jobs,
         "sources": sources,
+        "scored": bool(resume_text),
         "skill_demand": skill_demand(jobs),
     }
 

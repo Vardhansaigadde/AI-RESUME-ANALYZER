@@ -30,6 +30,16 @@ DATE_RE = re.compile(
     r"|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{2,4}\b|\b\d{1,2}/\d{2,4}\b",
     re.IGNORECASE,
 )
+# A date or date range at the end of an entry's title or subtitle ("... | Jun 2024 - Present")
+_DATE_TOKEN = (
+    r"(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+)?(?:19|20)\d{2}"
+    r"|present|current|now|ongoing|today"
+)
+TRAILING_DATE_RE = re.compile(
+    rf"^(?P<rest>.*?)(?:\s*[|,·•(]\s*|\s+[-–—]\s+|\s+|^)"
+    rf"(?P<date>(?:{_DATE_TOKEN})(?:\s*(?:-|–|—|to)\s*(?:{_DATE_TOKEN}))?)\)?\s*$",
+    re.IGNORECASE,
+)
 BULLET_RE = re.compile(r"^\s*(?:[•\-\*▪●◦‣–·■□➢➤►✓✔]|\d{1,2}[.)])\s+")
 
 # Canonical section -> heading phrases (lower case, without trailing colon)
@@ -288,6 +298,8 @@ def parse_resume(text: str) -> StructuredResume:
             items = [_strip_bullet(line) for line in body if line.strip()]
             if items:
                 resume.additional.append(ExtraSection(heading=title.title(), items=items))
+    for entries in (resume.experience, resume.projects, resume.education):
+        _move_dates(entries)
     return _within_limits(resume)
 
 
@@ -352,11 +364,35 @@ def looks_like_student(text: str, resume: StructuredResume, current_year: int) -
     return False
 
 
+def split_trailing_date(text: str) -> tuple[str, str]:
+    """("Software Intern, Acme | Jun 2024 - Aug 2024") -> ("Software Intern, Acme", "Jun 2024 - Aug 2024").
+
+    Only dates that include a year count, so "Present" alone or a version number stay put.
+    """
+    match = TRAILING_DATE_RE.match(text.strip())
+    if not match or not re.search(r"(?:19|20)\d{2}", match["date"]):
+        return text, ""
+    return match["rest"].strip(" |,·•-–—("), match["date"].strip()
+
+
+def _move_dates(entries: list[ResumeEntry]) -> None:
+    """Give each entry a separate date when its subtitle or title ends with one."""
+    for entry in entries:
+        if entry.date:
+            continue
+        for field in ("subtitle", "title"):
+            rest, date = split_trailing_date(getattr(entry, field))
+            if date:
+                setattr(entry, field, rest)
+                entry.date = date
+                break
+
+
 def _render_entries(entries: list[ResumeEntry]) -> list[str]:
     out: list[str] = []
     for entry in entries:
-        if entry.title:
-            out.append(entry.title)
+        if entry.title or entry.date:
+            out.append(" | ".join(x for x in (entry.title, entry.date) if x))
         if entry.subtitle:
             out.append(entry.subtitle)
         out.extend(f"• {bullet}" for bullet in entry.bullets if bullet.strip())

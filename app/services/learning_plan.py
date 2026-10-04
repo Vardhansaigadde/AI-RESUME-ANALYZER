@@ -48,6 +48,7 @@ def build_learning_plan(
     insights: JobInsights | None,
     role: str | None = None,
     have: set[str] | None = None,
+    goal: bool = False,
 ) -> list[LearningItem]:
     """Learning plan for missing skills, most important first, in study order.
 
@@ -55,19 +56,22 @@ def build_learning_plan(
     mentioned and quote the posting. Without one (``role`` given), the skills
     are a target role's missing core skills, already in importance order.
     ``have`` (the resume's skills) turns on prerequisites: missing ones are
-    inserted before the skills that need them.
+    inserted before the skills that need them. ``goal`` is for skills the
+    student chose to learn: their order is kept and they are marked "goal".
     """
     resources = load_resources()
     must = set(insights.must_have) if insights else set()
     nice = set(insights.nice_to_have) if insights else set()
 
     def priority(skill: str) -> str:
+        if goal:
+            return "goal"
         if role:
             return "core-skill"
         return "must-have" if skill in must else "nice-to-have" if skill in nice else "mentioned"
 
-    if role:
-        # Keep the role's importance order; soft skills last
+    if role or goal:
+        # Keep the role's (or the student's) order; soft skills last
         ranked = sorted(missing_skills, key=lambda s: s in GENERIC_SOFT_SKILLS)
     else:
         order = {"must-have": 0, "nice-to-have": 1, "mentioned": 2}
@@ -116,7 +120,7 @@ def build_learning_plan(
         else:
             continue  # no curated resources for this skill yet
         if skill in missing:
-            item.why = f"A core skill for {role} roles." if role else _job_line(job_text, skill)
+            item.why = "" if goal else f"A core skill for {role} roles." if role else _job_line(job_text, skill)
             item.priority = priority(skill)
         else:
             item.priority = "prerequisite"

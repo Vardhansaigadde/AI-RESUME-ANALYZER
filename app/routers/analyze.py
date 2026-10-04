@@ -5,7 +5,10 @@ Provides:
                              actionable suggestions, and top-3 role suggestions
                              from an uploaded PDF/DOCX resume file + job description.
   POST /api/recheck       -- Re-analyze an edited, structured resume.
-  POST /api/resume/docx   -- Download a structured resume as an ATS-friendly .docx.
+  POST /api/resume/docx   -- Download a structured resume as an ATS-friendly .docx (?template=, ?accent=).
+  POST /api/resume/parse  -- Split an uploaded resume into editable sections (resume builder).
+  POST /api/learn         -- Study plan for skills the student chooses.
+  GET  /api/learn/catalog -- Skills with a curated roadmap, and career paths.
   POST /api/role-gap      -- Compare a resume with a target job role.
   POST /api/jobs          -- Live jobs and internships, each with the resume's fit score.
   GET  /api/jobs/options  -- Countries and job sources the search supports.
@@ -21,12 +24,12 @@ import logging
 import re
 from typing import Any
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from app.schemas import AnalyzeResponse, SuggestRolesResponse
 from app.schemas.github import GithubCheckRequest, GithubCheckResponse
-from app.schemas.insights import RoleGapRequest, RoleGapResponse
+from app.schemas.insights import LearnRequest, LearnResponse, RoleGapRequest, RoleGapResponse
 from app.schemas.jobs import JobSearchRequest, JobSearchResponse
 from app.schemas.resume import RecheckRequest, StructuredResume
 from app.services.github_check import check_github
@@ -36,13 +39,16 @@ from app.services.pipeline import (
     REQUIRED_ANALYZE_MODELS,
     REQUIRED_ROLE_MODELS,
     PipelineError,
+    learn_catalog,
     run_full_analysis,
     run_job_search,
+    run_learn,
     run_recheck,
+    run_resume_parse,
     run_role_gap,
     run_role_suggestion,
 )
-from app.services.resume_docx import build_resume_docx
+from app.services.resume_docx import build_resume_docx, template_ids
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +232,30 @@ async def role_gap(payload: RoleGapRequest) -> dict[str, Any]:
     return await _run_pipeline(run_role_gap, resume=payload.resume, target_role=payload.target_role)
 
 
+@router.post("/resume/parse", response_model=StructuredResume)
+async def resume_parse(
+    resume_file: UploadFile | None = File(None),
+) -> StructuredResume:
+    """Split an uploaded PDF/DOCX resume into editable sections, without analysing it."""
+    file_bytes, filename = await _read_upload(resume_file)
+    try:
+        return await run_in_threadpool(run_resume_parse, file_bytes, filename)
+    except PipelineError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+
+@router.post("/learn", response_model=LearnResponse)
+async def learn(payload: LearnRequest) -> dict[str, Any]:
+    """Study plan, with prerequisites and projects, for the skills the student wants to learn."""
+    return await _run_pipeline(run_learn, skills=payload.skills, known=payload.known)
+
+
+@router.get("/learn/catalog")
+async def learn_catalog_endpoint() -> dict[str, Any]:
+    """Skills that have a curated roadmap, and career paths with their core skills."""
+    return learn_catalog()
+
+
 @router.post("/jobs", response_model=JobSearchResponse)
 async def jobs(payload: JobSearchRequest) -> dict[str, Any]:
     """Search live jobs and internships and score the resume against each posting.
@@ -257,9 +287,15 @@ async def github_check(payload: GithubCheckRequest) -> dict[str, Any]:
 
 
 @router.post("/resume/docx")
-async def resume_docx(resume: StructuredResume) -> Response:
-    """Return the structured resume as an ATS-friendly .docx file."""
-    content = await run_in_threadpool(build_resume_docx, resume)
+async def resume_docx(
+    resume: StructuredResume,
+    template: str | None = Query(None, max_length=40),
+    accent: str | None = Query(None, pattern=r"^#?[0-9a-fA-F]{6}$"),
+) -> Response:
+    """Return the structured resume as an ATS-friendly .docx file in the chosen template."""
+    if template is not None and template not in template_ids():
+        raise HTTPException(status_code=422, detail="Unknown template.")
+    content = await run_in_threadpool(build_resume_docx, resume, template, accent)
     stem = re.sub(r"[^A-Za-z0-9]+", "_", resume.name).strip("_") or "resume"
     return Response(
         content=content,

@@ -43,7 +43,7 @@ class LearningItem(BaseModel):
     why: str = Field("", description="The line of the job posting that mentions the skill.")
     resources: list[LearningResource] = Field(default_factory=list)
     project: str = Field("", description="A small project that proves the skill on a resume.")
-    priority: Literal["must-have", "nice-to-have", "mentioned", "core-skill", "prerequisite"] = "mentioned"
+    priority: Literal["must-have", "nice-to-have", "mentioned", "core-skill", "prerequisite", "goal"] = "mentioned"
     hours: int = Field(0, description="Rough hours to learn the basics and build the project.")
     done: list[str] = Field(default_factory=list, description='"Done when you can..." checklist.')
     roadmap: str = Field("", description="roadmap.sh roadmap for the skill, if there is one.")
@@ -93,6 +93,19 @@ class RoleGapRequest(BaseModel):
 
     resume: StructuredResume
     target_role: str = Field(..., min_length=1, max_length=60)
+
+
+class LearnRequest(BaseModel):
+    """Skills a student wants to learn, and the ones they already know (to skip prerequisites)."""
+
+    skills: list[str] = Field(..., min_length=1, max_length=8)
+    known: list[str] = Field(default_factory=list, max_length=150)
+
+
+class LearnResponse(BaseModel):
+    learning_plan: list[LearningItem]
+    project_picks: list[ProjectPick] = Field(default_factory=list)
+    unknown: list[str] = Field(default_factory=list, description="Requested skills without a curated roadmap.")
 
 
 class RoleGapResponse(BaseModel):
