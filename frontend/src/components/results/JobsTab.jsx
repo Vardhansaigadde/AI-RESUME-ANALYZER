@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, Building2, Check, Clock, MapPin, RefreshCw, Search, ShieldCheck, TrendingUp, Wallet } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { fetchJobOptions, searchJobs } from '../../lib/api';
+import { jobSiteLinks } from '../../lib/jobSites';
 import { scoreTone } from '../../lib/resume';
 import { formatSkill } from '../../utils/format';
 import Button from '../ui/Button';
@@ -57,7 +58,8 @@ function Meta({ icon: Icon, children }) {
 
 function JobCard({ job, index }) {
   const have = job.matched_skills.slice(0, 4);
-  const missing = job.missing_skills.slice(0, 3);
+  const scored = job.fit_score != null;
+  const missing = job.missing_skills.slice(0, scored ? 3 : 6);
   const tags = [job.employment_type, job.level].filter((t, i, all) => t && all.indexOf(t) === i);
   return (
     <motion.li
@@ -68,7 +70,7 @@ function JobCard({ job, index }) {
       className="card flex flex-col p-4 sm:p-5"
     >
       <div className="flex gap-4">
-        <FitBadge score={job.fit_score} />
+        {scored && <FitBadge score={job.fit_score} />}
         <div className="min-w-0 flex-1">
           <h3 className="line-clamp-2 font-display text-lg leading-snug font-semibold" title={job.title}>
             {job.title}
@@ -116,9 +118,9 @@ function JobCard({ job, index }) {
           )}
           {missing.length > 0 && (
             <p>
-              <span className="font-semibold">Missing </span>
+              <span className="font-semibold">{scored ? 'Missing ' : 'Skills asked '}</span>
               {missing.map((s, i) => (
-                <span key={s} className="font-medium text-pen">
+                <span key={s} className={`font-medium ${scored ? 'text-pen' : ''}`}>
                   {formatSkill(s)}
                   {i < missing.length - 1 && ', '}
                 </span>
@@ -164,9 +166,10 @@ function SkeletonCard() {
 }
 
 /** The skills these openings ask for most, with the ones the resume shows ticked. */
-function SkillDemand({ demand, total }) {
+function SkillDemand({ demand, total, scored }) {
   if (!demand?.length) return null;
   const have = demand.filter((d) => d.have).length;
+  const tone = (d) => (!scored ? 'bg-accent/70' : d.have ? 'bg-ok' : 'bg-pen/70');
   return (
     <section className="card mb-5 p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -174,9 +177,11 @@ function SkillDemand({ demand, total }) {
           <TrendingUp className="size-4.5 text-accent" aria-hidden />
           What these {total} openings ask for
         </h3>
-        <p className="text-sm text-muted">
-          You show <span className="font-semibold text-ink">{have}</span> of the top {demand.length}
-        </p>
+        {scored && (
+          <p className="text-sm text-muted">
+            You show <span className="font-semibold text-ink">{have}</span> of the top {demand.length}
+          </p>
+        )}
       </div>
       <ul className="grid gap-x-8 gap-y-2 md:grid-cols-2">
         {demand.map((d, i) => {
@@ -189,11 +194,11 @@ function SkillDemand({ demand, total }) {
                 ) : (
                   <span className="size-3.5 shrink-0" aria-hidden />
                 )}
-                <span className={`truncate ${d.have ? 'font-medium' : 'font-semibold text-pen'}`}>{formatSkill(d.skill)}</span>
+                <span className={`truncate ${scored && !d.have ? 'font-semibold text-pen' : 'font-medium'}`}>{formatSkill(d.skill)}</span>
               </span>
               <span className="h-2 overflow-hidden rounded-full bg-sunken">
                 <motion.span
-                  className={`block h-full rounded-full ${d.have ? 'bg-ok' : 'bg-pen/70'}`}
+                  className={`block h-full rounded-full ${tone(d)}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.6, delay: i * 0.03, ease: 'easeOut' }}
@@ -205,8 +210,10 @@ function SkillDemand({ demand, total }) {
         })}
       </ul>
       <p className="mt-3 text-xs text-muted">
-        Share of these postings that mention each skill. Red ones aren’t on your resume yet: if you have them, add them;
-        if not, they’re worth learning next.
+        Share of these postings that mention each skill.
+        {scored
+          ? ' Red ones aren’t on your resume yet: if you have them, add them; if not, they’re worth learning next.'
+          : ' Check your resume first to see which ones you already show.'}
       </p>
     </section>
   );
@@ -237,10 +244,64 @@ function Sources({ sources }) {
  * Live jobs and internships with your fit score on each.
  * `state` lives in ResultsView so results survive switching tabs.
  */
-export default function JobsTab({ resume, defaultQuery, studentMode, state, setState }) {
+/** Prefilled searches on the big job sites (we can't list their jobs, but can open their search). */
+function SiteLinks({ query, kind, countryName }) {
+  const [city, setCity] = useState('');
+  const id = useId();
+  if (query.trim().length < 2) return null;
+  const links = jobSiteLinks({ query, kind, city, country: countryName });
+  return (
+    <section className="card mt-4 p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="font-semibold">Search the big job sites too</h3>
+          <p className="text-sm text-muted">Opens each site's own search for “{query.trim()}”, already filled in.</p>
+        </div>
+        <div>
+          <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted">
+            City (optional)
+          </label>
+          <input
+            id={id}
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Bengaluru, Pune, Remote…"
+            maxLength={40}
+            className="field w-48"
+          />
+        </div>
+      </div>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {links.map((site) => (
+          <li key={site.name}>
+            <a
+              href={site.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group flex h-full flex-col rounded-xl border border-line px-3 py-2 transition hover:border-accent hover:bg-accent-soft/40"
+            >
+              <span className="flex items-center justify-between gap-1 font-semibold">
+                {site.name}
+                <ArrowUpRight className="size-3.5 text-muted transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+              </span>
+              <span className="text-xs text-muted">{site.note}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode, state, setState }) {
   const id = useId();
   const [form, setForm] = useState(
-    () => state.params || { query: defaultQuery || 'Software Engineer', country: 'IN', kind: studentMode ? 'internship' : 'all' },
+    () =>
+      state.params || {
+        query: defaultQuery || 'Software Engineer',
+        country: 'IN',
+        kind: defaultKind || (studentMode ? 'internship' : 'all'),
+      },
   );
   const [countries, setCountries] = useState(FALLBACK_COUNTRIES);
   const [sort, setSort] = useState('fit');
@@ -360,6 +421,12 @@ export default function JobsTab({ resume, defaultQuery, studentMode, state, setS
         </div>
       </form>
 
+      <SiteLinks
+        query={form.query}
+        kind={form.kind}
+        countryName={form.country === 'ANY' ? '' : countries.find((c) => c.code === form.country)?.name || 'India'}
+      />
+
       <div className="mt-5" aria-live="polite">
         {error && !loading && (
           <div className="card flex flex-col items-center gap-3 p-8 text-center">
@@ -383,7 +450,7 @@ export default function JobsTab({ resume, defaultQuery, studentMode, state, setS
 
         {!loading && !error && data && (
           <>
-            <SkillDemand demand={data.skill_demand} total={data.jobs.length} />
+            <SkillDemand demand={data.skill_demand} total={data.jobs.length} scored={data.scored !== false} />
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm">
                 <span className="font-semibold">{jobs.length}</span>{' '}

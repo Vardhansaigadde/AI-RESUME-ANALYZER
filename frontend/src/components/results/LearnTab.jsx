@@ -16,6 +16,7 @@ import {
   Quote,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { KEYS, readStorage, writeStorage } from '../../lib/storage';
 import { formatSkill } from '../../utils/format';
 import ProjectPicks from './ProjectPicks';
 
@@ -34,30 +35,10 @@ const PRIORITY = {
   mentioned: { label: 'mentioned', className: 'bg-sunken text-muted' },
   'core-skill': { label: 'core skill', className: 'bg-accent-soft text-accent' },
   prerequisite: { label: 'learn first', className: 'bg-warn-soft text-warn' },
+  goal: { label: 'your goal', className: 'bg-accent-soft text-accent' },
 };
 
 const HOURS_PER_WEEK = [4, 6, 8, 10, 15, 20];
-const PROGRESS_KEY = 'fitlens:roadmap-progress';
-const PACE_KEY = 'fitlens:hours-per-week';
-
-// Progress lives only in this browser; storage can be unavailable (private mode)
-function readStorage(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStorage(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Not saved; the page still works
-  }
-}
-
 const joinSkills = (skills) => skills.map(formatSkill).join(', ');
 
 function weekLabel(start, end) {
@@ -263,13 +244,13 @@ function Step({ item, index, last, done, week, open, onToggle, ticks, onTick }) 
 }
 
 /** The skill gaps as a study roadmap: order, time, resources, checklists and saved progress. */
-export default function LearnTab({ plan, projects, missingCount, role, roleRoadmap, roadmapRole }) {
-  const [progress, setProgress] = useState(() => readStorage(PROGRESS_KEY, {}));
-  const [hoursPerWeek, setHoursPerWeek] = useState(() => readStorage(PACE_KEY, 8));
+export default function LearnTab({ plan, projects, missingCount, role, roleRoadmap, roadmapRole, intro }) {
+  const [progress, setProgress] = useState(() => readStorage(KEYS.progress, {}));
+  const [hoursPerWeek, setHoursPerWeek] = useState(() => readStorage(KEYS.pace, 8));
   const [openSkill, setOpenSkill] = useState(null);
 
-  useEffect(() => writeStorage(PROGRESS_KEY, progress), [progress]);
-  useEffect(() => writeStorage(PACE_KEY, hoursPerWeek), [hoursPerWeek]);
+  useEffect(() => writeStorage(KEYS.progress, progress), [progress]);
+  useEffect(() => writeStorage(KEYS.pace, hoursPerWeek), [hoursPerWeek]);
 
   const steps = useMemo(() => plan || [], [plan]);
   const isDone = (item) => {
@@ -322,8 +303,9 @@ export default function LearnTab({ plan, projects, missingCount, role, roleRoadm
           <div>
             <h3 className="font-display text-xl font-semibold">{allDone ? 'Roadmap complete!' : 'Your study roadmap'}</h3>
             <p className="mt-1 text-sm text-muted">
-              {role ? `Core ${role} skills your resume doesn’t show yet` : 'Skills this job asks for that your resume doesn’t show yet'}, in the order
-              to learn them. Tick the checklist as you go; it’s saved in this browser.
+              {intro ||
+                `${role ? `Core ${role} skills your resume doesn’t show yet` : 'Skills this job asks for that your resume doesn’t show yet'}, in the order to learn them.`}{' '}
+              Tick the checklist as you go; it’s saved in this browser.
             </p>
           </div>
           {roleRoadmap && roadmapRole && (

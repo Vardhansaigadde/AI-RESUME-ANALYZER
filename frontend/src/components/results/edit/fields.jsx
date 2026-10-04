@@ -202,7 +202,16 @@ function BulletFeedback({ text }) {
 }
 
 /** Cards for experience / projects / education entries. */
-export function EntryList({ entries, onChange, titleLabel, subtitleLabel, titlePlaceholder, subtitlePlaceholder, addLabel }) {
+export function EntryList({
+  entries,
+  onChange,
+  titleLabel,
+  subtitleLabel,
+  titlePlaceholder,
+  subtitlePlaceholder,
+  datePlaceholder = 'Jun 2024 – Present',
+  addLabel,
+}) {
   const update = (id, patch) => onChange(entries.map((e) => (e._id === id ? { ...e, ...patch } : e)));
   const move = (index, delta) => {
     const next = [...entries];
@@ -258,7 +267,10 @@ export function EntryList({ entries, onChange, titleLabel, subtitleLabel, titleP
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <TextField label={titleLabel} value={entry.title} placeholder={titlePlaceholder} onChange={(v) => update(entry._id, { title: v })} />
-                <TextField label={subtitleLabel} value={entry.subtitle} placeholder={subtitlePlaceholder} onChange={(v) => update(entry._id, { subtitle: v })} />
+                <TextField label="Dates" value={entry.date || ''} placeholder={datePlaceholder} onChange={(v) => update(entry._id, { date: v })} />
+                <div className="sm:col-span-2">
+                  <TextField label={subtitleLabel} value={entry.subtitle} placeholder={subtitlePlaceholder} onChange={(v) => update(entry._id, { subtitle: v })} />
+                </div>
               </div>
               <div className="mt-3">
                 <LineList
@@ -280,7 +292,7 @@ export function EntryList({ entries, onChange, titleLabel, subtitleLabel, titleP
         size="sm"
         icon={Plus}
         className="mt-3"
-        onClick={() => onChange([...entries, { _id: newId(), title: '', subtitle: '', bullets: [''] }])}
+        onClick={() => onChange([...entries, { _id: newId(), title: '', subtitle: '', date: '', bullets: [''] }])}
       >
         {addLabel}
       </Button>

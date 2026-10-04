@@ -24,6 +24,7 @@ export default function ResultsView({
   canReanalyze,
   onReanalyze,
   onJobText,
+  onOpenBuilder,
 }) {
   const resumeOnly = result.mode === 'resume_only';
   const [tab, setTab] = useState('overview');
@@ -228,6 +229,7 @@ export default function ResultsView({
                 onRecheck={() => recheck()}
                 onDownload={download}
                 onReset={resetDraft}
+                onOpenBuilder={onOpenBuilder ? () => onOpenBuilder(JSON.parse(snapshot(draft))) : undefined}
               />
             )}
             {tab === 'learn' && (

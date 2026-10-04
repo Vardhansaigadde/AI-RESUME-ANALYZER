@@ -2,8 +2,16 @@
 
 [![CI](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml/badge.svg)](https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER/actions/workflows/ci.yml)
 
-Upload a resume (PDF or DOCX) and, optionally, paste a job description (or pick a sample). Built
-with students and freshers in mind. The report has five tabs:
+A free career toolkit for students and freshers. The home page is a dashboard of four tools:
+
+| Tool | Route | What it does |
+| --- | --- | --- |
+| **Check my resume** | `/check` | Upload a resume (PDF or DOCX), optionally with a job description, for the report below. |
+| **Build a resume** | `/build` | 12 ATS-friendly templates, a live preview, import from an existing resume, PDF and Word download, "check my score". The draft is saved in the browser. |
+| **Find jobs & internships** | `/jobs` | Live openings (scored when you've checked a resume), what they ask for, and prefilled searches on LinkedIn, Internshala, Unstop, Naukri, Indeed, foundit, Cutshort and Instahyre. |
+| **Learn a skill** | `/learn` | Pick skills or a career path; get the study roadmap (order, videos, docs, checklists, weekly schedule) and projects. |
+
+The resume report has five tabs:
 
 | Tab | What you get |
 | --- | --- |
@@ -130,6 +138,19 @@ order of importance, plus a default role for each classifier category. They are 
 classifier's 24 dataset categories because those are broad (the dataset's IT category is mostly
 infrastructure resumes) and would give a software student misleading gaps. The resume strength
 report is computed in the browser (`frontend/src/lib/strength.js`) so it updates while editing.
+
+### Resume builder
+
+Templates live in `app/data/resume_templates.json` (mirrored in `frontend/src/lib/resumeTemplates.json`;
+a test checks the copies match). Each one sets a font (Calibri, Cambria, Arial, Times New Roman,
+Georgia or Garamond, previewed with metric-compatible web fonts), sizes, header alignment, heading
+style (rule, double or thick rule, small caps, underline, accent bar or shaded band), accent colour,
+section order (standard, fresher, skills-first, academic) and spacing. The same definition drives
+the browser preview (`ResumeDocument.jsx`), the PDF (the browser's print-to-PDF of a print-only
+copy, so the text stays selectable) and the Word file (`resume_docx.py`: A4, dates right-aligned
+with a tab stop). Every template stays ATS-safe: one column, standard headings, no tables, text
+boxes, icons or photos. Entries have a separate `date`; the parser moves a trailing date ("... |
+Jun 2024 - Present") into it.
 
 ### GitHub proof check
 
@@ -296,6 +317,16 @@ public GitHub profile and up to 100 repositories as GitHub's API returns them. R
 `unproven`, `hidden`, `checks` and `stats`.
 
 `GET /api/jobs/options` — countries for the job search and whether on-site jobs are enabled.
+
+`POST /api/resume/parse` — multipart `resume_file`; returns the resume split into editable sections.
+
+`POST /api/resume/docx?template=campus&accent=%231d4ed8` — both query parameters optional.
+
+`POST /api/learn` — JSON `{"skills": ["react", "docker"], "known": ["html"]}` (1–8 skills); returns
+`learning_plan` (goals in your order, missing prerequisites first), `project_picks` and `unknown`
+(skills without a curated roadmap). `GET /api/learn/catalog` lists the skills and career paths.
+
+`POST /api/jobs` also works without `resume`: postings are then unscored and list the skills asked.
 
 `POST /api/suggest-roles` — a resume file or `resume_text`, optional `top_n` (1–24).
 

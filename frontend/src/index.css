@@ -128,3 +128,26 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Resume builder: "Download PDF" prints only #print-root (see PrintResume) */
+#print-root {
+  display: none;
+}
+
+@media print {
+  #root,
+  body > :not(#print-root) {
+    display: none !important;
+  }
+  #print-root {
+    display: block;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .resume-doc li,
+  .resume-doc p {
+    break-inside: avoid;
+  }
+}

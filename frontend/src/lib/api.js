@@ -78,9 +78,13 @@ export async function fetchRoleGap(resume, targetRole) {
   return response.json();
 }
 
-/** Download the structured resume as an ATS-friendly .docx file. */
-export async function downloadResumeDocx(resume) {
-  const response = await request('/api/resume/docx', {
+/** Download the structured resume as an ATS-friendly .docx file, in a template if one is given. */
+export async function downloadResumeDocx(resume, { template, accent } = {}) {
+  const params = new URLSearchParams();
+  if (template) params.set('template', template);
+  if (accent) params.set('accent', accent);
+  const query = params.toString() ? `?${params}` : '';
+  const response = await request(`/api/resume/docx${query}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(resume),
@@ -175,4 +179,28 @@ export async function checkGithub(resume, username) {
     }),
   });
   return { ...(await response.json()), profile: user };
+}
+
+/** Split an uploaded resume into editable sections (resume builder). */
+export async function parseResumeFile(file) {
+  const form = new FormData();
+  form.append('resume_file', file);
+  const response = await request('/api/resume/parse', { method: 'POST', body: form });
+  return response.json();
+}
+
+/** Study plan for skills the student wants to learn, skipping prerequisites they know. */
+export async function fetchLearnPlan(skills, known = []) {
+  const response = await request('/api/learn', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skills, known }),
+  });
+  return response.json();
+}
+
+/** Skills with a curated roadmap, and career paths with their core skills. */
+export async function fetchLearnCatalog() {
+  const response = await request('/api/learn/catalog', { method: 'GET' });
+  return response.json();
 }

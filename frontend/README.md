@@ -66,11 +66,15 @@ Open `/?demo=high`, `/?demo=low` or `/?demo=resume` (no job description) to see 
 
 ```text
 src/
-├── App.jsx                      routing (/, /privacy, /terms), upload → analyzing → results flow
+├── App.jsx                      routing (/, /check, /build, /jobs, /learn, /privacy, /terms); report flow
 ├── main.jsx, index.css          entry point; Tailwind theme tokens (light + dark) and base styles
 ├── lib/
 │   ├── api.js                   fetch wrappers, timeouts, error messages, .docx download, GitHub
 │   ├── bulletCoach.js           instant rule-based feedback on resume bullets
+│   ├── templates.js             resume templates (resumeTemplates.json), fonts, sample resume
+│   ├── jobSites.js              prefilled searches on LinkedIn, Internshala, Unstop, Naukri…
+│   ├── storage.js               browser storage helpers (draft, roadmap progress)
+│   ├── tools.js                 the dashboard's tools and routes
 │   ├── demo.js                  demo payloads (?demo=high, ?demo=low, ?demo=resume)
 │   ├── sampleJobs.js            sample job postings
 │   ├── strength.js              resume strength grades (live, from the editor draft)
@@ -79,7 +83,10 @@ src/
 ├── hooks/                       useCountUp (number animation), useTheme (light/dark)
 ├── utils/format.js              display labels for skills, roles and score factors
 └── components/
-    ├── layout/                  Header (logo, theme toggle), Footer
+    ├── layout/                  Header (tool nav, theme toggle, phone tab bar), Footer
+    ├── pages/                   Dashboard, BuilderPage, JobsPage, LearnPage, LegalPages
+    ├── resume/                  ResumeForm (editor), ResumeDocument (template renderer),
+    │                            ScaledPage (preview), TemplateGallery, PrintResume (PDF)
     ├── ui/                      Button, Switch, Tabs (animated), Toast
     ├── upload/UploadView.jsx    headline, resume drop zone, optional job (+ samples), student switch
     ├── AnalyzingView.jsx        loading state with a cold-start notice
@@ -96,7 +103,6 @@ src/
     │   ├── ProjectPicks.jsx     one or two projects that close several skill gaps
     │   ├── JobsTab.jsx          live jobs and internships with a fit score on each
     │   └── edit/fields.jsx      fields, skill tag input, list/entry editors, bullet coach
-    ├── pages/LegalPages.jsx     Privacy, Terms, 404
     └── ErrorBoundary.jsx
 ```
 
