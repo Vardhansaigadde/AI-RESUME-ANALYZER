@@ -103,7 +103,7 @@ export default function Dashboard({ onNavigate }) {
       <motion.div variants={reveal} className="max-w-2xl">
         <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
           <Sparkles className="size-3.5" aria-hidden />
-          {user ? `Welcome back, ${firstName(user)}` : 'Free for students · no sign-up needed'}
+          {user ? `Welcome back, ${firstName(user)}` : 'Free for students · check your resume without signing up'}
         </p>
         <h1 className="font-display text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
           Everything you need to land your <span className="marker px-1">first job</span>

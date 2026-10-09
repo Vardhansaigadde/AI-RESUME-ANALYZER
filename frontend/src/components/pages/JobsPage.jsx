@@ -3,7 +3,7 @@ import { ArrowRight, ScanSearch } from 'lucide-react';
 import { useState } from 'react';
 import JobsTab from '../results/JobsTab';
 
-const KINDS = ['all', 'internship', 'entry'];
+const KINDS = ['all', 'internship', 'entry', 'hackathon'];
 
 /** Find jobs & internships: live openings plus prefilled searches on the big job sites. */
 export default function JobsPage({ resume, onNavigate }) {
@@ -19,9 +19,10 @@ export default function JobsPage({ resume, onNavigate }) {
       exit={{ opacity: 0 }}
       className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 sm:pt-10"
     >
-      <h1 className="font-display text-4xl font-bold tracking-tight">Find jobs & internships</h1>
+      <h1 className="font-display text-4xl font-bold tracking-tight">Find jobs, internships & hackathons</h1>
       <p className="mt-2 max-w-2xl text-lg text-muted">
-        Live openings with what employers ask for, plus one-click searches on LinkedIn, Internshala, Unstop, Naukri and more.
+        Live openings with what employers ask for, one-click searches on LinkedIn, Internshala, Unstop, Naukri and more,
+        and open hackathons on Unstop, Devfolio, Devpost and MLH.
       </p>
 
       {scored ? (

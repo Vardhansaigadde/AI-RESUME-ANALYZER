@@ -57,7 +57,8 @@ export function PrivacyPage({ onHome }) {
           nothing is kept afterwards.
         </li>
         <li>
-          <strong>Without an account, nothing is stored.</strong> We do not keep resumes, job descriptions or results.
+          <strong>Without an account, none of your content is stored.</strong> We do not keep resumes, job descriptions or
+          results.
         </li>
         <li>
           <strong>If you sign in</strong> (optional, with Google or an email link), we store your name, email and profile
@@ -68,6 +69,11 @@ export function PrivacyPage({ onHome }) {
         <li>
           <strong>Not in our logs.</strong> Server logs record operational details such as request paths, status codes and
           file types, never resume content.
+        </li>
+        <li>
+          <strong>Visit counts.</strong> To know how many people use FitLens, your browser gets a random id and we count,
+          per day, which pages were opened and whether you were signed in. No IP address, location or resume content is
+          kept with it, and it is only used for these totals.
         </li>
         <li>
           <strong>Your theme choice</strong> (light or dark), <strong>skill-plan progress</strong> and pace are saved in

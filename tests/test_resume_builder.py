@@ -106,6 +106,18 @@ class DocxTests(unittest.TestCase):
         self.assertTrue(order("fresher"))
         self.assertFalse(order("classic"))
 
+    def test_picked_accent_colours_ink_templates(self):
+        def colours(template, accent=None):
+            paragraphs = _paragraphs(build_resume_docx(RESUME, template, accent))
+            name = next(p for p in paragraphs if p.text == RESUME.name)
+            heading = next(p for p in paragraphs if p.text.upper() == "EXPERIENCE")
+            return str(name.runs[0].font.color.rgb), str(heading.runs[0].font.color.rgb)
+
+        for template in ("classic", "minimal", "executive"):
+            with self.subTest(template=template):
+                self.assertEqual(colours(template, "#1A7F5A"), ("1A7F5A", "1A7F5A"))
+                self.assertNotIn("1A7F5A", colours(template))  # template default keeps its own look
+
     def test_heading_case(self):
         classic = [p.text for p in _paragraphs(build_resume_docx(RESUME, "classic"))]
         elegant = [p.text for p in _paragraphs(build_resume_docx(RESUME, "elegant"))]

@@ -64,6 +64,13 @@ def extract_text_from_docx(source: bytes | BinaryIO | Path | str) -> str:
         doc = docx.Document(stream)
         text_parts: list[str] = []
 
+        # Many Word templates keep the name and contact line in the page header
+        for part in _header_footer_parts(doc, headers=True):
+            for para in part.paragraphs:
+                text = para.text.strip()
+                if text and text not in text_parts:
+                    text_parts.append(text)
+
         # Extract paragraphs; Word list items carry their bullet in the list
         # formatting, not the text, so mark them to keep the structure.
         for para in doc.paragraphs:
@@ -82,6 +89,17 @@ def extract_text_from_docx(source: bytes | BinaryIO | Path | str) -> str:
     except Exception as exc:
         logger.error("Failed to extract text from DOCX: %s", exc)
         raise ValueError(f"Failed to extract text from DOCX: {exc}") from exc
+
+
+def _header_footer_parts(doc, headers: bool = True, footers: bool = False) -> list:
+    """The distinct, defined headers/footers of a document (never creates new ones)."""
+    found = []
+    for section in doc.sections:
+        candidates = ([section.header] if headers else []) + ([section.footer] if footers else [])
+        for item in candidates:
+            if not item.is_linked_to_previous and all(item.part is not seen.part for seen in found):
+                found.append(item)
+    return found
 
 
 def _is_list_paragraph(para) -> bool:
@@ -105,11 +123,76 @@ def extract_text_from_file(file_content: bytes, filename: str) -> str:
     """
     ext = Path(filename).suffix.lower()
     if ext == ".pdf":
-        return extract_text_from_pdf(file_content)
+        text = extract_text_from_pdf(file_content)
     elif ext == ".docx":
-        return extract_text_from_docx(file_content)
+        text = extract_text_from_docx(file_content)
     else:
         raise ValueError(f"Unsupported file format '{ext}'. Only PDF (.pdf) and DOCX (.docx) files are supported.")
+    return _with_hidden_links(text, extract_hyperlinks(file_content, ext))
+
+
+def extract_hyperlinks(file_content: bytes, ext: str) -> list[str]:
+    """Targets of the clickable links in a PDF or DOCX (best effort, never raises).
+
+    Many resumes show just "GitHub" or "LinkedIn" with the URL behind the word,
+    so the text alone misses the profile links.
+    """
+    ext = ext.lower().lstrip(".")
+    targets: list[str] = []
+    try:
+        if ext == "pdf":
+            with pdfplumber.open(io.BytesIO(file_content)) as pdf:
+                for page in pdf.pages:
+                    targets.extend(link.get("uri") or "" for link in page.hyperlinks)
+        elif ext == "docx":
+            document = docx.Document(io.BytesIO(file_content))
+            extra = _header_footer_parts(document, headers=True, footers=True)
+            for part in [document.part] + [item.part for item in extra]:
+                rels = part.rels.values()
+                targets.extend(r.target_ref for r in rels if r.is_external and r.reltype.endswith("/hyperlink"))
+    except Exception as exc:  # links are a bonus; the text was already extracted
+        logger.warning("Could not read hyperlinks from .%s file: %s", ext, exc)
+    return list(dict.fromkeys(t.strip() for t in targets if t and t.strip()))
+
+
+def _link_text(target: str) -> str | None:
+    """A link target as it should appear in the resume text, or None to skip it."""
+    lower = target.lower()
+    if lower.startswith("mailto:"):
+        return target[7:].split("?")[0].strip() or None
+    if lower.startswith("tel:"):
+        return target[4:].strip() or None
+    if lower.startswith(("http://", "https://")):
+        return target
+    if lower.startswith("www."):
+        return f"https://{target}"
+    return None  # internal anchors, javascript:, file paths
+
+
+def _normalized(value: str) -> str:
+    return re.sub(r"^(?:https?://)?(?:www\.)?", "", value.lower()).rstrip("/")
+
+
+def _with_hidden_links(text: str, targets: list[str]) -> str:
+    """Add link targets that are not already visible in the text.
+
+    They go on the line after the name, with the other contact details, so the
+    section parser treats them as contact info and not as part of a section.
+    """
+    visible = re.sub(r"(?:https?://)?(?:www\.)?", "", text.lower())
+    hidden: list[str] = []
+    for target in targets:
+        value = _link_text(target)
+        if value and _normalized(value) not in visible and value not in hidden:
+            hidden.append(value)
+    if not hidden:
+        return text
+    contact_line = " | ".join(hidden)
+    lines = text.split("\n")
+    first = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if first is None:
+        return contact_line
+    return "\n".join(lines[: first + 1] + [contact_line] + lines[first + 1 :])
 
 
 @dataclass

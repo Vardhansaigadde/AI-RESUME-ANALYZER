@@ -83,7 +83,7 @@ export function resumeStrength(resume, { studentMode = false } = {}) {
 
   // Education
   const edu = r.education || [];
-  const hasYear = edu.some((e) => /\b(19|20)\d{2}\b/.test(`${e.title} ${e.subtitle}`));
+  const hasYear = edu.some((e) => /\b(19|20)\d{2}\b/.test(`${e.title} ${e.subtitle} ${e.date || ''}`));
   const hasGrade = edu.some((e) => /\b(c?gpa|cpi|percentage|%|\d\.\d{1,2}\s*\/\s*(10|4))/i.test(`${e.title} ${e.subtitle} ${(e.bullets || []).join(' ')}`));
   const eduNotes = [
     !hasYear && 'Add the years (e.g. 2023 – 2027).',
