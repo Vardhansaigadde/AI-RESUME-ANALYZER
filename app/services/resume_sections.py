@@ -40,7 +40,16 @@ TRAILING_DATE_RE = re.compile(
     rf"(?P<date>(?:{_DATE_TOKEN})(?:\s*(?:-|–|—|to)\s*(?:{_DATE_TOKEN}))?)\)?\s*$",
     re.IGNORECASE,
 )
-BULLET_RE = re.compile(r"^\s*(?:[•\-\*▪●◦‣–·■□➢➤►✓✔]|\d{1,2}[.)])\s+")
+# Bullet glyphs. PDFs often drop the space after the glyph ("•Built ..."), and
+# Word's Symbol/Wingdings bullets arrive as private-use characters (U+F0B7 etc.).
+BULLET_GLYPHS = "•▪●◦‣·■□➢➤►✓✔❖◆◇▸▹▶➔➜→⇒★⁃∙⦁"
+BULLET_RE = re.compile(rf"^\s*(?:[{BULLET_GLYPHS}]\s*|[-*–—]\s+|\d{{1,2}}[.)]\s+)")
+LINK_LABEL_RE = re.compile(
+    r"\b(?:github|linkedin|leetcode|hackerrank|codechef|codeforces|kaggle|portfolio|website|e-?mail|phone|mobile)\b"
+    r"\s*:?",
+    re.IGNORECASE,
+)
+LONE_BULLET_RE = re.compile(rf"^\s*[{BULLET_GLYPHS}\-*–]\s*$")
 
 # Canonical section -> heading phrases (lower case, without trailing colon)
 SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
@@ -228,11 +237,29 @@ def _paragraph(lines: list[str]) -> str:
     return " ".join(_strip_bullet(line) for line in lines if line.strip())
 
 
+def _join_lone_bullets(lines: list[str]) -> list[str]:
+    """Some PDFs put the bullet glyph on its own line; attach it to the next text line."""
+    joined: list[str] = []
+    pending = False
+    for line in lines:
+        if LONE_BULLET_RE.match(line):
+            pending = True
+            continue
+        if pending and line:
+            joined.append(f"• {line}")
+            pending = False
+        else:
+            joined.append(line)
+    return joined
+
+
 def parse_resume(text: str) -> StructuredResume:
     """Split extracted resume text into a StructuredResume (best effort)."""
     # Runs of 4+ spaces/tabs separate columns or headings in many PDF extractions
     # (and in flattened text), so treat them as line breaks.
-    lines = [line.strip() for line in re.split(r"\n|[ \t\u00a0\u200b]{4,}", str(text or ""))]
+    lines = _join_lone_bullets(
+        [line.strip() for line in re.split(r"\n|[ \t\u00a0\u200b]{4,}", str(text or ""))]
+    )
     resume = StructuredResume()
 
     # Contact details can sit anywhere (header, footer, a sidebar)
@@ -274,6 +301,8 @@ def parse_resume(text: str) -> StructuredResume:
         for bit in contact_bits:
             if bit:
                 cleaned = cleaned.replace(bit, " ")
+        # Link labels whose URL sits behind the word ("GitHub | LinkedIn")
+        cleaned = LINK_LABEL_RE.sub(" ", cleaned)
         cleaned = re.sub(r"(?:\s*[|•·,]\s*)+", " | ", cleaned).strip(" |")
         if not cleaned or EMAIL_RE.search(cleaned):
             continue
