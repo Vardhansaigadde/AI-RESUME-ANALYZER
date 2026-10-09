@@ -1,6 +1,8 @@
 import { AnimatePresence } from 'framer-motion';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { FilePenLine, GraduationCap } from 'lucide-react';
 import AnalyzingView from './components/AnalyzingView';
+import SignInRequired from './components/auth/SignInRequired';
 import Footer from './components/layout/Footer';
 import Header from './components/layout/Header';
 import Dashboard from './components/pages/Dashboard';
@@ -9,7 +11,9 @@ import ResultsView from './components/results/ResultsView';
 import Toast from './components/ui/Toast';
 import UploadView from './components/upload/UploadView';
 import { useTheme } from './hooks/useTheme';
+import { trackVisit } from './lib/analytics';
 import { analyzeResume, recheckResume } from './lib/api';
+import { useAuth } from './lib/authContext';
 import { DEMO_HIGH_RESULT, DEMO_LOW_RESULT, DEMO_RESUME_ONLY_RESULT } from './lib/demo';
 
 // Loaded when first opened, to keep the first page fast
@@ -17,6 +21,7 @@ const BuilderPage = lazy(() => import('./components/pages/BuilderPage'));
 const JobsPage = lazy(() => import('./components/pages/JobsPage'));
 const LearnPage = lazy(() => import('./components/pages/LearnPage'));
 const TrackerPage = lazy(() => import('./components/pages/TrackerPage'));
+const AdminPage = lazy(() => import('./components/pages/AdminPage'));
 
 const PAGES = {
   '/': 'home',
@@ -28,6 +33,7 @@ const PAGES = {
   '/tracker': 'tracker',
   '/privacy': 'privacy',
   '/terms': 'terms',
+  '/admin': 'admin',
 };
 const DEMO_JOB = 'Junior software engineer: Python, SQL, Docker, AWS, Kubernetes, CI/CD and REST APIs.';
 
@@ -64,6 +70,17 @@ export default function App() {
   const clearToast = useCallback(() => setToast(null), []);
   const showError = useCallback((message) => setToast(message ? { tone: 'error', message } : null), []);
 
+  const { user, ready: authReady, enabled: accounts } = useAuth();
+  // Build and Learn need an account (when accounts are set up at all)
+  const locked = accounts && authReady && !user;
+
+  // Anonymous page counts for the owner's dashboard; recounted after sign-in so the
+  // day is marked as a signed-in visit
+  const signedIn = Boolean(user);
+  useEffect(() => {
+    if (authReady) trackVisit(page);
+  }, [page, authReady, signedIn]);
+
   useEffect(() => {
     const onPop = () => setPage(currentPage());
     window.addEventListener('popstate', onPop);
@@ -90,6 +107,7 @@ export default function App() {
     window.scrollTo({ top: 0 });
     try {
       const data = await analyzeResume(file, job, mode);
+      trackVisit('analysis');
       setOriginal(data);
       setResult(data);
     } catch (err) {
@@ -124,6 +142,31 @@ export default function App() {
 
   let content;
   if (page === 'home') content = <Dashboard key="home" onNavigate={navigate} />;
+  else if (page === 'admin') content = <AdminPage key="admin" onHome={goHome} />;
+  else if ((page === 'build' || page === 'learn') && accounts && !authReady)
+    content = <main key="wait" className="min-h-[60vh]" aria-busy="true" />;
+  else if (page === 'build' && locked)
+    content = (
+      <SignInRequired
+        key="build-locked"
+        page
+        icon={FilePenLine}
+        title="Resume builder"
+        text="Build your resume with 12 ATS-friendly templates, a live preview and PDF or Word download. Your resumes are saved to your account."
+        reason="Sign in to build and save your resumes."
+      />
+    );
+  else if (page === 'learn' && locked)
+    content = (
+      <SignInRequired
+        key="learn-locked"
+        page
+        icon={GraduationCap}
+        title="Learn"
+        text="Get a week-by-week skill plan for your target role, with free courses and projects. Your progress is saved to your account."
+        reason="Sign in to get your skill plan and keep your progress."
+      />
+    );
   else if (page === 'build')
     content = (
       <BuilderPage key="build" notify={notify} onCheck={checkBuiltResume} seed={builderSeed} onSeedUsed={() => setBuilderSeed(null)} />

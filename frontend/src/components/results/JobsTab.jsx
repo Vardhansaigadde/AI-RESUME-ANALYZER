@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   Bookmark,
   BookmarkCheck,
+  Briefcase,
   Building2,
   Check,
   Clock,
@@ -20,6 +21,7 @@ import { useAuth } from '../../lib/authContext';
 import { jobSiteLinks } from '../../lib/jobSites';
 import { scoreTone } from '../../lib/resume';
 import { formatSkill } from '../../utils/format';
+import SignInRequired from '../auth/SignInRequired';
 import Button from '../ui/Button';
 import HackathonLinks from './HackathonLinks';
 
@@ -357,11 +359,14 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
   );
   const [countries, setCountries] = useState(FALLBACK_COUNTRIES);
   const [sort, setSort] = useState('fit');
+  const { user, ready, enabled, openSignIn } = useAuth();
+  // Jobs need an account when accounts are set up
+  const locked = enabled && (!ready || !user);
 
   const run = async (params = form) => {
     const query = params.query.trim();
     // Hackathons are links to other sites, not a job search
-    if (query.length < 2 || params.kind === 'hackathon') return;
+    if (locked || query.length < 2 || params.kind === 'hackathon') return;
     // Only the latest search may update the results
     const requestId = `${Date.now()}-${Math.random()}`;
     setState((s) => ({ ...s, loading: true, error: null, params, requestId }));
@@ -378,16 +383,19 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
   useEffect(() => {
     let live = true;
     jobOptions().then((opts) => live && opts?.countries?.length && setCountries(opts.countries));
-    // First visit: search right away with the target role (once, even under StrictMode)
-    if (!started.current && !state.data && !state.loading) {
-      started.current = true;
-      run();
-    }
     return () => {
       live = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    // First visit (or right after signing in): search with the target role, once even under StrictMode
+    if (!locked && !started.current && !state.data && !state.loading) {
+      started.current = true;
+      run();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locked]);
 
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
   const searchWith = (changes) => {
@@ -398,7 +406,6 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
 
   const hackathons = form.kind === 'hackathon';
   const { data, loading, error } = state;
-  const { user, enabled, openSignIn } = useAuth();
   const applications = useApplications();
   const saveJob = async (job) => {
     if (!user) {
@@ -413,6 +420,19 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
   };
   const jobs = data ? [...data.jobs].sort(SORTS[sort]) : [];
   const onsiteOff = data?.sources?.find((s) => s.name === 'Adzuna' && s.status === 'off');
+
+  if (locked) {
+    return ready ? (
+      <SignInRequired
+        icon={Briefcase}
+        title="Jobs, internships & hackathons"
+        text="See live openings with your fit score on each, one-click searches on LinkedIn, Internshala and Naukri, and open hackathons. Save jobs to your tracker."
+        reason="Sign in to search jobs, internships and hackathons."
+      />
+    ) : (
+      <div className="min-h-[40vh]" aria-busy="true" />
+    );
+  }
 
   return (
     <div>

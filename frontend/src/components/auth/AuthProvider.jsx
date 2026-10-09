@@ -137,7 +137,7 @@ function SignInDialog({ open, reason, onClose }) {
                     Email me a sign-in link
                   </Button>
                 </form>
-                <p className="mt-4 text-center text-xs text-muted">No password needed. Everything also works without an account.</p>
+                <p className="mt-4 text-center text-xs text-muted">No password needed. Checking your resume also works without an account.</p>
               </>
             )}
             {error && (
