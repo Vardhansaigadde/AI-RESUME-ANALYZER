@@ -21,11 +21,13 @@ import { jobSiteLinks } from '../../lib/jobSites';
 import { scoreTone } from '../../lib/resume';
 import { formatSkill } from '../../utils/format';
 import Button from '../ui/Button';
+import HackathonLinks from './HackathonLinks';
 
 const KINDS = [
   { id: 'all', label: 'All jobs' },
   { id: 'internship', label: 'Internships' },
   { id: 'entry', label: 'Entry-level' },
+  { id: 'hackathon', label: 'Hackathons' },
 ];
 
 const FALLBACK_COUNTRIES = [{ code: 'IN', name: 'India', onsite: false }];
@@ -358,7 +360,8 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
 
   const run = async (params = form) => {
     const query = params.query.trim();
-    if (query.length < 2) return;
+    // Hackathons are links to other sites, not a job search
+    if (query.length < 2 || params.kind === 'hackathon') return;
     // Only the latest search may update the results
     const requestId = `${Date.now()}-${Math.random()}`;
     setState((s) => ({ ...s, loading: true, error: null, params, requestId }));
@@ -393,6 +396,7 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
     run(next);
   };
 
+  const hackathons = form.kind === 'hackathon';
   const { data, loading, error } = state;
   const { user, enabled, openSignIn } = useAuth();
   const applications = useApplications();
@@ -419,7 +423,7 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
         }}
         className="card p-4 sm:p-5"
       >
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className={`flex flex-col gap-3 sm:flex-row ${hackathons ? 'hidden' : ''}`}>
           <div className="relative flex-1">
             <label htmlFor={`${id}-q`} className="sr-only">
               Role or keywords
@@ -460,7 +464,7 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className={`flex flex-wrap items-center justify-between gap-3 ${hackathons ? '' : 'mt-3'}`}>
           <div role="radiogroup" aria-label="Job type" className="inline-flex rounded-xl bg-sunken p-1">
             {KINDS.map((k) => (
               <button
@@ -491,13 +495,19 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
         </div>
       </form>
 
-      <SiteLinks
-        query={form.query}
-        kind={form.kind}
-        countryName={form.country === 'ANY' ? '' : countries.find((c) => c.code === form.country)?.name || 'India'}
-      />
+      {hackathons ? (
+        <div className="mt-4">
+          <HackathonLinks />
+        </div>
+      ) : (
+        <SiteLinks
+          query={form.query}
+          kind={form.kind}
+          countryName={form.country === 'ANY' ? '' : countries.find((c) => c.code === form.country)?.name || 'India'}
+        />
+      )}
 
-      <div className="mt-5" aria-live="polite">
+      <div className={`mt-5 ${hackathons ? 'hidden' : ''}`} aria-live="polite">
         {error && !loading && (
           <div className="card flex flex-col items-center gap-3 p-8 text-center">
             <p className="text-sm text-muted">{error}</p>
