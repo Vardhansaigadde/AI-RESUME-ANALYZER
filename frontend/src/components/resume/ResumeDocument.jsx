@@ -24,13 +24,18 @@ export default function ResumeDocument({ resume, templateId, accent, print = fal
   const density = DENSITY[t.density];
   const h = t.heading;
   const tone = (name) => (name === 'accent' ? color : name === 'muted' ? MUTED : INK);
+  // A colour the user picked shows on every template: name, headings and their rules.
+  // "Template default" (no accent) keeps each template's own black or grey headings.
+  const picked = Boolean(accent);
+  const headingColor = picked ? color : tone(h.color);
+  const nameColor = picked ? color : tone(t.name_color);
   const pt = (n) => `${n}pt`;
 
-  const ruleColor = h.color === 'accent' ? color : h.rule === 'thick' ? INK : RULE_GREY;
+  const ruleColor = picked || h.color === 'accent' ? color : h.rule === 'thick' ? INK : RULE_GREY;
   const headingStyle = {
     fontSize: pt(h.size),
     fontWeight: 700,
-    color: tone(h.color),
+    color: headingColor,
     margin: `${pt(density.before)} 0 ${pt(4)}`,
     paddingBottom: h.rule !== 'none' ? pt(1.5) : 0,
     textTransform: h.case === 'upper' ? 'uppercase' : 'none',
@@ -147,7 +152,7 @@ export default function ResumeDocument({ resume, templateId, accent, print = fal
             margin: `0 0 ${pt(2)}`,
             lineHeight: 1.1,
             textAlign: align,
-            color: tone(t.name_color),
+            color: nameColor,
           }}
         >
           {resume.name}

@@ -68,13 +68,20 @@ def _tint(hex_color: str, amount: float = 0.88) -> str:
 class _Style:
     def __init__(self, template: dict, accent: str | None):
         self.t = template
-        self.accent = (accent if accent and HEX.match(accent) else template["accent"]).lstrip("#").upper()
+        # A colour the user picked shows on every template (name, headings, rules);
+        # without one each template keeps its own black or grey headings.
+        self.picked = bool(accent and HEX.match(accent))
+        self.accent = (accent if self.picked else template["accent"]).lstrip("#").upper()
         self.font = load_templates()["fonts"][template["font"]]["docx"]
         self.margin, self.space_before, self.space_after = DENSITY[template["density"]]
         self.width = A4[0] - Pt(self.margin * 2)
 
     def color(self, name: str) -> str:
         return {"accent": self.accent, "muted": MUTED}.get(name, INK)
+
+    def strong(self, name: str) -> str:
+        """Colour of the name and section headings."""
+        return self.accent if self.picked else self.color(name)
 
 
 def _border(paragraph, side: str, attrs: dict[str, str]) -> None:
@@ -121,12 +128,12 @@ def _heading(document: Document, s: _Style, text: str) -> None:
     run = paragraph.add_run(label)
     run.bold = True
     run.font.size = Pt(h["size"])
-    run.font.color.rgb = _rgb(s.color(h["color"]))
+    run.font.color.rgb = _rgb(s.strong(h["color"]))
     if h["case"] == "small-caps":
         run.font.small_caps = True
     if h["underline"]:
         run.underline = True
-    rule_color = s.accent if h["color"] == "accent" else (INK if h["rule"] == "thick" else RULE_GREY)
+    rule_color = s.accent if s.picked or h["color"] == "accent" else (INK if h["rule"] == "thick" else RULE_GREY)
     if h["rule"] == "single":
         _border(paragraph, "bottom", {"val": "single", "sz": "6", "space": "1", "color": rule_color})
     elif h["rule"] == "double":
@@ -187,7 +194,7 @@ def _header(document: Document, resume: StructuredResume, s: _Style) -> None:
         run = name.add_run(resume.name.strip())
         run.bold = True
         run.font.size = Pt(s.t["name_size"])
-        run.font.color.rgb = _rgb(s.color(s.t["name_color"]))
+        run.font.color.rgb = _rgb(s.strong(s.t["name_color"]))
     if resume.headline.strip():
         headline = document.add_paragraph()
         headline.alignment = align
