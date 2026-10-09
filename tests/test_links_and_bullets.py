@@ -163,8 +163,12 @@ class TestBullets(unittest.TestCase):
         )
 
     def test_wrapped_bullet_is_joined(self):
-        text = "Sample Student\nPROJECTS\nChat App 2024\n• Built a chat app used by 200 students across\nthree colleges.\n"
-        self.assertEqual(parse_resume(text).projects[0].bullets, ["Built a chat app used by 200 students across three colleges."])
+        text = (
+            "Sample Student\nPROJECTS\nChat App 2024\n• Built a chat app used by 200 students across\nthree colleges.\n"
+        )
+        self.assertEqual(
+            parse_resume(text).projects[0].bullets, ["Built a chat app used by 200 students across three colleges."]
+        )
 
 
 if __name__ == "__main__":

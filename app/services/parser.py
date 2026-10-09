@@ -148,9 +148,8 @@ def extract_hyperlinks(file_content: bytes, ext: str) -> list[str]:
             document = docx.Document(io.BytesIO(file_content))
             extra = _header_footer_parts(document, headers=True, footers=True)
             for part in [document.part] + [item.part for item in extra]:
-                targets.extend(
-                    rel.target_ref for rel in part.rels.values() if rel.is_external and rel.reltype.endswith("/hyperlink")
-                )
+                rels = part.rels.values()
+                targets.extend(r.target_ref for r in rels if r.is_external and r.reltype.endswith("/hyperlink"))
     except Exception as exc:  # links are a bonus; the text was already extracted
         logger.warning("Could not read hyperlinks from .%s file: %s", ext, exc)
     return list(dict.fromkeys(t.strip() for t in targets if t and t.strip()))

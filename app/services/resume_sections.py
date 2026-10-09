@@ -257,9 +257,7 @@ def parse_resume(text: str) -> StructuredResume:
     """Split extracted resume text into a StructuredResume (best effort)."""
     # Runs of 4+ spaces/tabs separate columns or headings in many PDF extractions
     # (and in flattened text), so treat them as line breaks.
-    lines = _join_lone_bullets(
-        [line.strip() for line in re.split(r"\n|[ \t\u00a0\u200b]{4,}", str(text or ""))]
-    )
+    lines = _join_lone_bullets([line.strip() for line in re.split(r"\n|[ \t\u00a0\u200b]{4,}", str(text or ""))])
     resume = StructuredResume()
 
     # Contact details can sit anywhere (header, footer, a sidebar)
