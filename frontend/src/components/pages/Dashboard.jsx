@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, ClipboardList, FilePenLine, GraduationCap, Sparkles } from 'lucide-react';
+import { ArrowRight, ClipboardList, FilePenLine, GraduationCap, Moon, Sparkles, Sun, Sunrise, Sunset } from 'lucide-react';
 import { useApplications } from '../../hooks/useApplications';
 import { firstName, useAuth } from '../../lib/authContext';
 import { STAGES } from '../../lib/cloud';
@@ -46,7 +46,58 @@ const QUICK_STARTS = [
   { label: 'Check my resume against a job', path: '/check' },
 ];
 
-/** Home: the student's toolkit. */
+// A different nudge each day (same all day), so the home page doesn't feel canned
+const DAILY_LINES = [
+  'One strong bullet beats three weak ones.',
+  'Numbers make recruiters stop scrolling.',
+  'Apply today, polish tomorrow.',
+  'Your best project is your best bullet.',
+  'Small edits, more callbacks.',
+  'Ten focused applications beat fifty rushed ones.',
+  'Every rejection is interview practice.',
+  'A skill a day keeps the gaps away.',
+  'Tailor the resume, not the truth.',
+  'Ship one thing this week and add it to your resume.',
+];
+
+/** Greeting for the local time of day, with a matching icon. */
+function timeGreeting(now = new Date()) {
+  const hour = now.getHours();
+  if (hour >= 5 && hour < 12) return { icon: Sunrise, text: 'Good morning' };
+  if (hour >= 12 && hour < 17) return { icon: Sun, text: 'Good afternoon' };
+  if (hour >= 17 && hour < 22) return { icon: Sunset, text: 'Good evening' };
+  return { icon: Moon, text: 'Up late' };
+}
+
+function dailyLine(now = new Date()) {
+  const day = Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000);
+  return DAILY_LINES[day % DAILY_LINES.length];
+}
+
+function Greeting({ user }) {
+  if (!user) {
+    return (
+      <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
+        <Sparkles className="size-3.5" aria-hidden />
+        Free for students · check your resume without signing up
+      </p>
+    );
+  }
+  const { icon: Icon, text } = timeGreeting();
+  const name = firstName(user);
+  return (
+    <div className="mb-4">
+      <p className="flex items-center gap-2 font-display text-xl font-semibold">
+        <span className="grid size-8 place-items-center rounded-full bg-highlight text-ink">
+          <Icon className="size-4" aria-hidden />
+        </span>
+        {name ? `${text}, ${name}` : text}
+      </p>
+      <p className="mt-1 pl-10 text-sm text-muted italic">{dailyLine()}</p>
+    </div>
+  );
+}
+
 /** Signed in: applications by stage, linking to the tracker. */
 function ApplicationsSummary({ onNavigate }) {
   const { items } = useApplications();
@@ -101,10 +152,7 @@ export default function Dashboard({ onNavigate }) {
       className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6 sm:pt-14"
     >
       <motion.div variants={reveal} className="max-w-2xl">
-        <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
-          <Sparkles className="size-3.5" aria-hidden />
-          {user ? `Welcome back, ${firstName(user)}` : 'Free for students · check your resume without signing up'}
-        </p>
+        <Greeting user={user} />
         <h1 className="font-display text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
           Everything you need to land your <span className="marker px-1">first job</span>
         </h1>
