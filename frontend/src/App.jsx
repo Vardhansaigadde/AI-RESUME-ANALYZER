@@ -12,7 +12,7 @@ import Toast from './components/ui/Toast';
 import UploadView from './components/upload/UploadView';
 import { useTheme } from './hooks/useTheme';
 import { trackVisit } from './lib/analytics';
-import { analyzeResume, recheckResume } from './lib/api';
+import { analyzeResume, recheckResume, wakeServer } from './lib/api';
 import { useAuth } from './lib/authContext';
 import { DEMO_HIGH_RESULT, DEMO_LOW_RESULT, DEMO_RESUME_ONLY_RESULT } from './lib/demo';
 
@@ -80,6 +80,11 @@ export default function App() {
   useEffect(() => {
     if (authReady) trackVisit(page);
   }, [page, authReady, signedIn]);
+
+  // Wake the (possibly sleeping) backend while the visitor looks around
+  useEffect(() => {
+    wakeServer();
+  }, []);
 
   useEffect(() => {
     const onPop = () => setPage(currentPage());

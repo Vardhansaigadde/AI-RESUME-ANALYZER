@@ -28,6 +28,20 @@ async function request(path, options) {
   }
 }
 
+/**
+ * Start waking the backend as soon as someone opens the site. Render's free plan
+ * sleeps after ~15 idle minutes and takes up to a minute to boot (models load at
+ * startup), so by the time a visitor has picked a file it is usually awake.
+ * Fire and forget: the response is not needed. Locally (no API base) there is
+ * nothing to wake.
+ */
+export function wakeServer() {
+  if (!API_BASE) return;
+  fetch(`${API_BASE}/`, { mode: 'no-cors', cache: 'no-store', keepalive: true }).catch(() => {
+    // Asleep or offline: the real request will show a proper error if needed
+  });
+}
+
 async function errorMessage(response) {
   try {
     const data = await response.json();
