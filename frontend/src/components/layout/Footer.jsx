@@ -21,9 +21,6 @@ export default function Footer({ onNavigate }) {
         <nav className="flex items-center gap-4" aria-label="Footer">
           {link('/privacy', 'Privacy')}
           {link('/terms', 'Terms')}
-          <a href={REPO_URL} target="_blank" rel="noreferrer" className="hover:text-ink">
-            GitHub
-          </a>
         </nav>
       </div>
     </footer>
