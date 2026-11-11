@@ -46,6 +46,9 @@ provider.
   pasted job (matching projects and skills first, missing keywords suggested, never invented).
 - **End-to-end product.** Resume builder with 15 ATS-safe templates (PDF + Word) and clickable links, live jobs scored against
   the resume, hackathon finder, week-by-week learning roadmaps, an application tracker and accounts.
+- **Earn while you study.** A freelancing guide that starts from zero skills: services that free AI tools make
+  doable, a 30-day plan to the first client, platforms, message templates, pricing, getting paid in India,
+  scam warnings and tax basics, with services matched to the student's resume.
 - **Production quality.** 306 automated tests and linting on every pull request (GitHub Actions), a
   Dockerised API with rate limiting and file-signature checks, and row-level security in PostgreSQL.
 - **Privacy first.** Resumes are processed in memory and never stored or sent to an AI service.

@@ -291,6 +291,25 @@ least 3 postings, and a skill must appear in 2), with each one's share and wheth
 it. Soft skills and generic words from the extractor's catch-all domain group ("reporting",
 "research") are left out unless a target role lists them, so "accounting" or "SEO" still count.
 
+
+### Earn (freelancing guide)
+
+`/earn` (`frontend/src/components/pages/EarnPage.jsx`, content in `frontend/src/lib/earn.js`) is a
+static guide, open without sign-in, for students who want to earn while studying, including those
+with no skills yet. It has:
+
+- 24 services in three starting levels (zero skills, basics, tech). Each lists the free AI tools
+  that do the hard part, what the student must still check, a starting price, where clients are,
+  three portfolio samples to make, and prefilled searches on YouTube, Fiverr, Upwork and Freelancer
+  (there is no free gig API, and those sites' terms don't allow scraping).
+- A 30-day plan with checkboxes saved in the browser.
+- Platforms with fees, message templates with a copy button (English and Hinglish), pricing, rules
+  for using AI honestly, getting paid in India (UPI, PayPal, Payoneer, FIRA, 18+ and PAN), common
+  scams, and tax basics (new regime ₹12 lakh, Section 44ADA, GST threshold), marked as general
+  information, not advice.
+
+If the student has checked a resume in the same visit, services that use their skills are marked
+"Matches your resume" and the page opens on the matching level. Nothing is sent to the server.
 ## Data
 
 | File | Rows | Used for |

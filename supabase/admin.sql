@@ -81,7 +81,7 @@ declare
   today date := private.today();
 begin
   if visitor_key is null
-    or page_name not in ('home', 'check', 'analysis', 'build', 'jobs', 'learn', 'tracker', 'privacy', 'terms') then
+    or page_name not in ('home', 'check', 'analysis', 'build', 'jobs', 'learn', 'earn', 'tracker', 'privacy', 'terms') then
     return;
   end if;
   insert into private.daily_visitors (day, visitor_id, user_id)

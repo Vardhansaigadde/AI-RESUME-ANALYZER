@@ -20,6 +20,7 @@ import { DEMO_HIGH_RESULT, DEMO_LOW_RESULT, DEMO_RESUME_ONLY_RESULT } from './li
 const BuilderPage = lazy(() => import('./components/pages/BuilderPage'));
 const JobsPage = lazy(() => import('./components/pages/JobsPage'));
 const LearnPage = lazy(() => import('./components/pages/LearnPage'));
+const EarnPage = lazy(() => import('./components/pages/EarnPage'));
 const TrackerPage = lazy(() => import('./components/pages/TrackerPage'));
 const AdminPage = lazy(() => import('./components/pages/AdminPage'));
 
@@ -30,6 +31,7 @@ const PAGES = {
   '/build': 'build',
   '/jobs': 'jobs',
   '/learn': 'learn',
+  '/earn': 'earn',
   '/tracker': 'tracker',
   '/privacy': 'privacy',
   '/terms': 'terms',
@@ -167,6 +169,7 @@ export default function App() {
     );
   else if (page === 'jobs') content = <JobsPage key="jobs" resume={result?.resume || null} onNavigate={navigate} />;
   else if (page === 'learn') content = <LearnPage key="learn" notify={notify} onNavigate={navigate} />;
+  else if (page === 'earn') content = <EarnPage key="earn" skills={result?.resume?.skills || []} notify={notify} />;
   else if (page === 'tracker') content = <TrackerPage key="tracker" notify={notify} onNavigate={navigate} />;
   else if (page === 'privacy') content = <PrivacyPage key="privacy" onHome={goHome} />;
   else if (page === 'terms') content = <TermsPage key="terms" onHome={goHome} />;

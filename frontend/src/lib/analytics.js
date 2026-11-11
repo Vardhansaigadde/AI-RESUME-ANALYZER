@@ -4,7 +4,7 @@
 import { supabase } from './supabase';
 
 const VISITOR_KEY = 'fitlens:visitor';
-const TRACKED = new Set(['home', 'check', 'analysis', 'build', 'jobs', 'learn', 'tracker', 'privacy', 'terms']);
+const TRACKED = new Set(['home', 'check', 'analysis', 'build', 'jobs', 'learn', 'earn', 'tracker', 'privacy', 'terms']);
 
 function visitorId() {
   try {
