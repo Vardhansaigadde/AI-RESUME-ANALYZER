@@ -292,6 +292,20 @@ it. Soft skills and generic words from the extractor's catch-all domain group ("
 "research") are left out unless a target role lists them, so "accounting" or "SEO" still count.
 
 
+### Paid internship guide
+
+`/jobs?view=guide` (`frontend/src/components/jobs/InternshipGuide.jsx`, content in
+`frontend/src/lib/internshipGuide.js`) lists 16 routes to a paid internship for any student,
+filtered by year (1st–2nd, 3rd, final) and field (CS/IT, ECE/EEE, core engineering, science,
+commerce/management/arts) and sorted fastest first. They include portals, LinkedIn hiring posts,
+startup founders, emailing professors, NPTEL toppers' internships, IIT/IISc and science-academy
+summer fellowships, funded internships abroad (Mitacs, DAAD WISE, IUSSTF), AICTE and PM Internship
+portals, competitions, paid open source (GSoC, C4GT, LFX, Outreachy), alumni and T&P, core industry
+training, business roles, freelancing and teaching roles. Each route has steps and official links
+only, because dates, pay and eligibility change every year. There are also copyable email
+templates for professors, founders and alumni, and a list of fake-internship red flags. The
+shared guide components live in `frontend/src/components/ui/Guide.jsx`.
+
 ### Earn (freelancing guide)
 
 `/earn` (`frontend/src/components/pages/EarnPage.jsx`, content in `frontend/src/lib/earn.js`) is a

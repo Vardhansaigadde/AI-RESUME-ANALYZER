@@ -167,7 +167,7 @@ export default function App() {
     content = (
       <BuilderPage key="build" notify={notify} onCheck={checkBuiltResume} seed={builderSeed} onSeedUsed={() => setBuilderSeed(null)} />
     );
-  else if (page === 'jobs') content = <JobsPage key="jobs" resume={result?.resume || null} onNavigate={navigate} />;
+  else if (page === 'jobs') content = <JobsPage key="jobs" resume={result?.resume || null} onNavigate={navigate} notify={notify} />;
   else if (page === 'learn') content = <LearnPage key="learn" notify={notify} onNavigate={navigate} />;
   else if (page === 'earn') content = <EarnPage key="earn" skills={result?.resume?.skills || []} notify={notify} />;
   else if (page === 'tracker') content = <TrackerPage key="tracker" notify={notify} onNavigate={navigate} />;
