@@ -169,6 +169,19 @@ def matches_query(query: str, *texts: str) -> bool:
     return all(w in have for w in words)
 
 
+def about_query(query: str, title: str, text: str) -> bool:
+    """For searches that match loosely (Jooble): the title names part of the search and the posting covers all of it.
+
+    Jooble matches words anywhere in a posting, so "python developer" also returns a
+    "Paint Simulation Lead Engineer" whose description mentions Python once.
+    """
+    words = [w for w in clean_text(query).split() if w not in QUERY_FILLER]
+    if not words:
+        return True
+    title_words = set(clean_text(title).split())
+    return any(w in title_words for w in words) and matches_query(query, title, text)
+
+
 def _feed(url: str) -> Any:
     """A whole-feed download shared by every search for FEED_TTL seconds."""
     key = ("feed", url)
@@ -454,7 +467,8 @@ def fetch_jooble(query: str, country: str, kind: str) -> list[dict]:
     for job in data["jobs"][:RESULTS_PER_SOURCE]:
         title = html_to_text(job.get("title") or "")
         link = job.get("link") or ""
-        if not title or not link:
+        snippet = html_to_text(job.get("snippet") or "")
+        if not title or not link or not about_query(query, title, snippet):
             continue
         postings.append(
             {
@@ -469,7 +483,7 @@ def fetch_jooble(query: str, country: str, kind: str) -> list[dict]:
                 "salary": (job.get("salary") or "").strip(),
                 "url": link,
                 "source": "Jooble",
-                "text": html_to_text(job.get("snippet") or ""),
+                "text": snippet,
                 "short_description": True,
             }
         )

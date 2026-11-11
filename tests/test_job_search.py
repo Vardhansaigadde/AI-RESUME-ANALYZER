@@ -146,7 +146,14 @@ JOOBLE = {
             "type": "Full-time",
             "link": "https://jooble.org/desc/99",
             "updated": "2026-10-01T10:00:00.0000000",
-        }
+        },
+        {  # mentions python only in passing: not a Python job
+            "id": 100,
+            "title": "Sr Engineer - Paint Simulation",
+            "company": "AutoCo",
+            "snippet": "CFD and paint simulation; scripting in Python is a plus.",
+            "link": "https://jooble.org/desc/100",
+        },
     ],
 }
 
@@ -297,7 +304,9 @@ class JobSearchServiceTests(unittest.TestCase):
             mock.patch.object(job_search, "_http_post_json", side_effect=fake_post),
         ):
             result = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
-        jooble = next(j for j in result["jobs"] if j.source == "Jooble")
+        jooble = [j for j in result["jobs"] if j.source == "Jooble"]
+        self.assertEqual([j.company for j in jooble], ["Hyd Soft"])  # the paint-simulation role is left out
+        jooble = jooble[0]
         self.assertEqual(jooble.title, "Python Developer Fresher")
         self.assertEqual(jooble.salary, "₹3 - 5 LPA")
         self.assertEqual(jooble.posted, "2026-10-01")
