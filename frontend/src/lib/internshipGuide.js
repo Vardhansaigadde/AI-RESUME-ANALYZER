@@ -51,6 +51,27 @@ export const ROUTES = [
     ],
   },
   {
+    id: 'small-companies',
+    title: 'Apply to small, lesser-known companies',
+    speed: 'fast',
+    pay: '₹3,000–15,000 a month is common; sometimes less, so agree on it first',
+    years: [],
+    fields: [],
+    why: 'A famous startup’s posting gets hundreds of applicants; a 20-person company in your city may get fifteen. The founder or manager decides fast, often after one call and a small task, and you do real work from day one.',
+    steps: [
+      'Find them: search Google Maps for your field near you (“software company”, “digital marketing agency”, “CAD design”, “CA firm”), filter LinkedIn companies by your city and 1–50 employees, and look up your city’s IT park or industrial estate.',
+      'On Internshala and LinkedIn, apply to postings from small companies with few applicants, even if the stipend is lower.',
+      'Email them even when nothing is posted: careers@ / hr@ or the founder on LinkedIn, with a 5-line message and your resume (use the founder template below).',
+      'If they are nearby, walk in with a printed resume. Small companies often hire the student who shows up.',
+      'Check they are real before joining: a working website and company email, real employees on LinkedIn, Google reviews, and a registered company name (search it with “private limited” and CIN). Never pay anything.',
+      'Agree on the stipend, hours and duration in writing (an email or offer letter) before you start, and ask for a certificate and a recommendation at the end.',
+    ],
+    links: [
+      { label: 'Google Maps: companies near you (edit the search)', href: 'https://www.google.com/maps/search/software+company+near+me' },
+      { label: 'LinkedIn company search', href: 'https://www.linkedin.com/search/results/companies/' },
+    ],
+  },
+  {
     id: 'linkedin-posts',
     title: 'Reply to “hiring intern” posts on LinkedIn',
     speed: 'fast',

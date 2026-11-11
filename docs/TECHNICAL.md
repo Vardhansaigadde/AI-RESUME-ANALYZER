@@ -295,9 +295,9 @@ it. Soft skills and generic words from the extractor's catch-all domain group ("
 ### Paid internship guide
 
 `/jobs?view=guide` (`frontend/src/components/jobs/InternshipGuide.jsx`, content in
-`frontend/src/lib/internshipGuide.js`) lists 16 routes to a paid internship for any student,
+`frontend/src/lib/internshipGuide.js`) lists 17 routes to a paid internship for any student,
 filtered by year (1st–2nd, 3rd, final) and field (CS/IT, ECE/EEE, core engineering, science,
-commerce/management/arts) and sorted fastest first. They include portals, LinkedIn hiring posts,
+commerce/management/arts) and sorted fastest first. They include portals, small lesser-known companies, LinkedIn hiring posts,
 startup founders, emailing professors, NPTEL toppers' internships, IIT/IISc and science-academy
 summer fellowships, funded internships abroad (Mitacs, DAAD WISE, IUSSTF), AICTE and PM Internship
 portals, competitions, paid open source (GSoC, C4GT, LFX, Outreachy), alumni and T&P, core industry
