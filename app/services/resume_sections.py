@@ -167,6 +167,10 @@ def _match_heading(line: str) -> tuple[str, str, str] | None:
     stripped = line.strip()
     if not stripped or len(stripped) > 60:
         return None
+    if BULLET_RE.match(stripped):
+        # Word files sometimes format a heading as a list item: accept it only as a whole heading
+        found = _match_heading(BULLET_RE.sub("", stripped))
+        return found if found and not found[2] else None
     norm = _normalize_heading(stripped.rstrip(":"))
     if norm in _HEADING_LOOKUP and len(norm.split()) <= 5:
         return _HEADING_LOOKUP[norm], stripped.rstrip(":").strip(), ""
@@ -233,6 +237,9 @@ def _split_items(lines: list[str]) -> list[str]:
 _CONTINUES = re.compile(r"\b(for|and|or|of|in|to|with|the|a|an|on|at|by|from|using|via|into|across|over)$", re.I)
 
 
+# A real address has a dot in its site name ("https://www" alone is a broken fragment)
+_REAL_HOST = re.compile(r"^(?:https?://)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+", re.IGNORECASE)
+_POST_LINK = re.compile(r"linkedin\.com/(?:posts|feed|pulse)/", re.IGNORECASE)
 _ENTRY_LINK = re.compile(r"\s*\[link\]\(([^)\s]+)\)")
 
 
@@ -342,7 +349,7 @@ def parse_resume(text: str) -> StructuredResume:
     # Visible addresses anywhere, except those already inside a [text](url) link
     for match in URL_RE.finditer(INLINE_LINK_RE.sub(" ", full)):
         url = match.group(0).rstrip(".)")
-        if "@" not in url and url not in links:
+        if "@" not in url and url not in links and not _POST_LINK.search(url) and _REAL_HOST.search(url):
             links.append(url)
     resume.links = links[:5]
     without_urls = URL_RE.sub(" ", EMAIL_RE.sub(" ", INLINE_LINK_RE.sub(" ", full)))
@@ -388,7 +395,13 @@ def parse_resume(text: str) -> StructuredResume:
             continue
         if not resume.name and len(cleaned.split()) <= 5 and re.fullmatch(r"[A-Za-z .'-]+", cleaned):
             resume.name = cleaned  # exactly as the student wrote it ("GADDE JASWITHA" stays in capitals)
-        elif resume.name and not resume.headline and len(cleaned.split()) <= 12 and len(cleaned) >= 4:
+        elif (
+            resume.name
+            and not resume.headline
+            and len(cleaned.split()) <= 12
+            and len(cleaned) >= 4
+            and not re.search(r"https?:|www\.|\.com\b|/", line, re.IGNORECASE)
+        ):
             resume.headline = cleaned
     if not sections and len(header) > 2:
         # No recognisable headings: keep everything after the name as the summary

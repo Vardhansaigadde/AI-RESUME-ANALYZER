@@ -153,6 +153,41 @@ class FixedResumeRespectsTheDesignTests(unittest.TestCase):
         self.assertTrue(degree_of(parse_resume(RESUME)).startswith("B.Tech in Computer Science"))
 
 
+MESSY_WORD_EXPORT = """Sample Dev
+https://www. .com/feed/update/urn:li:activity:7000000000000000001/ | https://www.linkedin.com/posts/sample-dev_x-activity-7000000000000000002-ab
+sample.dev@example.com | +91 98765 43210 | https://github.com/sample-dev | https://quiz-app.example.com/
+SUMMARY
+Aspiring AI and ML student building practical projects with Python.
+EXPERIENCE
+AI Intern \u2013 Sample Labs\tMay 2025 \u2013 July 2025
+\u2022 Developed a sentiment analysis project using NLP.
+\u2022 Achievements & Awards
+\u2022 Qualified the preliminary round of a national hackathon.
+\u2022 Certificates & Additional Information
+\u2022 Python \u2013 TechGig
+"""
+
+
+class MessyWordExportTests(unittest.TestCase):
+    """A resume saved by an older tool: links as text in the header and headings saved as list items."""
+
+    def setUp(self):
+        self.resume = parse_resume(MESSY_WORD_EXPORT)
+
+    def test_headings_saved_as_list_items_are_still_headings(self):
+        self.assertEqual(self.resume.achievements, ["Qualified the preliminary round of a national hackathon."])
+        self.assertEqual([x.heading for x in self.resume.additional], ["Certificates & Additional Information"])
+        self.assertEqual(self.resume.experience[0].bullets, ["Developed a sentiment analysis project using NLP."])
+
+    def test_header_keeps_only_real_profile_links(self):
+        self.assertEqual(self.resume.links, ["https://github.com/sample-dev", "https://quiz-app.example.com/"])
+        self.assertEqual(self.resume.headline, "")  # a line of addresses is never the headline
+
+    def test_a_bulleted_skill_line_is_not_a_heading(self):
+        resume = parse_resume("SKILLS\n\u2022 Tools: Git, Docker\n\u2022 Projects: 3 shipped\n")
+        self.assertEqual(resume.skills[:2], ["Tools: Git", "Docker"])
+
+
 class LinkDisplayTests(unittest.TestCase):
     def test_labels(self):
         self.assertEqual(contact_link(f"[GitHub]({GITHUB})"), ("GitHub", GITHUB))
