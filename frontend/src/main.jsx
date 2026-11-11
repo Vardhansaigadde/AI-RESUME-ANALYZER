@@ -5,6 +5,9 @@ import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import AuthProvider from './components/auth/AuthProvider.jsx';
 import './index.css';
+import { installErrorReporting } from './lib/reportError';
+
+installErrorReporting();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

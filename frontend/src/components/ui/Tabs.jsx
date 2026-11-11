@@ -16,7 +16,7 @@ export default function Tabs({ tabs, active, onChange, idPrefix = 'tab' }) {
   };
 
   return (
-    <div role="tablist" aria-label="Result views" className="flex gap-0.5 rounded-2xl border border-line bg-card p-1 sm:gap-1 sm:p-1.5" onKeyDown={onKeyDown}>
+    <div role="tablist" aria-label="Result views" className="flex gap-0.5 overflow-x-auto rounded-2xl border border-line bg-card p-1 [scrollbar-width:none] sm:gap-1 sm:p-1.5" onKeyDown={onKeyDown}>
       {tabs.map(({ id, label, short, icon: Icon, badge }) => {
         const selected = id === active;
         return (
@@ -29,7 +29,7 @@ export default function Tabs({ tabs, active, onChange, idPrefix = 'tab' }) {
             aria-controls={`${idPrefix}-panel-${id}`}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(id)}
-            className={`relative flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-1 py-2.5 text-[13px] font-semibold whitespace-nowrap sm:px-4 sm:text-sm transition-colors ${
+            className={`relative flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-1 py-2.5 text-[13px] font-semibold whitespace-nowrap sm:px-2 sm:text-sm md:px-4 transition-colors ${
               selected ? 'text-ink' : 'text-muted hover:text-ink'
             }`}
           >

@@ -4,8 +4,9 @@ A small in-memory sliding-window limiter (one process, no external store),
 which is enough for the single free-tier Render instance this API runs on.
 Each POST under /api counts against the client's IP; when a client exceeds
 `limit` requests within `window_seconds`, it gets HTTP 429 with Retry-After.
-The client IP comes from the ASGI scope, which uvicorn fills from
-X-Forwarded-For when run with --proxy-headers (see Dockerfile).
+The client IP is read by `client_ip`, not from X-Forwarded-For's leftmost
+entry: on Render, Cloudflare sits in front of the app and only *appends* to
+X-Forwarded-For, so a client could put any IP first and dodge the limit.
 """
 
 from __future__ import annotations
@@ -20,6 +21,32 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Forget clients that have been idle this long, to keep memory bounded
 _IDLE_PRUNE_SECONDS = 600
+
+
+def _header(scope: Scope, name: bytes) -> str:
+    for key, value in scope.get("headers", []):
+        if key == name:
+            return value.decode("latin-1").strip()
+    return ""
+
+
+def client_ip(scope: Scope) -> str:
+    """The visitor's IP, in a way the visitor can't fake.
+
+    Render puts Cloudflare in front of every service. Cloudflare sets
+    CF-Connecting-IP to the address that connected to it (overwriting anything
+    the client sent), and appends that address to X-Forwarded-For, after which
+    Cloudflare's own edge IP is appended. So the order of trust is:
+    CF-Connecting-IP, then the second X-Forwarded-For entry from the right,
+    then the socket address (local runs and tests, where there is no proxy).
+    """
+    if ip := _header(scope, b"cf-connecting-ip"):
+        return ip
+    forwarded = [part.strip() for part in _header(scope, b"x-forwarded-for").split(",") if part.strip()]
+    if len(forwarded) >= 2:
+        return forwarded[-2]
+    client = scope.get("client")
+    return client[0] if client else "unknown"
 
 
 class RateLimitMiddleware:
@@ -61,8 +88,7 @@ class RateLimitMiddleware:
 
         now = self.clock()
         self._prune(now)
-        client = scope.get("client")
-        key = client[0] if client else "unknown"
+        key = client_ip(scope)
         hits = self._hits.setdefault(key, deque())
         while hits and hits[0] <= now - self.window:
             hits.popleft()
