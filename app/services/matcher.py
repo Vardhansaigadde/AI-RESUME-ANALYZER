@@ -20,6 +20,14 @@ import numpy as np
 
 from app.ml.features import FEATURE_COLUMNS, build_features
 from app.services.data_cleaning import clean_text
+from app.services.score_integrity import (
+    KEYWORD_LIST_CAP,
+    effective_overlap,
+    evidenced_skills,
+    implied_by,
+    is_keyword_list,
+    strip_copied,
+)
 from app.services.skill_extractor import compare_skills, extract_skills
 
 logger = logging.getLogger(__name__)
@@ -132,6 +140,12 @@ def match_resume_to_job(
               resume or job description); empty when inputs look normal.
             - resume_skills_count: total extracted skills from resume.
             - required_skills_count: total extracted skills from job description.
+            - evidenced_skills / listed_only_skills: matched skills used in an
+              experience or project entry, and those only listed.
+            - implied_skills: missing job skills the resume implies (e.g. pandas
+              from machine learning): partial credit, still missing for ATS.
+            - integrity: copied words removed and whether the resume is a
+              keyword list (see app.services.score_integrity).
     """
     # Same normalization as the training data (data/processed/*.csv.gz)
     res_clean = clean_text(resume_text)
@@ -148,18 +162,31 @@ def match_resume_to_job(
             "score_warnings": [],
             "resume_skills_count": 0,
             "required_skills_count": 0,
+            "evidenced_skills": [],
+            "listed_only_skills": [],
+            "implied_skills": [],
+            "integrity": {"copied_words": 0, "keyword_list": False},
         }
 
+    # Text copied from the job post earns nothing: score the resume without it
+    res_scored, copied_words = strip_copied(res_clean, job_clean)
+    keyword_list = is_keyword_list(res_scored)
+
     # Extract & compare skills
-    resume_skills = extract_skills(res_clean)
+    resume_skills = extract_skills(res_scored)
     job_skills = extract_skills(job_clean)
     matched_skills, missing_skills = compare_skills(resume_skills, job_skills)
+    evidenced = evidenced_skills(resume_text, job_clean)
+    implied = implied_by(resume_skills)
 
-    # Build 3-feature DataFrame
+    # Build 3-feature DataFrame; skill overlap weighs evidence and implied skills
     feature_df = build_features(
-        resume_text=res_clean,
+        resume_text=res_scored,
         job_text=job_clean,
         as_dataframe=True,
+    )
+    feature_df.loc[feature_df.index[0], "skill_overlap_ratio"] = effective_overlap(
+        resume_skills, job_skills, evidenced, implied
     )
     feature_dict = feature_df.iloc[0].to_dict()
 
@@ -188,15 +215,38 @@ def match_resume_to_job(
         if adjustment != 0:
             breakdown["range_adjustment"] = adjustment
 
+    warnings = score_warnings(res_scored, job_clean)
+    if copied_words:
+        warnings.insert(
+            0,
+            f"We ignored {copied_words} words copied from the job description. Recruiters and ATS spot copied "
+            "text; describe your own work in your own words instead.",
+        )
+    if keyword_list:
+        if score > KEYWORD_LIST_CAP:
+            if breakdown:
+                breakdown["keyword_list_cap"] = round(KEYWORD_LIST_CAP - score, 2)
+            score = KEYWORD_LIST_CAP
+        warnings.insert(
+            0,
+            f"Your resume is mostly a list of keywords, so the score is capped at {KEYWORD_LIST_CAP:.0f}. Show the "
+            "skills in project and experience bullet points.",
+        )
+
+    listed_only = sorted(s for s in matched_skills if evidenced is not None and s not in evidenced)
     return {
         "match_score": score,
         "matched_skills": sorted(matched_skills),
         "missing_skills": sorted(missing_skills),
         "features": {k: round(v, 4) for k, v in feature_dict.items()},
         "score_breakdown": breakdown,
-        "score_warnings": score_warnings(res_clean, job_clean),
+        "score_warnings": warnings,
         "resume_skills_count": len(resume_skills),
         "required_skills_count": len(job_skills),
+        "evidenced_skills": sorted(s for s in matched_skills if s not in listed_only),
+        "listed_only_skills": listed_only,
+        "implied_skills": sorted(s for s in missing_skills if s in implied),
+        "integrity": {"copied_words": copied_words, "keyword_list": keyword_list},
     }
 
 

@@ -9,6 +9,22 @@ from pydantic import BaseModel, Field
 from app.schemas.resume import StructuredResume
 
 
+class EligibilityCheck(BaseModel):
+    """One eligibility rule from the job post (batch, branch, CGPA ...) checked against the resume."""
+
+    id: str
+    label: str
+    status: Literal["pass", "fail", "check"]
+    detail: str = ""
+
+
+class Eligibility(BaseModel):
+    """Campus / fresher eligibility rules (see app.services.eligibility)."""
+
+    status: Literal["eligible", "not_eligible", "check"]
+    checks: list[EligibilityCheck] = Field(default_factory=list)
+
+
 class JobInsights(BaseModel):
     """Rule-based reading of the job posting (see app.services.job_decoder)."""
 

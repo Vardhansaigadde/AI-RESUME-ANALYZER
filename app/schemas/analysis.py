@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.insights import InventoryGroup, JobInsights, LearningItem, ProjectPick, RoleGap
+from app.schemas.insights import Eligibility, InventoryGroup, JobInsights, LearningItem, ProjectPick, RoleGap
 from app.schemas.resume import AtsReport, StructuredResume
 
 
@@ -37,6 +37,17 @@ class AnalyzeResponse(BaseModel):
     )
     resume_skills_count: int
     required_skills_count: int
+    evidenced_skills: list[str] = Field(
+        default_factory=list, description="Matched skills used in an experience or project entry."
+    )
+    listed_only_skills: list[str] = Field(
+        default_factory=list, description="Matched skills only listed, not shown in any entry (count partly)."
+    )
+    implied_skills: list[str] = Field(
+        default_factory=list,
+        description="Missing job skills the resume implies (pandas from machine learning): add them for ATS.",
+    )
+    eligibility: Eligibility | None = Field(None, description="Batch, branch, CGPA and other rules in the post.")
     suggested_roles: list[RolePrediction]
     suggestions: list[str]
     confidence: Literal["high", "low"] = "high"

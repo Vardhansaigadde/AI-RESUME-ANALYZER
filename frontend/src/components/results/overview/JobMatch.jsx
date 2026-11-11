@@ -169,6 +169,12 @@ export function ScoreBreakdown({ breakdown, warnings }) {
           );
         })}
       </ul>
+      {entries.length > 0 && (
+        <p className="mt-4 text-xs text-muted">
+          An estimate from FitLens's model, usually within about ±15 points. Use it to compare versions of your resume
+          for the same job, not as a guarantee.
+        </p>
+      )}
     </Panel>
   );
 }

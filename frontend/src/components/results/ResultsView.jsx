@@ -210,6 +210,7 @@ export default function ResultsView({
                 roleLoading={roleLoading}
                 addJob={{ onSubmit: addJob, loading: checking, open: addJobOpen, setOpen: setAddJobOpen }}
                 github={{ state: githubCheck, setState: setGithubCheck, onAddSkills: addSkills }}
+                onAddSkills={addSkills}
               />
             )}
             {tab === 'ats' && <AtsTab ats={result.ats} onEdit={() => showTab('edit')} />}
