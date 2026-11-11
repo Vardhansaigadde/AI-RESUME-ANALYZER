@@ -76,8 +76,14 @@ export function PrivacyPage({ onHome }) {
           kept with it, and it is only used for these totals.
         </li>
         <li>
-          <strong>Your theme choice</strong> (light or dark), <strong>skill-plan progress</strong> and pace are saved in
-          your own browser only.
+          <strong>Error reports.</strong> If a page crashes, your browser sends us the error message, the technical stack
+          trace and the page path (no query string), so we can fix it. No resume content, form contents or IP address is
+          included. Server errors may also be sent to our error-monitoring service (Sentry) without request contents,
+          headers or IP addresses.
+        </li>
+        <li>
+          <strong>Your theme choice</strong> (light or dark), <strong>skill-plan progress</strong>, pace and{' '}
+          <strong>Earn plan ticks</strong> are saved in your own browser only.
         </li>
       </ul>
 
@@ -93,7 +99,7 @@ export function PrivacyPage({ onHome }) {
         </li>
         <li>
           <strong>Job search:</strong> only your search words, country and job type are sent to the job sites (Himalayas,
-          and Adzuna when enabled). Your resume is scored against the postings on our server and never sent to them.
+          Remote OK, Jooble, Adzuna and Arbeitnow). Your resume is scored against the postings on our server and never sent to them.
         </li>
         <li>
           <strong>GitHub check:</strong> if you use it, your browser asks GitHub directly for the public profile and
