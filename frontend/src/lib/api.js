@@ -115,6 +115,58 @@ export async function downloadResumeDocx(resume, { template, accent } = {}) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * "Generate a fixed resume": the student's resume with the report's issues fixed for a job,
+ * a role, or in general. `skip` undoes changes by id; `accept` takes suggestions.
+ */
+export async function tailorResume({ resume, jobDescription = '', targetRole = '', confirmedSkills = [], skip = [], accept = [] }) {
+  const response = await request('/api/resume/tailor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      resume,
+      job_description: jobDescription,
+      target_role: targetRole,
+      confirmed_skills: confirmedSkills,
+      skip,
+      accept,
+    }),
+  });
+  return response.json();
+}
+
+/** The same fixes inside the student's own .docx (their fonts and layout). Returns how many changes were applied and missed. */
+export async function downloadFixedDocx(file, payload) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append(
+    'payload',
+    JSON.stringify({
+      resume: payload.resume,
+      job_description: payload.jobDescription || '',
+      target_role: payload.targetRole || '',
+      confirmed_skills: payload.confirmedSkills || [],
+      skip: payload.skip || [],
+      accept: payload.accept || [],
+    }),
+  );
+  const response = await request('/api/resume/tailor/docx', { method: 'POST', body: form });
+  const blob = await response.blob();
+  const match = /filename="([^"]+)"/.exec(response.headers.get('content-disposition') || '');
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = match ? match[1] : 'resume_fixed.docx';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return {
+    applied: Number(response.headers.get('x-fitlens-applied') || 0),
+    missed: Number(response.headers.get('x-fitlens-missed') || 0),
+  };
+}
+
 /** Live jobs and internships, each scored against the resume. Only the search words reach the job sites. */
 export async function searchJobs(resume, { query, country, kind }) {
   const response = await request('/api/jobs', {

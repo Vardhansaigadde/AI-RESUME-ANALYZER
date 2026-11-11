@@ -193,6 +193,10 @@ def _split_items(lines: list[str]) -> list[str]:
     return items
 
 
+# A bullet that ends mid-phrase ("... the forecast for") continues on the next line
+_CONTINUES = re.compile(r"\b(for|and|or|of|in|to|with|the|a|an|on|at|by|from|using|via|into|across|over)$", re.I)
+
+
 def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
     """Group a section's lines into entries of title, subtitle and bullets."""
     raw_lines = [raw for raw in lines if raw.strip()]
@@ -208,13 +212,27 @@ def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
             last = current.bullets[-1]
             if text[:1].islower() or last.endswith(",") or not last.endswith((".", "!", "?", ")", "%")):
                 # PDF extraction wraps a long bullet onto the next line
-                if text[:1].islower() or last.endswith(","):
+                if text[:1].islower() or last.endswith(",") or _CONTINUES.search(last):
                     current.bullets[-1] = f"{last} {text}"
                     continue
 
         # A new entry's title has a date on its own line or the next one
         nearby = text + " " + (_strip_bullet(raw_lines[i + 1]) if i + 1 < len(raw_lines) else "")
         starts_entry = short and not is_bullet and bool(DATE_RE.search(nearby))
+        # ...or, in a bulleted section, a short capitalised line between bullet groups is the
+        # next entry's title even without a date ("Churn Predictor" after a project's bullets)
+        if not starts_entry and has_bullets and short and not is_bullet and i > 0:
+            ahead = raw_lines[i + 1 : i + 3]
+            starts_entry = (
+                bool(BULLET_RE.match(raw_lines[i - 1]))
+                and text[:1].isupper()
+                and not text.endswith((".", "!", "?", ","))
+                and bool(ahead)
+                and (
+                    bool(BULLET_RE.match(ahead[0]))
+                    or (len(ahead) == 2 and not BULLET_RE.match(ahead[0]) and bool(BULLET_RE.match(ahead[1])))
+                )
+            )
 
         if is_bullet:
             if current is None:

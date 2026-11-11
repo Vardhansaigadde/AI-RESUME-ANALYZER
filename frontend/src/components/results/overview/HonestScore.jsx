@@ -68,7 +68,10 @@ export function SkillEvidence({ evidenced = [], listedOnly = [], implied = [], o
           <div>
             <p className="mb-1 text-xs font-bold tracking-wide text-warn uppercase">Only listed</p>
             <SkillList skills={listedOnly} />
-            <p className="mt-1 text-xs text-muted">Mention them in a project or internship bullet to count fully.</p>
+            <p className="mt-1 text-xs text-muted">
+              To count them fully, add a line like <span className="font-semibold">“Tech: Python, Flask, MySQL”</span> under the
+              project or internship where you used them.
+            </p>
           </div>
         )}
         {implied.length > 0 && (

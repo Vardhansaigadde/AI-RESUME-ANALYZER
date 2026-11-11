@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Briefcase, GraduationCap, LayoutDashboard, Lightbulb, PencilLine, RotateCcw, ScanText } from 'lucide-react';
+import { ArrowRight, Briefcase, GraduationCap, LayoutDashboard, Lightbulb, PencilLine, RotateCcw, ScanText, Wand2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { downloadResumeDocx, fetchRoleGap, recheckResume } from '../../lib/api';
 import { snapshot, withIds } from '../../lib/resume';
@@ -9,6 +9,7 @@ import Switch from '../ui/Switch';
 import Tabs from '../ui/Tabs';
 import AtsTab from './AtsTab';
 import EditTab from './EditTab';
+import FixedResume from './FixedResume';
 import JobsTab from './JobsTab';
 import LearnTab from './LearnTab';
 import OverviewTab from './OverviewTab';
@@ -26,6 +27,7 @@ export default function ResultsView({
   onReanalyze,
   onJobText,
   onOpenBuilder,
+  file,
 }) {
   const resumeOnly = result.mode === 'resume_only';
   const [tab, setTab] = useState('overview');
@@ -37,6 +39,7 @@ export default function ResultsView({
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [jobSearch, setJobSearch] = useState({ loading: false, error: null, params: null, data: null });
   const [githubCheck, setGithubCheck] = useState({ loading: false, error: null, data: null, username: '' });
+  const [fixing, setFixing] = useState(false);
 
   const studentMode = Boolean(result.student_mode);
   const targetRole = result.role_gap?.role || null;
@@ -186,76 +189,114 @@ export default function ResultsView({
 
       <SummaryCards key={`${result.mode}-${result.match_score}-${result.ats?.score}`} result={result} original={original} draft={draft} />
 
-      <div className="sticky top-16 z-20 -mx-1 mt-6 bg-paper/85 px-1 py-2 backdrop-blur-md">
-        <Tabs tabs={tabs} active={tab} onChange={setTab} idPrefix="results" />
-      </div>
-
-      <div className="mt-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={tab}
-            role="tabpanel"
-            id={`results-panel-${tab}`}
-            aria-labelledby={`results-${tab}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.2 }}
+      {fixing ? (
+        <div className="mt-6">
+          <FixedResume
+            resume={JSON.parse(snapshot(draft))}
+            jobText={resumeOnly ? '' : jobText}
+            defaultRole={targetRole}
+            roles={result.role_gap?.available_roles || []}
+            file={pristine ? file : null}
+            notify={notify}
+            onBack={() => {
+              setFixing(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenBuilder={onOpenBuilder}
+          />
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setFixing(true);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="group mt-5 flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-accent/40 bg-accent-soft/50 px-4 py-3 text-left transition hover:bg-accent-soft"
           >
-            {tab === 'overview' && (
-              <OverviewTab
-                result={result}
-                draft={draft}
-                onEdit={() => showTab('edit')}
-                onRoleChange={changeRole}
-                roleLoading={roleLoading}
-                addJob={{ onSubmit: addJob, loading: checking, open: addJobOpen, setOpen: setAddJobOpen }}
-                github={{ state: githubCheck, setState: setGithubCheck, onAddSkills: addSkills }}
-                onAddSkills={addSkills}
-              />
-            )}
-            {tab === 'ats' && <AtsTab ats={result.ats} onEdit={() => showTab('edit')} />}
-            {tab === 'edit' && (
-              <EditTab
-                draft={draft}
-                setDraft={setDraft}
-                missingSkills={resumeOnly ? result.role_gap?.missing || [] : result.missing_skills}
-                missingLabel={
-                  resumeOnly && targetRole
-                    ? `Core ${targetRole} skills not in your resume. Only add the ones you really have:`
-                    : undefined
-                }
-                dirty={dirty}
-                checking={checking}
-                downloading={downloading}
-                onRecheck={() => recheck()}
-                onDownload={download}
-                onReset={resetDraft}
-                onOpenBuilder={onOpenBuilder ? () => onOpenBuilder(JSON.parse(snapshot(draft))) : undefined}
-              />
-            )}
-            {tab === 'learn' && (
-              <LearnTab
-                plan={result.learning_plan}
-                projects={result.project_picks || []}
-                missingCount={resumeOnly ? result.role_gap?.missing.length || 0 : result.missing_skills.length}
-                role={resumeOnly ? targetRole : null}
-                roleRoadmap={result.role_gap?.roadmap}
-                roadmapRole={targetRole}
-              />
-            )}
-            {tab === 'jobs' && (
-              <JobsTab
-                resume={draft}
-                defaultQuery={targetRole}
-                studentMode={studentMode}
-                state={jobSearch}
-                setState={setJobSearch}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+            <Wand2 className="size-5 shrink-0 text-accent" aria-hidden />
+            <span className="flex-1 text-sm">
+              <span className="font-semibold">Generate a fixed resume{resumeOnly ? '' : ' for this job'}.</span>{' '}
+              <span className="text-muted">
+                We fix the issues in this report and show every change so you can keep or undo it.
+              </span>
+            </span>
+            <ArrowRight className="size-4 text-accent transition group-hover:translate-x-0.5" aria-hidden />
+          </button>
+
+          <div className="sticky top-16 z-20 -mx-1 mt-6 bg-paper/85 px-1 py-2 backdrop-blur-md">
+            <Tabs tabs={tabs} active={tab} onChange={setTab} idPrefix="results" />
+          </div>
+
+          <div className="mt-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={tab}
+                role="tabpanel"
+                id={`results-panel-${tab}`}
+                aria-labelledby={`results-${tab}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+              >
+                {tab === 'overview' && (
+                  <OverviewTab
+                    result={result}
+                    draft={draft}
+                    onEdit={() => showTab('edit')}
+                    onRoleChange={changeRole}
+                    roleLoading={roleLoading}
+                    addJob={{ onSubmit: addJob, loading: checking, open: addJobOpen, setOpen: setAddJobOpen }}
+                    github={{ state: githubCheck, setState: setGithubCheck, onAddSkills: addSkills }}
+                    onAddSkills={addSkills}
+                  />
+                )}
+                {tab === 'ats' && <AtsTab ats={result.ats} onEdit={() => showTab('edit')} />}
+                {tab === 'edit' && (
+                  <EditTab
+                    draft={draft}
+                    setDraft={setDraft}
+                    missingSkills={resumeOnly ? result.role_gap?.missing || [] : result.missing_skills}
+                    missingLabel={
+                      resumeOnly && targetRole
+                        ? `Core ${targetRole} skills not in your resume. Only add the ones you really have:`
+                        : undefined
+                    }
+                    dirty={dirty}
+                    checking={checking}
+                    downloading={downloading}
+                    onRecheck={() => recheck()}
+                    onDownload={download}
+                    onReset={resetDraft}
+                    onOpenBuilder={onOpenBuilder ? () => onOpenBuilder(JSON.parse(snapshot(draft))) : undefined}
+                  />
+                )}
+                {tab === 'learn' && (
+                  <LearnTab
+                    plan={result.learning_plan}
+                    projects={result.project_picks || []}
+                    missingCount={resumeOnly ? result.role_gap?.missing.length || 0 : result.missing_skills.length}
+                    role={resumeOnly ? targetRole : null}
+                    roleRoadmap={result.role_gap?.roadmap}
+                    roadmapRole={targetRole}
+                  />
+                )}
+                {tab === 'jobs' && (
+                  <JobsTab
+                    resume={draft}
+                    defaultQuery={targetRole}
+                    studentMode={studentMode}
+                    state={jobSearch}
+                    setState={setJobSearch}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </>
+      )}
       <HelpfulPrompt page="results" question="Was this report helpful?" />
     </motion.main>
   );

@@ -61,7 +61,7 @@ function StartChoice({ icon: Icon, title, text, onClick, busy, children }) {
 }
 
 /** Resume builder: pick an ATS-friendly template, edit with a live preview, download. */
-export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
+export default function BuilderPage({ notify, onCheck, seed, seedTemplate, onSeedUsed }) {
   const saved = useMemo(() => readStorage(KEYS.builder), []);
   const params = new URLSearchParams(window.location.search);
   const [resume, setResume] = useState(() => {
@@ -71,6 +71,7 @@ export default function BuilderPage({ notify, onCheck, seed, onSeedUsed }) {
     return saved?.resume ? withIds(saved.resume) : null;
   });
   const [template, setTemplate] = useState(() => {
+    if (seed && TEMPLATES.some((t) => t.id === seedTemplate)) return seedTemplate;
     const fromUrl = params.get('template');
     return TEMPLATES.some((t) => t.id === fromUrl) ? fromUrl : saved?.template || DEFAULT_TEMPLATE;
   });

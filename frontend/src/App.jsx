@@ -66,6 +66,7 @@ export default function App() {
   const [result, setResult] = useState(demoResult);
   // A resume handed from the report's editor to the builder
   const [builderSeed, setBuilderSeed] = useState(null);
+  const [builderTemplate, setBuilderTemplate] = useState(null);
   const [toast, setToast] = useState(null);
 
   const notify = useCallback((t) => setToast(t), []);
@@ -142,8 +143,10 @@ export default function App() {
     }
   };
 
-  const openInBuilder = (draft) => {
+  // `template` comes with a fixed resume ("Generate a fixed resume" picks one that fits on a page)
+  const openInBuilder = (draft, template = null) => {
     setBuilderSeed(draft);
+    setBuilderTemplate(template);
     navigate('/build');
   };
 
@@ -165,7 +168,17 @@ export default function App() {
     );
   else if (page === 'build')
     content = (
-      <BuilderPage key="build" notify={notify} onCheck={checkBuiltResume} seed={builderSeed} onSeedUsed={() => setBuilderSeed(null)} />
+      <BuilderPage
+        key="build"
+        notify={notify}
+        onCheck={checkBuiltResume}
+        seed={builderSeed}
+        seedTemplate={builderTemplate}
+        onSeedUsed={() => {
+          setBuilderSeed(null);
+          setBuilderTemplate(null);
+        }}
+      />
     );
   else if (page === 'jobs') content = <JobsPage key="jobs" resume={result?.resume || null} onNavigate={navigate} notify={notify} />;
   else if (page === 'learn') content = <LearnPage key="learn" notify={notify} onNavigate={navigate} />;
@@ -192,6 +205,7 @@ export default function App() {
         }}
         onJobText={setJobText}
         onOpenBuilder={openInBuilder}
+        file={file}
         notify={notify}
       />
     );
