@@ -1,4 +1,4 @@
-import { groupSkills, safeUrl, shortUrl, splitLinks } from '../../lib/richText';
+import { contactLink, groupSkills, linkLabel, safeUrl, splitLinks } from '../../lib/richText';
 import { DENSITY, FONTS, ORDERS, templateById } from '../../lib/templates';
 import { ExternalIcon, GithubIcon, LinkedinIcon, LinkIcon, MailIcon, PhoneIcon, PinIcon } from './ResumeIcons';
 
@@ -127,7 +127,7 @@ export default function ResumeDocument({ resume, templateId, accent, print = fal
                             <ExternalIcon />{' '}
                           </>
                         )}
-                        {shortUrl(entry.link)}
+                        {linkLabel(entry.link)}
                       </a>
                     )}
                   </span>
@@ -196,7 +196,10 @@ export default function ResumeDocument({ resume, templateId, accent, print = fal
     { text: resume.email, url: safeUrl(resume.email), Icon: MailIcon },
     { text: resume.phone, url: resume.phone?.trim() ? `tel:${resume.phone.replace(/[^0-9+]/g, '')}` : null, Icon: PhoneIcon },
     { text: resume.location, url: null, Icon: PinIcon },
-    ...(resume.links || []).map((l) => ({ text: l, url: safeUrl(l), Icon: iconForLink(l) })),
+    ...(resume.links || []).map((l) => {
+      const { text, url, address } = contactLink(l);
+      return { text, url, Icon: iconForLink(address) };
+    }),
   ].filter((c) => c.text?.trim());
   // Icon templates put the links on their own line, like LaTeX resumes
   const linkCount = (resume.links || []).filter((l) => l?.trim()).length;

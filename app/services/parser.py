@@ -38,8 +38,9 @@ def extract_text_from_pdf(source: bytes | BinaryIO | Path | str) -> str:
         text_parts: list[str] = []
         with pdfplumber.open(stream) as pdf:
             for page in pdf.pages:
-                page_text = page.extract_text()
-                if page_text:
+                page_text, tolerance = _page_text(page)
+                page_text = _CID.sub("", _place_pdf_links(page, page_text, tolerance))
+                if page_text.strip():
                     text_parts.append(page_text.strip())
         return "\n\n".join(text_parts).strip()
     except Exception as exc:
@@ -67,14 +68,14 @@ def extract_text_from_docx(source: bytes | BinaryIO | Path | str) -> str:
         # Many Word templates keep the name and contact line in the page header
         for part in _header_footer_parts(doc, headers=True):
             for para in part.paragraphs:
-                text = para.text.strip()
+                text = _docx_text(para).strip()
                 if text and text not in text_parts:
                     text_parts.append(text)
 
         # Extract paragraphs; Word list items carry their bullet in the list
         # formatting, not the text, so mark them to keep the structure.
         for para in doc.paragraphs:
-            text = para.text.strip()
+            text = _docx_text(para).strip()
             if text:
                 text_parts.append(f"• {text}" if _is_list_paragraph(para) else text)
 
@@ -89,6 +90,28 @@ def extract_text_from_docx(source: bytes | BinaryIO | Path | str) -> str:
     except Exception as exc:
         logger.error("Failed to extract text from DOCX: %s", exc)
         raise ValueError(f"Failed to extract text from DOCX: {exc}") from exc
+
+
+def _docx_text(para) -> str:
+    """A paragraph's text with its hyperlinks kept in place as [text](url)."""
+    try:
+        parts = []
+        for item in para.iter_inner_content():
+            address = getattr(item, "address", None)
+            if address is None:
+                parts.append(item.text)
+                continue
+            value = _link_text(address)
+            label = (item.text or "").strip()
+            if not value or value.startswith(("mailto:", "tel:")) or "@" in value.split("/")[0]:
+                parts.append(item.text)
+            elif label:
+                parts.append(f"[{label}]({value})")
+            else:
+                parts.append(f" [link]({value})")
+        return "".join(parts)
+    except Exception:  # noqa: BLE001 - fall back to the plain text
+        return para.text
 
 
 def _header_footer_parts(doc, headers: bool = True, footers: bool = False) -> list:
@@ -193,6 +216,80 @@ def _with_hidden_links(text: str, targets: list[str]) -> str:
     if first is None:
         return contact_line
     return "\n".join(lines[: first + 1] + [contact_line] + lines[first + 1 :])
+
+
+# Words glued together ("GitHubskillverification") when a PDF packs letters tightly
+_GLUED = re.compile(r"[A-Za-z]{22,}")
+# Icon glyphs some PDF fonts expose as "(cid:135)"
+_CID = re.compile(r"\(cid:\d+\)\s*")
+_GLYPHS = "•▪●◦‣·■□➢➤►✓✔❖◆◇▸▹▶➔➜→⇒★⁃∙⦁-*–"
+
+
+def _page_text(page) -> tuple[str, float]:
+    """The page's text, re-read with finer letter spacing when words come out glued together."""
+    tolerance = 3.0
+    text = page.extract_text() or ""
+    if _GLUED.search(text):
+        finer = page.extract_text(x_tolerance=1.5) or ""
+        if len(_GLUED.findall(finer)) < len(_GLUED.findall(text)):
+            text, tolerance = finer, 1.5
+    return text, tolerance
+
+
+def _squash(text: str) -> str:
+    return re.sub(r"\s+", "", _CID.sub("", text or ""))
+
+
+def _is_heading(line: str) -> bool:
+    from app.services.resume_sections import _match_heading  # local import: resume_sections imports this module
+
+    return bool(_match_heading(line))
+
+
+def _place_pdf_links(page, text: str, tolerance: float) -> str:
+    """Put each clickable link back where it sits on the page, as [text](url).
+
+    A word link ("GitHub") keeps its word; a link icon after an entry's title becomes
+    " [link](url)" on that line (the entry's own link); a link on a bullet makes the
+    bullet's text the link. Links that can't be placed are left for the header.
+    """
+    try:
+        links = page.hyperlinks
+    except Exception:  # noqa: BLE001 - links are a bonus
+        return text
+    if not links:
+        return text
+    words = page.extract_words(x_tolerance=tolerance)
+    lines = text.split("\n")
+    original = [_squash(line) for line in lines]
+    for link in links:
+        value = _link_text(link.get("uri") or "")
+        if not value or value.startswith(("mailto:", "tel:")) or "@" in value.split("/")[0]:
+            continue  # the email and phone are already in the text
+        mid = (link["top"] + link["bottom"]) / 2
+        on_line = sorted((w for w in words if abs((w["top"] + w["bottom"]) / 2 - mid) < 4), key=lambda w: w["x0"])
+        anchor = " ".join(w["text"] for w in on_line if w["x0"] >= link["x0"] - 1 and w["x1"] <= link["x1"] + 1).strip()
+        anchor = _CID.sub("", anchor).strip()
+        key = _squash("".join(w["text"] for w in on_line))
+        if not key:
+            continue
+        index = next((i for i, s in enumerate(original) if s and (s == key or key in s)), None)
+        if index is None:
+            continue
+        line = lines[index]
+        visible = re.sub(r"(?:https?://)?(?:www\.)?", "", line.lower())
+        if _is_heading(line) or _normalized(value) in visible:
+            continue  # never link a section heading; an address already shown stays as it is
+        if re.search(r"[A-Za-z0-9]", anchor) and anchor in line and f"[{anchor}](" not in line:
+            line = line.replace(anchor, f"[{anchor}]({value})", 1)
+        else:
+            bullet = re.match(rf"^(\s*[{re.escape(_GLYPHS)}]\s*)(.+?)\s*$", line)
+            if bullet and "](" not in bullet.group(2):
+                line = f"{bullet.group(1)}[{bullet.group(2)}]({value})"
+            else:
+                line = f"{line.rstrip()} [link]({value})"
+        lines[index] = line
+    return "\n".join(lines)
 
 
 @dataclass

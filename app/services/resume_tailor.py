@@ -109,6 +109,16 @@ DISPLAY = {
     "etabs": "ETABS",
     "staad pro": "STAAD Pro",
 }
+# Topics, not tools: they belong in skills and bullets, not on a "Tech:" line
+CONCEPTS = frozenset(
+    [
+        "machine learning", "deep learning", "natural language processing", "nlp", "computer vision",
+        "data science", "data analysis", "data visualization", "data visualization tools", "statistics",
+        "generative ai", "artificial intelligence", "ai/ml", "algorithms", "data structures",
+        "object-oriented programming", "problem solving", "web development", "app development",
+        "prompt engineering", "model evaluation", "supervised learning", "unsupervised learning",
+    ]
+)  # fmt: skip
 _SHORT_WORDS = {"git", "java", "go", "rust", "dart", "ruby", "vue", "excel", "figma", "jira", "linux", "react"}
 
 _TECH_PREFIX = re.compile(r"^\s*(tech(nologies|nology| stack)?|tools?|stack|built with|skills)\s*[:\-–]", re.I)
@@ -385,7 +395,11 @@ def tech_line(entry: ResumeEntry, target: _Target, names: list[str]) -> list[str
         return []
     if extract_skills(clean_text(entry.subtitle)):
         return []  # the subtitle already is a tech list ("Python, Flask, MySQL")
-    used = sorted((s for s in _entry_skills(entry) if _technical(s)), key=lambda s: (-target.weight(s), s))
+    used = sorted(
+        (s for s in _entry_skills(entry) if _technical(s) and s not in CONCEPTS), key=lambda s: (-target.weight(s), s)
+    )
+    if len(used) < 2:
+        return []  # one tool alone ("Tech: GitHub") isn't worth a line
     source = " ".join([entry.title, *entry.bullets])
     return [_display(s, source, ", ".join(names)) for s in used[:6]]
 
@@ -422,9 +436,33 @@ def grouped_rows(catalog: list[CatalogSkill], names: list[str]) -> list[str]:
     return out
 
 
+_DEGREE = re.compile(
+    r"\b(b\.?\s?tech|b\.?\s?e\b|b\.?\s?sc|b\.?\s?com|b\.?\s?a\b|bca|bba|m\.?\s?tech|m\.?\s?e\b|m\.?\s?sc|mca|mba|"
+    r"m\.?\s?com|bachelor|master|diploma|ph\.?\s?d|b\.?\s?pharm|mbbs|llb|integrated)",
+    re.I,
+)
+
+
+def degree_of(resume: StructuredResume) -> str:
+    """The degree line ("B.Tech in Computer Science"), whether it's an education entry's title or subtitle."""
+    for entry in resume.education:
+        for text in (entry.title, entry.subtitle):
+            if _DEGREE.search(text or ""):
+                return re.split(r"\s*[|·•]\s*", text.strip())[0]
+    return ""
+
+
+def _branch(degree: str) -> str:
+    """'B.Tech in Computer Science with AI and ML' -> 'Computer Science'."""
+    if " in " not in degree:
+        return ""
+    branch = re.split(r"\s+in\s+", degree, maxsplit=1)[1]
+    return re.split(r"\s+(?:with|specialization|specialisation|\(|-|–)\s*", branch, maxsplit=1)[0].strip()
+
+
 def _summary(resume: StructuredResume, target: _Target, top: list[str]) -> str:
     level, graduated = _level(resume.education, date.today())
-    degree = resume.education[0].title.strip() if resume.education else ""
+    degree = degree_of(resume)
     person = re.sub(r"\s+", " ", f"{level} {degree} {'graduate' if graduated else 'student'}").strip()
     person = person[:1].upper() + person[1:]
     parts = [f"{person}{f' targeting {target.role} roles' if target.role else ''}."]
@@ -509,8 +547,19 @@ def tailor_resume(
 
     # ---- skills: used-but-unlisted ones are added; likely-known and wanted ones are only offered
     typed = typed_skills(resume.skills)
+    labels = [m.group(1) for m in (_LABEL.match(item) for item in resume.skills) if m]
     typed_canonical = {c for c in (_canonical(t) for t in typed) if c}
-    from_entries = sorted((s for s in claimed - typed_canonical if _technical(s)), key=lambda s: (-target.weight(s), s))
+    # Group names count too: "Generative AI & NLP: ..." means both are listed
+    typed_canonical |= extract_skills(clean_text(" , ".join(labels)))
+    listed = {t.lower() for t in typed} | typed_canonical
+    from_entries = sorted(
+        (
+            s
+            for s in claimed - typed_canonical
+            if _technical(s) and s not in listed and not any(s in t or t in s for t in listed if len(t) > 3)
+        ),
+        key=lambda s: (-target.weight(s), s),
+    )  # "data visualization tools" isn't new when "Data Visualization" is listed
     implied = implied_by(claimed)
     confirmed = [c.strip() for c in confirmed_skills or [] if c.strip()]
     confirmed_canonical = {c for c in (_canonical(n) for n in confirmed) if c} | {n.lower() for n in confirmed}
@@ -558,7 +607,8 @@ def tailor_resume(
     candidates = list(dict.fromkeys([*typed, *used_names, *confirmed, *(x.skill for x in likely), *suggested]))
     catalog = skill_catalog(candidates, target)
     grouped = grouped_rows(catalog, names)
-    if names and [s.lower() for s in grouped] != [s.lower() for s in resume.skills]:
+    own_groups = len(labels) >= 2  # the student grouped their skills their own way: keep it
+    if names and not own_groups and [s.lower() for s in grouped] != [s.lower() for s in resume.skills]:
         title = "Grouped your skills" + (", with the most wanted first" if target.wanted else "")
         skills = grouped if change("skills-group", "Skills", "reordered", title) else [*resume.skills, *added]
     else:
@@ -667,15 +717,15 @@ def tailor_resume(
 
     headline = resume.headline
     if not headline.strip() and target.role:
-        branch = re.split(r"\s+in\s+", resume.education[0].title, maxsplit=1)[-1].strip() if resume.education else ""
+        branch = _branch(degree_of(resume))
         _, graduated = _level(resume.education, date.today())
         who = f"{branch} {'Graduate' if graduated else 'Student'}" if branch else ""
         new_headline = f"{who} | Aspiring {target.role}" if who else f"Aspiring {target.role}"
         if change(
             "headline",
             "Header",
-            "new",
-            "Added a headline under your name",
+            "suggestion",
+            "A headline under your name, if you'd like one (your header is kept as it is)",
             after=new_headline,
             patch={"headline": new_headline},
         ):

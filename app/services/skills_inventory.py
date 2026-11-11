@@ -170,6 +170,31 @@ GROUPS: dict[str, frozenset[str]] = {
         ]
     ),
 }
+# Skills added to the taxonomy later (modern stacks and Indian campus skills), in their groups
+_NEWER: dict[str, list[str]] = {
+    "Programming languages": ["dart", "solidity"],
+    "Web & frameworks": [
+        "fastapi", "next.js", "express", "tailwind css", "bootstrap", "redux", "flutter", "react native", "android",
+        "streamlit",
+    ],
+    "Data & AI": [
+        "langchain", "llms", "rag", "hugging face", "transformers", "opencv", "xgboost", "mlops", "matplotlib",
+        "seaborn", "generative ai", "prompt engineering", "vector databases",
+    ],
+    "Databases": ["supabase", "dbms"],
+    "Engineering practices": [
+        "postman", "pytest", "selenium", "unit testing", "api testing", "system design", "competitive programming",
+        "power automate",
+    ],
+    "Security & networking": ["computer networks", "operating systems", "blockchain"],
+    "Design": ["canva", "ui/ux design", "catia", "ansys", "creo", "staad pro", "etabs"],
+    "Business & office tools": ["tally", "gst"],
+}  # fmt: skip
+GROUPS = {name: frozenset(skills | set(_NEWER.get(name, []))) for name, skills in GROUPS.items()}
+GROUPS["Electronics & embedded"] = frozenset(
+    ["iot", "arduino", "raspberry pi", "embedded systems", "vlsi", "verilog", "pcb design", "plc"]
+)
+
 SOFT_GROUP = "Soft skills"
 DOMAIN_GROUP = "Domain skills"
 GROUP_ORDER = [*GROUPS, DOMAIN_GROUP, SOFT_GROUP]

@@ -71,7 +71,11 @@ class TestResumeSections(unittest.TestCase):
         self.assertEqual(r.phone, "+91 98765 43210")
         self.assertIn("linkedin.com/in/alexsample", r.links)
         self.assertIn("data structures", r.summary)
-        self.assertEqual(r.skills, ["C", "C++", "Python", "Java", "HTML", "CSS", "JavaScript", "SQL"])
+        # Group labels are kept, so the builder shows the same groups the student made
+        self.assertEqual(
+            r.skills,
+            ["Programming Languages: C", "C++", "Python", "Java", "Web: HTML", "CSS", "JavaScript", "Database: SQL"],
+        )
         self.assertEqual([p.title for p in r.projects], ["Event Registration Portal", "Java Mini Games Hub"])
         self.assertEqual(len(r.projects[0].bullets), 2)
         self.assertEqual(r.education[0].subtitle, "State University, 2024 - 2028 | CGPA 8.6")
