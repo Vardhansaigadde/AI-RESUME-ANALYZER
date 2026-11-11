@@ -73,6 +73,84 @@ ADZUNA = {
 }
 
 
+REMOTEOK = [
+    {"legal": "API Terms of Service: please link back to Remote OK."},
+    {
+        "id": "7",
+        "position": "Junior Python Developer",
+        "company": "Snake Co",
+        "location": "Worldwide",
+        "tags": ["python", "django"],
+        "description": "<p>Build APIs with Python and Django.</p>",
+        "epoch": "1790000000",
+        "salary_min": "40000",
+        "salary_max": "60000",
+        "url": "https://remoteOK.com/remote-jobs/7",
+    },
+    {  # restricted to another country: left out for India
+        "id": "8",
+        "position": "Python Engineer",
+        "company": "Euro Co",
+        "location": "Warsaw",
+        "tags": ["python"],
+        "description": "Python",
+        "url": "https://remoteOK.com/remote-jobs/8",
+    },
+    {  # doesn't mention the query
+        "id": "9",
+        "position": "Designer",
+        "company": "Pixel",
+        "location": "",
+        "tags": ["figma"],
+        "description": "Figma",
+        "url": "https://remoteOK.com/remote-jobs/9",
+    },
+]
+
+ARBEITNOW = {
+    "data": [
+        {
+            "slug": "werkstudent-python",
+            "company_name": "Berlin Labs",
+            "title": "Werkstudent Python Developer (m/w/d)",
+            "description": "<p>Python, SQL and Docker.</p>",
+            "remote": False,
+            "url": "https://www.arbeitnow.com/jobs/companies/berlin-labs/werkstudent-python",
+            "tags": ["IT"],
+            "job_types": ["Internship"],
+            "location": "Berlin",
+            "created_at": 1790000000,
+        },
+        {
+            "slug": "sales",
+            "company_name": "Shop",
+            "title": "Account Executive",
+            "description": "Sales",
+            "remote": False,
+            "url": "https://www.arbeitnow.com/jobs/companies/shop/sales",
+            "location": "Munich",
+        },
+    ]
+}
+
+JOOBLE = {
+    "totalCount": 1,
+    "jobs": [
+        {
+            "id": 99,
+            "title": "Python Developer <b>Fresher</b>",
+            "company": "Hyd Soft",
+            "location": "Hyderabad, Telangana",
+            "snippet": "&nbsp;Python, Django and SQL...",
+            "salary": "₹3 - 5 LPA",
+            "type": "Full-time",
+            "link": "https://jooble.org/desc/99",
+            "updated": "2026-10-01T10:00:00.0000000",
+        }
+    ],
+}
+
+
 def fake_get(urls_seen):
     def get(url):
         urls_seen.append(url)
@@ -80,9 +158,17 @@ def fake_get(urls_seen):
             return HIMALAYAS
         if "adzuna" in url:
             return ADZUNA
+        if url.startswith(job_search.REMOTEOK_URL):
+            return REMOTEOK
+        if url.startswith(job_search.ARBEITNOW_URL):
+            return ARBEITNOW
         raise AssertionError(url)
 
     return get
+
+
+def himalayas_urls(urls):
+    return [u for u in urls if u.startswith(job_search.HIMALAYAS_URL)]
 
 
 class JobSearchServiceTests(unittest.TestCase):
@@ -97,12 +183,12 @@ class JobSearchServiceTests(unittest.TestCase):
         with mock.patch.dict("os.environ", {"ADZUNA_APP_ID": "", "ADZUNA_APP_KEY": ""}):
             result = job_search.search_jobs(STUDENT_RESUME, "software  engineer", "in", "all")
         self.assertEqual(result["query"], "software engineer")
-        self.assertEqual(len(result["jobs"]), 2)
+        self.assertEqual(len([j for j in result["jobs"] if j.source == "Himalayas"]), 2)
         sources = {s.name: s for s in result["sources"]}
         self.assertEqual(sources["Himalayas"].status, "ok")
         self.assertEqual(sources["Adzuna"].status, "off")
-        self.assertEqual(len(self.urls), 1)
-        params = parse_qs(urlparse(self.urls[0]).query)
+        self.assertEqual(len(himalayas_urls(self.urls)), 1)
+        params = parse_qs(urlparse(himalayas_urls(self.urls)[0]).query)
         self.assertEqual(params["country"], ["IN"])
         self.assertEqual(params["q"], ["software engineer"])
 
@@ -122,20 +208,20 @@ class JobSearchServiceTests(unittest.TestCase):
 
     def test_internship_and_entry_filters(self):
         interns = job_search.search_jobs(STUDENT_RESUME, "software", "ANY", "internship")
-        self.assertEqual([j.company for j in interns["jobs"]], ["Acme"])
-        params = parse_qs(urlparse(self.urls[0]).query)
+        self.assertEqual([j.company for j in interns["jobs"]], ["Acme"])  # Arbeitnow's posting isn't "software"
+        params = parse_qs(urlparse(himalayas_urls(self.urls)[0]).query)
         self.assertEqual(params["employment_type"], ["Intern"])
         self.assertNotIn("country", params)
 
         job_search.CACHE.clear()
         entry = job_search.search_jobs(STUDENT_RESUME, "software", "ANY", "entry")
         self.assertNotIn("Bigco", [j.company for j in entry["jobs"]])
-        self.assertEqual(parse_qs(urlparse(self.urls[-1]).query)["seniority"], ["Entry-level"])
+        self.assertEqual(parse_qs(urlparse(himalayas_urls(self.urls)[-1]).query)["seniority"], ["Entry-level"])
 
     def test_results_are_cached(self):
         job_search.search_jobs(STUDENT_RESUME, "Python", "IN", "all")
         job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
-        self.assertEqual(len(self.urls), 1)
+        self.assertEqual(len(himalayas_urls(self.urls)), 1)
 
     def test_adzuna_when_keys_are_set(self):
         with mock.patch.dict("os.environ", {"ADZUNA_APP_ID": "id", "ADZUNA_APP_KEY": "key"}):
@@ -160,6 +246,76 @@ class JobSearchServiceTests(unittest.TestCase):
             result = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
         self.assertEqual(result["jobs"], [])
         self.assertEqual(result["sources"][0].status, "unavailable")
+
+    def test_remoteok_postings(self):
+        result = job_search.search_jobs(STUDENT_RESUME, "python developer", "IN", "all")
+        remote_ok = [j for j in result["jobs"] if j.source == "Remote OK"]
+        self.assertEqual([j.company for j in remote_ok], ["Snake Co"])  # no notice, no Warsaw, no designer
+        self.assertEqual(remote_ok[0].location, "Remote · Worldwide")
+        self.assertEqual(remote_ok[0].salary, "$40k – 60k / year")
+        self.assertIn("https://remoteok.com/api?tag=python", self.urls)
+
+    def test_arbeitnow_only_for_germany_and_anywhere(self):
+        india = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
+        self.assertEqual({s.name: s.status for s in india["sources"]}["Arbeitnow"], "off")
+        self.assertFalse(any("arbeitnow" in u for u in self.urls))
+        germany = job_search.search_jobs(STUDENT_RESUME, "python", "DE", "all")
+        self.assertEqual([j.company for j in germany["jobs"] if j.source == "Arbeitnow"], ["Berlin Labs"])
+
+    def test_feeds_are_downloaded_once_for_all_searches(self):
+        job_search.search_jobs(STUDENT_RESUME, "python", "ANY", "all")
+        job_search.search_jobs(STUDENT_RESUME, "python sql", "ANY", "all")
+        self.assertEqual(sum("arbeitnow" in u for u in self.urls), 1)
+
+    def test_jooble_needs_a_key_and_hides_it(self):
+        with mock.patch.dict("os.environ", {"JOOBLE_API_KEY": ""}):
+            off = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
+        self.assertEqual({s.name: s.status for s in off["sources"]}["Jooble"], "off")
+
+        job_search.CACHE.clear()
+        posted = []
+
+        def fake_post(url, payload):
+            posted.append((url, payload))
+            return JOOBLE
+
+        with (
+            mock.patch.dict("os.environ", {"JOOBLE_API_KEY": "secret-key"}),
+            mock.patch.object(job_search, "_http_post_json", side_effect=fake_post),
+        ):
+            result = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "internship")
+        self.assertEqual(posted[0][0], "https://jooble.org/api/secret-key")
+        self.assertEqual(posted[0][1]["location"], "India")
+        self.assertEqual(posted[0][1]["keywords"], "python internship")
+        self.assertFalse(
+            any(j.source == "Jooble" for j in result["jobs"])
+        )  # "Python Developer Fresher" is not an internship title
+
+        job_search.CACHE.clear()
+        with (
+            mock.patch.dict("os.environ", {"JOOBLE_API_KEY": "secret-key"}),
+            mock.patch.object(job_search, "_http_post_json", side_effect=fake_post),
+        ):
+            result = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
+        jooble = next(j for j in result["jobs"] if j.source == "Jooble")
+        self.assertEqual(jooble.title, "Python Developer Fresher")
+        self.assertEqual(jooble.salary, "₹3 - 5 LPA")
+        self.assertEqual(jooble.posted, "2026-10-01")
+        self.assertTrue(jooble.short_description)
+
+    def test_query_matching(self):
+        self.assertTrue(job_search.matches_query("python developer jobs", "Junior Python Developer"))
+        self.assertFalse(job_search.matches_query("data analyst", "Data Engineer"))
+        self.assertTrue(job_search.matches_query("remote jobs", "Anything"))
+        self.assertTrue(job_search.matches_query("internship", "Growth Strategy Intern"))
+        self.assertFalse(job_search.matches_query("internship", "Account Executive"))
+
+    def test_germany_keeps_german_places(self):
+        job_search.CACHE.clear()
+        london = {**ARBEITNOW["data"][0], "slug": "london", "company_name": "Tea Co", "location": "London"}
+        with mock.patch.dict(ARBEITNOW, {"data": [*ARBEITNOW["data"], london]}):
+            germany = job_search.search_jobs(STUDENT_RESUME, "python", "DE", "all")
+        self.assertEqual([j.company for j in germany["jobs"] if j.source == "Arbeitnow"], ["Berlin Labs"])
 
     def test_soft_skills_left_out(self):
         self.assertEqual(job_search.rank_skills(["leadership", "sql", "python"]), ["python", "sql"])
@@ -202,7 +358,7 @@ class SkillDemandTests(unittest.TestCase):
     def test_search_returns_demand(self):
         job_search.CACHE.clear()
         with mock.patch.object(job_search, "_http_get_json", side_effect=fake_get([])):
-            result = job_search.search_jobs(STUDENT_RESUME, "python", "IN", "all")
+            result = job_search.search_jobs(STUDENT_RESUME, "sql", "IN", "all")
         self.assertIn("skill_demand", result)  # two postings: too few to report
         self.assertEqual(result["skill_demand"], [])
 
@@ -215,10 +371,10 @@ class JobSearchEndpointTests(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def test_search(self):
-        response = client.post("/api/jobs", json={"resume": RESUME, "query": "python", "country": "IN", "kind": "all"})
+        response = client.post("/api/jobs", json={"resume": RESUME, "query": "sql", "country": "IN", "kind": "all"})
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
-        self.assertEqual(len(body["jobs"]), 2)
+        self.assertEqual(len(body["jobs"]), 2)  # Himalayas' two; Remote OK's posting isn't about SQL
         self.assertIn("fit_score", body["jobs"][0])
         self.assertNotIn("text", body["jobs"][0])
 
@@ -236,7 +392,7 @@ class JobSearchEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
 
     def test_options(self):
-        with mock.patch.dict("os.environ", {"ADZUNA_APP_ID": "", "ADZUNA_APP_KEY": ""}):
+        with mock.patch.dict("os.environ", {"ADZUNA_APP_ID": "", "ADZUNA_APP_KEY": "", "JOOBLE_API_KEY": ""}):
             body = client.get("/api/jobs/options").json()
         self.assertFalse(body["onsite_enabled"])
         self.assertEqual(body["countries"][0], {"code": "IN", "name": "India", "onsite": False})
