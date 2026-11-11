@@ -15,6 +15,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.monitoring import init_sentry
+from app.monitoring import router as monitoring_router
 from app.rate_limit import RateLimitMiddleware
 from app.routers.analyze import router as analyze_router
 from app.services.pipeline import MAX_FILE_SIZE
@@ -24,6 +26,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+if init_sentry():
+    logger.info("Sentry error monitoring is on.")
 
 docs_enabled = os.getenv("ENABLE_DOCS", "false").lower() in ("true", "1", "yes")
 
@@ -199,6 +204,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 
 app.include_router(analyze_router)
+app.include_router(monitoring_router)
 
 
 @app.api_route("/", methods=["GET", "HEAD"])

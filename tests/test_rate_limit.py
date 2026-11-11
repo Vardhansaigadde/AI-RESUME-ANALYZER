@@ -57,6 +57,19 @@ class TestRateLimit(unittest.TestCase):
         for _ in range(5):
             self.assertEqual(client.get("/api/info").status_code, 200)
 
+    def test_faked_forwarded_for_does_not_dodge_the_limit(self):
+        # Cloudflare appends the real client, then its edge IP; the client controls only what is to the left
+        client = make_client(limit=2, clock=FakeClock())
+        for fake in ("1.1.1.1", "2.2.2.2", "3.3.3.3"):
+            response = client.post("/api/analyze", headers={"X-Forwarded-For": f"{fake}, 203.0.113.9, 104.22.17.40"})
+        self.assertEqual(response.status_code, 429)
+
+    def test_cloudflare_header_identifies_the_client(self):
+        client = make_client(limit=1, clock=FakeClock())
+        self.assertEqual(client.post("/api/analyze", headers={"CF-Connecting-IP": "203.0.113.9"}).status_code, 200)
+        self.assertEqual(client.post("/api/analyze", headers={"CF-Connecting-IP": "203.0.113.9"}).status_code, 429)
+        self.assertEqual(client.post("/api/analyze", headers={"CF-Connecting-IP": "198.51.100.7"}).status_code, 200)
+
     def test_zero_limit_disables(self):
         client = make_client(limit=0, clock=FakeClock())
         for _ in range(20):

@@ -25,3 +25,7 @@ services:
         sync: false
       - key: ADZUNA_APP_KEY
         sync: false
+      # Optional: free Sentry DSN (https://sentry.io) for error alerts. Without it,
+      # errors (including browser crashes) still go to Render's logs.
+      - key: SENTRY_DSN
+        sync: false

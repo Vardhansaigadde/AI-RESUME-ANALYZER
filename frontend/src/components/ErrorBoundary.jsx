@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { reportError } from '../lib/reportError';
 
 /** Catches render errors and shows a friendly fallback instead of a blank page. */
 export default class ErrorBoundary extends Component {
@@ -10,6 +11,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Unhandled UI error:', error, info);
+    reportError(error, 'render');
   }
 
   render() {

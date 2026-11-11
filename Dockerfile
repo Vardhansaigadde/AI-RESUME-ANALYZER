@@ -31,5 +31,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -fsS "http://localhost:${PORT}/" || exit 1
 
 # Shell form so ${PORT} (injected by Render and other platforms) is honoured.
-# --proxy-headers: Render/Vercel terminate TLS in front of the container.
+# --proxy-headers: Render terminates TLS in front of the container, so this keeps
+# https in generated URLs. The rate limiter does NOT trust the client IP uvicorn
+# derives from X-Forwarded-For (it can be faked); see app/rate_limit.py.
 CMD uvicorn app.main:app --host 0.0.0.0 --port "${PORT}" --proxy-headers --forwarded-allow-ips="*"
