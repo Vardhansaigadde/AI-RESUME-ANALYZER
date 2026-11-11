@@ -46,7 +46,7 @@ provider.
   pasted job (matching projects and skills first, missing keywords suggested, never invented).
 - **End-to-end product.** Resume builder with 15 ATS-safe templates (PDF + Word) and clickable links, live jobs scored against
   the resume, hackathon finder, week-by-week learning roadmaps, an application tracker and accounts.
-- **Production quality.** 281 automated tests and linting on every pull request (GitHub Actions), a
+- **Production quality.** 294 automated tests and linting on every pull request (GitHub Actions), a
   Dockerised API with rate limiting and file-signature checks, and row-level security in PostgreSQL.
 - **Privacy first.** Resumes are processed in memory and never stored or sent to an AI service.
 
@@ -121,7 +121,7 @@ Decisions worth calling out:
 | Backend | Python 3.14, FastAPI, Pydantic, pdfplumber, python-docx |
 | Frontend | React 19, Vite, Tailwind CSS 4, Framer Motion |
 | Data and auth | Supabase (PostgreSQL, Google / email sign-in, row-level security) |
-| Quality and delivery | pytest (281 tests), ruff, GitHub Actions CI, Docker, Render, Vercel |
+| Quality and delivery | pytest (294 tests), ruff, GitHub Actions CI, Docker, Render, Vercel |
 
 ## Run it locally
 

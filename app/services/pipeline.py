@@ -18,6 +18,7 @@ from app.ml.features import DEFAULT_VECTORIZER_PATH as TFIDF_VECTORIZER_PATH
 from app.schemas.resume import StructuredResume
 from app.services.ats_checker import check_ats
 from app.services.data_cleaning import clean_text
+from app.services.eligibility import check_eligibility
 from app.services.job_decoder import decode_job
 from app.services.job_search import ANYWHERE, COUNTRIES, search_jobs
 from app.services.learning_plan import build_learning_plan, load_resources
@@ -36,6 +37,7 @@ from app.services.role_predictor import (
 from app.services.role_predictor import (
     predict_roles_with_confidence,
 )
+from app.services.score_integrity import implied_by
 from app.services.skill_extractor import extract_skills
 from app.services.skills_inventory import build_inventory
 from app.services.suggestions import generate_suggestions
@@ -324,7 +326,14 @@ def _analyze_text(
             "score_warnings": [],
             "resume_skills_count": len(resume_skills),
             "required_skills_count": 0,
+            "evidenced_skills": [],
+            "listed_only_skills": [],
+            "implied_skills": [],
         }
+    match_result.pop("integrity", None)
+    # Skills the student very likely knows (pandas from machine learning) are never suggested to learn
+    implied = implied_by(resume_skills)
+    to_learn = [s for s in match_result["missing_skills"] if s not in implied]
 
     # 4. Generate prioritized suggestions
     suggestions = generate_suggestions(
@@ -353,16 +362,13 @@ def _analyze_text(
     role_gap = compare_with_role(resume_skills, role) if role else None
     if has_job:
         insights = decode_job(job_content_text, resume_skills)
-        learning_plan = build_learning_plan(
-            match_result["missing_skills"], job_content_text, insights, have=resume_skills
-        )
-        project_picks = pick_projects(match_result["missing_skills"], resume_skills, insights)
+        learning_plan = build_learning_plan(to_learn, job_content_text, insights, have=resume_skills)
+        project_picks = pick_projects(to_learn, resume_skills, insights)
     else:
         insights = None
-        learning_plan = (
-            build_learning_plan(role_gap.missing, "", None, role=role, have=resume_skills) if role_gap else []
-        )
-        project_picks = pick_projects(role_gap.missing, resume_skills) if role_gap else []
+        role_missing = [s for s in role_gap.missing if s not in implied] if role_gap else []
+        learning_plan = build_learning_plan(role_missing, "", None, role=role, have=resume_skills) if role_gap else []
+        project_picks = pick_projects(role_missing, resume_skills) if role_gap else []
 
     return {
         **match_result,
@@ -372,6 +378,7 @@ def _analyze_text(
         "resume": resume,
         "ats": ats,
         "job_insights": insights,
+        "eligibility": check_eligibility(job_content_text, resume, resume_content_text) if has_job else None,
         "learning_plan": learning_plan,
         "project_picks": project_picks,
         "student_mode": student_mode,

@@ -75,6 +75,30 @@ flat 0 or 100, and ranking-preserving. When the cap changes a score, the breakdo
 `range_adjustment` line so it still adds up. Resumes under 150 words or job descriptions under 50
 words get `score_warnings`, because they are far outside the training data.
 
+#### Keeping the score honest (`app/services/score_integrity.py`)
+
+The model only sees word and skill overlap, so on its own it could be gamed and it could not tell
+a listed skill from a used one. These checks run around it:
+
+| Check | What it does | Why this threshold |
+| --- | --- | --- |
+| Copied text | Removes resume words in 8+ word runs that also appear in the job post (when 15+ words are copied), then scores the rest and warns | 0 of 400 honest training pairs share even one 8-word run |
+| Keyword list | A resume that is over 40 % skill names with almost no sentence words is capped at 25 | real resumes peak at 17 % skill words |
+| Evidence | A matched skill counts fully when an experience, project or activity entry uses it, 0.75 when it is only listed | rewards proof without punishing a skills section |
+| Implied skills | `app/data/implied_skills.json` (Machine Learning → Python, NumPy, pandas; React → JavaScript, HTML, CSS; …) gives 0.5 credit, keeps them out of the learning plan, but leaves them "missing" for ATS | ATS matches exact words, so the report asks the student to add them (one click) |
+
+Pasting a whole job post into a resume used to raise its score from 37 to 99.7; it now stays at the
+honest 35. On 300 real training pairs nothing was flagged and the correlation with the labels was
+unchanged (0.722). The UI shows the score as an estimate (about ±15 points, the model's MAE).
+
+#### Eligibility (`app/services/eligibility.py`)
+
+Indian campus posts set rules before skills: batch year, branch (CSE/IT/ECE/…, with CSE, IT, AI & ML
+and Data Science treated as one family), degree, CGPA or percentage cutoff, 10th/12th marks and
+backlogs. Each rule found in the post is checked against the resume as pass, fail or "check
+yourself" (for example backlogs, which a resume never states). Branch and degree acronyms are
+matched case-sensitively as whole words, so the word "it" is never the IT branch.
+
 ### Job categories
 
 A TF-IDF (word + bigram, sublinear TF) → `CalibratedClassifierCV(LinearSVC)` classifier trained on

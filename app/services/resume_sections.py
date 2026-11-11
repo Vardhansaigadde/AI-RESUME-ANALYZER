@@ -414,6 +414,23 @@ def _move_dates(entries: list[ResumeEntry]) -> None:
                 setattr(entry, field, rest)
                 entry.date = date
                 break
+        else:
+            # A line that is only a date ("2022 – 2026") under the entry is its date, not a bullet
+            for i, bullet in enumerate(entry.bullets):
+                if _is_date_only(bullet):
+                    entry.date = bullet.strip()
+                    del entry.bullets[i]
+                    break
+
+
+def _is_date_only(line: str) -> bool:
+    text = line.strip()
+    if not text or len(text) > 40 or not DATE_RE.search(text):
+        return False
+    rest = re.sub(
+        r"\b(?:to|till|until|present|current|now|ongoing|expected)\b", " ", DATE_RE.sub(" ", text), flags=re.I
+    )
+    return not re.sub(r"[\s\-–—/.,()']", "", rest)
 
 
 def _render_entries(entries: list[ResumeEntry]) -> list[str]:

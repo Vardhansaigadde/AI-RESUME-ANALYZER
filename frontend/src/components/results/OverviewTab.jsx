@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import AddJobBar from './overview/AddJobBar';
 import GithubCheck from './overview/GithubCheck';
+import { EligibilityPanel, SkillEvidence } from './overview/HonestScore';
 import { JobSummary, ScoreBreakdown } from './overview/JobMatch';
 import { SectionLabel } from './overview/Panel';
 import { SkillsFound, StrengthReport, TargetRole } from './overview/ResumeProfile';
 
 /** Overview: the job match (when there is a job) and the resume's own profile. */
-export default function OverviewTab({ result, draft, onEdit, onRoleChange, roleLoading, addJob, github }) {
+export default function OverviewTab({ result, draft, onEdit, onRoleChange, roleLoading, addJob, github, onAddSkills }) {
   const resumeOnly = result.mode === 'resume_only';
   return (
     <motion.div
@@ -20,8 +21,15 @@ export default function OverviewTab({ result, draft, onEdit, onRoleChange, roleL
       ) : (
         <>
           <SectionLabel>Job match</SectionLabel>
+          <EligibilityPanel eligibility={result.eligibility} />
           <JobSummary insights={result.job_insights} matched={result.matched_skills} missing={result.missing_skills} />
           <ScoreBreakdown breakdown={result.score_breakdown} warnings={result.score_warnings} />
+          <SkillEvidence
+            evidenced={result.evidenced_skills}
+            listedOnly={result.listed_only_skills}
+            implied={result.implied_skills}
+            onAddSkills={onAddSkills}
+          />
         </>
       )}
 
