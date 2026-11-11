@@ -88,7 +88,7 @@ export default function Header({ dark, onToggleTheme, page, onNavigate, notify }
         aria-label="Tools"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden"
       >
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-6">
           {[HOME, ...TOOLS].map((tool) => {
             const active = page === tool.id;
             const Icon = tool.icon;

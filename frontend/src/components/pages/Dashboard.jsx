@@ -194,7 +194,7 @@ export default function Dashboard({ onNavigate }) {
         {TOOLS.map((tool) => {
           const Icon = tool.icon;
           return (
-            <motion.li key={tool.id} variants={reveal} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+            <motion.li key={tool.id} variants={reveal} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} className={tool.wide ? 'sm:col-span-2' : undefined}>
               <a href={tool.path} onClick={go(tool.path)} className="card group flex h-full flex-col p-6 hover:border-ink/30">
                 <span className={`grid size-12 place-items-center rounded-2xl ${tool.tone}`}>
                   <Icon className="size-6" aria-hidden />

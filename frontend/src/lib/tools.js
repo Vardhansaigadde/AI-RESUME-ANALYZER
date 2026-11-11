@@ -1,4 +1,4 @@
-import { Briefcase, FilePenLine, GraduationCap, House, ScanSearch } from 'lucide-react';
+import { Briefcase, FilePenLine, GraduationCap, House, ScanSearch, Wallet } from 'lucide-react';
 
 /** The dashboard's tools: one route each. */
 export const TOOLS = [
@@ -37,6 +37,16 @@ export const TOOLS = [
     icon: GraduationCap,
     tone: 'bg-pen-soft text-pen',
     description: 'Pick a skill or a career path and get a full roadmap: order, videos, docs, checklists and projects.',
+  },
+  {
+    id: 'earn',
+    path: '/earn',
+    label: 'Earn while you study',
+    short: 'Earn',
+    icon: Wallet,
+    tone: 'bg-warn-soft text-warn',
+    description: 'Freelancing from zero: what to sell (even with no skills, using free AI tools), a 30-day plan, platforms, message templates, getting paid and avoiding scams.',
+    wide: true,
   },
 ];
 
