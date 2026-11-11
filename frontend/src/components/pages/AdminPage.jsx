@@ -13,6 +13,7 @@ const PAGE_LABELS = {
   build: 'Builder',
   jobs: 'Jobs',
   learn: 'Learn',
+  earn: 'Earn',
   tracker: 'Tracker',
   privacy: 'Privacy',
   terms: 'Terms',
@@ -108,6 +109,59 @@ function Pages({ pages }) {
   );
 }
 
+const FEEDBACK_PAGES = { results: 'Resume report', earn: 'Earn', internships: 'Internship guide', site: 'Footer form' };
+
+/** Thumbs per page (30 days) and the latest messages, from supabase/feedback.sql. */
+function FeedbackPanel({ feedback }) {
+  if (!feedback) {
+    return (
+      <section className="card p-4 text-sm text-muted sm:p-5">
+        Feedback isn't set up yet: run supabase/feedback.sql in the Supabase SQL editor.
+      </section>
+    );
+  }
+  const { ratings, messages } = feedback;
+  return (
+    <section className="card p-4 sm:p-5">
+      <h2 className="font-semibold">Feedback</h2>
+      <p className="text-sm text-muted">Was it helpful? Last 30 days.</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {Object.entries(FEEDBACK_PAGES)
+          .filter(([page]) => page !== 'site')
+          .map(([page, label]) => {
+            const r = ratings[page] || { up: 0, down: 0 };
+            return (
+              <div key={page} className="rounded-xl border border-line p-3">
+                <p className="text-xs font-semibold text-muted">{label}</p>
+                <p className="mt-1 font-display text-xl font-bold">
+                  <span className="text-ok">👍 {fmt(r.up)}</span> <span className="text-pen">👎 {fmt(r.down)}</span>
+                </p>
+              </div>
+            );
+          })}
+      </div>
+      <h3 className="mt-5 text-sm font-semibold">Latest messages</h3>
+      {messages.length === 0 ? (
+        <p className="mt-1 text-sm text-muted">No messages yet.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-line">
+          {messages.map((m) => (
+            <li key={`${m.at}-${m.message.slice(0, 20)}`} className="py-2.5 text-sm">
+              <p className="text-xs text-muted">
+                {new Date(m.at).toLocaleString('en-IN')} · {FEEDBACK_PAGES[m.page] || m.page}
+                {m.rating === 1 && ' · 👍'}
+                {m.rating === -1 && ' · 👎'}
+                {m.contact && ` · reply to ${m.contact}`}
+              </p>
+              <p className="mt-0.5 whitespace-pre-wrap">{m.message}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /**
  * Owner-only usage dashboard. Not linked anywhere. The database decides who may
  * see it (site_stats() returns nothing unless the signed-in account is an admin);
@@ -123,8 +177,14 @@ export default function AdminPage({ onHome }) {
       return;
     }
     setState((s) => ({ ...s, status: s.stats ? 'refreshing' : 'checking' }));
-    const { data, error } = await supabase.rpc('site_stats');
-    setState(error || !data ? { status: 'denied', stats: null } : { status: 'ok', stats: data });
+    const [{ data, error }, feedback] = await Promise.all([
+      supabase.rpc('site_stats'),
+      supabase.rpc('admin_feedback').then(
+        (r) => r.data,
+        () => null,
+      ),
+    ]);
+    setState(error || !data ? { status: 'denied', stats: null } : { status: 'ok', stats: data, feedback });
   }, [user]);
 
   useEffect(() => {
@@ -185,6 +245,8 @@ export default function AdminPage({ onHome }) {
           </dl>
         </section>
       </div>
+
+      <FeedbackPanel feedback={state.feedback} />
     </motion.main>
   );
 }

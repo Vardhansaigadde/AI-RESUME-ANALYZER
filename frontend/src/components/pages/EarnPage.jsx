@@ -29,6 +29,7 @@ import {
   tutorialLink,
 } from '../../lib/earn';
 import { readStorage, writeStorage } from '../../lib/storage';
+import { HelpfulPrompt } from '../ui/Feedback';
 import { BulletList, CopyCard, ExternalLink, Section } from '../ui/Guide';
 
 const PLAN_KEY = 'fitlens:earn-plan';
@@ -322,6 +323,7 @@ export default function EarnPage({ skills = [], notify }) {
           <ExternalLink href="https://www.incometax.gov.in">Income Tax Department e-filing</ExternalLink>
         </p>
       </Section>
+      <HelpfulPrompt page="earn" question="Was this guide helpful?" />
     </motion.main>
   );
 }
