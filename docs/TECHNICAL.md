@@ -292,6 +292,40 @@ it. Soft skills and generic words from the extractor's catch-all domain group ("
 "research") are left out unless a target role lists them, so "accounting" or "SEO" still count.
 
 
+### Generate a fixed resume
+
+From the report, "Generate a fixed resume" (`components/results/FixedResume.jsx`) calls
+`POST /api/resume/tailor` (`app/services/resume_tailor.py`). It takes the student's own resume and
+fixes what the report found, in one of three modes: for the pasted **job**; for a **target role**
+when there is no job (the role's core skills stand in, and the score shows how many of them the
+resume covers); or a **general** clean-up when there is neither. Rule-based, no AI service:
+
+- Skills used in projects or jobs but missing from the skills section are added; skills the
+  student very likely knows (`implied_skills.json`) are added when the job or role needs them;
+  rows are grouped with the wanted skills first. Wanted skills the resume doesn't show are only
+  suggested ("I know SQL" adds them).
+- Projects that match come first, each with a "Tech: ..." line from the skills it already mentions.
+- Only weak bullets change ("worked on", "responsible for" → action verbs; numbers and skill names
+  formatted). Strong bullets stay exactly as written.
+- A good existing summary (20+ words, real skills, not boilerplate) is kept and ours is offered as
+  a suggestion; a missing or thin one is replaced. The summary only claims skills the resume shows.
+- Dates use one format. Nothing is invented: missing numbers, links and contact details become
+  notes for the student.
+
+Every change has an id and is listed with its before and after text. The student can undo any
+change (`skip`) or take a suggestion (`accept`); the resume is rebuilt with only what they kept,
+and the match and ATS scores are shown before and after.
+
+For Word uploads, `POST /api/resume/tailor/docx` (`app/services/resume_docx_edit.py`) applies the
+kept changes inside the student's own file: each change is matched to the paragraph holding the
+original text (body, tables and text boxes) and only the text changes, so fonts, colours, spacing
+and layout stay theirs. Regrouping skills, reordering projects and adding a headline are left to
+the builder, since they would change the design. PDFs can't be edited this way (their fonts usually
+contain only the letters already used), so they open in the builder with a FitLens template.
+
+The resume reader now also starts a new entry at a dateless project title between bullet groups,
+and keeps a bullet that wraps mid-phrase ("... the forecast for / Hyderabad") together.
+
 ### Feedback
 
 A quiet "Was this helpful? 👍 👎" line sits at the end of the resume report, the Earn guide and the

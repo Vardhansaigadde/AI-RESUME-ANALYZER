@@ -16,6 +16,7 @@ from datetime import date
 
 from app.ml.features import DEFAULT_VECTORIZER_PATH as TFIDF_VECTORIZER_PATH
 from app.schemas.resume import StructuredResume
+from app.schemas.tailor import TailorRequest
 from app.services.ats_checker import check_ats
 from app.services.data_cleaning import clean_text
 from app.services.eligibility import check_eligibility
@@ -239,6 +240,51 @@ def run_recheck(
     return _analyze_text(
         resume_content_text, job_content_text, resume, layout=None, student_mode=student_mode, target_role=target_role
     )
+
+
+def run_tailor(request: TailorRequest, with_scores: bool = True) -> dict[str, Any]:
+    """A fixed resume (for a job, a role, or general), every change listed, and the scores before and after."""
+    from app.services.resume_tailor import tailor_resume  # local import keeps startup light
+
+    job = str(request.job_description or "").strip()
+    if not render_resume_text(request.resume).strip():
+        raise PipelineError("The resume is empty.", status_code=422)
+
+    score = None
+    if with_scores:
+        verify_models_present(REQUIRED_ANALYZE_MODELS)
+
+        def score(version: StructuredResume) -> tuple[float | None, float | None]:
+            report = _analyze_text(render_resume_text(version), job, version, layout=None)
+            return report["match_score"], report["ats"].score
+
+    return tailor_resume(
+        request.resume,
+        job_text=job,
+        target_role=request.target_role,
+        confirmed_skills=request.confirmed_skills,
+        skip=request.skip,
+        accept=request.accept,
+        score=score,
+    ).model_dump()
+
+
+def run_tailor_docx(content: bytes | None, filename: str | None, request: TailorRequest) -> tuple[bytes, dict]:
+    """The student's own Word file with the kept changes applied (their fonts and layout untouched)."""
+    from app.schemas.tailor import TailorResponse
+    from app.services.resume_docx_edit import apply_to_docx
+
+    if not filename or not filename.lower().endswith(".docx"):
+        raise PipelineError("Only Word (.docx) files can be fixed in place. Use the builder for PDFs.", status_code=400)
+    validate_and_extract_file(content, filename)
+    fixed = TailorResponse(**run_tailor(request, with_scores=False))
+    try:
+        return apply_to_docx(content, request.resume, fixed)
+    except Exception as exc:
+        logger.warning("In-place docx edit failed: %s", exc)
+        raise PipelineError(
+            "Couldn't edit this Word file. Open the fixed resume in the builder instead.", status_code=422
+        ) from exc
 
 
 def run_job_search(resume: StructuredResume | None, query: str, country: str, kind: str) -> dict[str, Any]:
