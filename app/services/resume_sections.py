@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 
 from app.schemas.resume import ExtraSection, ResumeEntry, StructuredResume
-from app.services.rich_text import plain_links, short_url
+from app.services.rich_text import INLINE_LINK_RE, plain_links, short_url
 
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?<![\w/])(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,5}\)?[\s.-]?){2,4}\d{2,5}(?![\w/])")
@@ -150,6 +150,7 @@ SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
     ),
 }
 _HEADING_LOOKUP = {phrase: section for section, phrases in SECTION_HEADINGS.items() for phrase in phrases}
+_HEADING_WORDS = {word for phrase in _HEADING_LOOKUP for word in phrase.split()} | {"and", "other", "my"}
 _HEADING_PREFIX_RE = re.compile(
     r"^\s*(" + "|".join(sorted(map(re.escape, _HEADING_LOOKUP), key=len, reverse=True)) + r")\s*[:\-–]\s*(.*)$",
     re.IGNORECASE,
@@ -169,6 +170,14 @@ def _match_heading(line: str) -> tuple[str, str, str] | None:
     norm = _normalize_heading(stripped.rstrip(":"))
     if norm in _HEADING_LOOKUP and len(norm.split()) <= 5:
         return _HEADING_LOOKUP[norm], stripped.rstrip(":").strip(), ""
+    words = norm.split()
+    if 2 <= len(words) <= 6 and not re.search(r"\d", stripped) and set(words) <= _HEADING_WORDS:
+        # Made only of heading words: the section of the first known heading phrase in it
+        for size in (3, 2, 1):
+            for start in range(len(words) - size + 1):
+                phrase = " ".join(words[start : start + size])
+                if phrase in _HEADING_LOOKUP:
+                    return _HEADING_LOOKUP[phrase], stripped.rstrip(":").strip(), ""
     match = _HEADING_PREFIX_RE.match(stripped)
     if match:
         heading = match.group(1)
@@ -182,17 +191,32 @@ def _strip_bullet(line: str) -> str:
     return text.strip()
 
 
+def _list_items(lines: list[str]) -> list[str]:
+    """One item per bullet; in a bulleted list, a line without a bullet continues the one above."""
+    raw = [line for line in lines if line.strip()]
+    bulleted = sum(bool(BULLET_RE.match(line)) for line in raw) >= max(1, len(raw) // 3)
+    items: list[str] = []
+    for line in raw:
+        text = _strip_bullet(line)
+        if items and bulleted and not BULLET_RE.match(line):
+            items[-1] = f"{items[-1]} {text}"
+        else:
+            items.append(text)
+    return items
+
+
 def _split_items(lines: list[str]) -> list[str]:
     """Split skill-style lines ("Languages: C, C++ | Python") into individual items."""
     items: list[str] = []
     seen: set[str] = set()
     for raw in lines:
         line = _strip_bullet(raw)
+        label = ""
         if ":" in line and len(line.split(":", 1)[0].split()) <= 4:
-            line = line.split(":", 1)[1]  # drop "Programming Languages:" style labels
+            label, line = (x.strip() for x in line.split(":", 1))  # "Programming Languages: ..." starts a group
         for part in re.split(r"[,;|•·▪/]|\s{3,}", line):
             if ":" in part and len(part.split(":", 1)[0].split()) <= 4:
-                part = part.split(":", 1)[1]  # "Database: SQL" after a "|" separator
+                label, part = (x.strip() for x in part.split(":", 1))  # "Database: SQL" after a "|" separator
             item = re.sub(
                 r"\s*\((?:proficient|familiar|basic|intermediate|advanced|expert)\)\s*", " ", part, flags=re.I
             )
@@ -200,12 +224,24 @@ def _split_items(lines: list[str]) -> list[str]:
             key = item.lower()
             if item and len(item.split()) <= 5 and key not in seen:
                 seen.add(key)
-                items.append(item)
+                items.append(f"{label}: {item}" if label else item)
+                label = ""  # only the group's first item carries the label
     return items
 
 
 # A bullet that ends mid-phrase ("... the forecast for") continues on the next line
 _CONTINUES = re.compile(r"\b(for|and|or|of|in|to|with|the|a|an|on|at|by|from|using|via|into|across|over)$", re.I)
+
+
+_ENTRY_LINK = re.compile(r"\s*\[link\]\(([^)\s]+)\)")
+
+
+def _titled(text: str) -> ResumeEntry:
+    """A new entry from its title line; a "[link](url)" on it (an icon link in the PDF) is the entry's link."""
+    found = _ENTRY_LINK.search(text)
+    if not found:
+        return ResumeEntry(title=text)
+    return ResumeEntry(title=_ENTRY_LINK.sub("", text).strip(), link=found.group(1))
 
 
 def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
@@ -216,7 +252,8 @@ def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
     for i, raw in enumerate(raw_lines):
         is_bullet = bool(BULLET_RE.match(raw))
         text = _strip_bullet(raw.strip())
-        short = len(text.split()) <= 14 and len(text) <= 150
+        visible = _ENTRY_LINK.sub("", text)
+        short = len(visible.split()) <= 14 and len(visible) <= 150
         has_bullets = current is not None and bool(current.bullets)
 
         if not is_bullet and has_bullets:
@@ -234,8 +271,9 @@ def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
         # next entry's title even without a date ("Churn Predictor" after a project's bullets)
         if not starts_entry and has_bullets and short and not is_bullet and i > 0:
             ahead = raw_lines[i + 1 : i + 3]
+            last_bullet = current.bullets[-1] if current is not None and current.bullets else ""
             starts_entry = (
-                bool(BULLET_RE.match(raw_lines[i - 1]))
+                (bool(BULLET_RE.match(raw_lines[i - 1])) or last_bullet.rstrip().endswith((".", "!", "?", ")", "%")))
                 and text[:1].isupper()
                 and not text.endswith((".", "!", "?", ","))
                 and bool(ahead)
@@ -251,10 +289,10 @@ def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
                 entries.append(current)
             current.bullets.append(text)
         elif current is None:
-            current = ResumeEntry(title=text) if short else ResumeEntry(bullets=[text])
+            current = _titled(text) if short or _ENTRY_LINK.search(text) else ResumeEntry(bullets=[text])
             entries.append(current)
         elif has_bullets and starts_entry:
-            current = ResumeEntry(title=text)
+            current = _titled(text)
             entries.append(current)
         elif not has_bullets and not current.subtitle and short and current.title:
             current.subtitle = text
@@ -295,12 +333,19 @@ def parse_resume(text: str) -> StructuredResume:
     email = EMAIL_RE.search(full)
     resume.email = email.group(0) if email else ""
     links: list[str] = []
-    for match in URL_RE.finditer(full):
+    # Labelled links in the header ("[GitHub](https://github.com/...)") keep their label
+    first_heading = next((i for i, line in enumerate(lines) if _match_heading(line)), len(lines))
+    for line in lines[:first_heading]:
+        for match in INLINE_LINK_RE.finditer(line):
+            if match.group(1).lower() != "link" and "@" not in match.group(2):
+                links.append(match.group(0))
+    # Visible addresses anywhere, except those already inside a [text](url) link
+    for match in URL_RE.finditer(INLINE_LINK_RE.sub(" ", full)):
         url = match.group(0).rstrip(".)")
         if "@" not in url and url not in links:
             links.append(url)
     resume.links = links[:5]
-    without_urls = URL_RE.sub(" ", EMAIL_RE.sub(" ", full))
+    without_urls = URL_RE.sub(" ", EMAIL_RE.sub(" ", INLINE_LINK_RE.sub(" ", full)))
     for match in PHONE_RE.finditer(without_urls):
         candidate = match.group(0).strip()
         digits = re.sub(r"\D", "", candidate)
@@ -325,18 +370,25 @@ def parse_resume(text: str) -> StructuredResume:
     # Name and headline: first header lines that are not contact details
     contact_bits = {resume.email, resume.phone, *resume.links}
     for line in header[:4]:
+        contact_line = any(bit and bit in line for bit in (resume.email, resume.phone))
         cleaned = line
         for bit in contact_bits:
             if bit:
                 cleaned = cleaned.replace(bit, " ")
         # Link labels whose URL sits behind the word ("GitHub | LinkedIn")
+        cleaned = INLINE_LINK_RE.sub(" ", cleaned)
         cleaned = LINK_LABEL_RE.sub(" ", cleaned)
         cleaned = re.sub(r"(?:\s*[|•·,]\s*)+", " | ", cleaned).strip(" |")
         if not cleaned or EMAIL_RE.search(cleaned):
             continue
+        if contact_line:
+            place = cleaned.replace(" | ", ", ")
+            if not resume.location and len(place.split()) <= 6 and re.fullmatch(r"[A-Za-z .,'-]+", place):
+                resume.location = place
+            continue
         if not resume.name and len(cleaned.split()) <= 5 and re.fullmatch(r"[A-Za-z .'-]+", cleaned):
             resume.name = cleaned.title() if cleaned.isupper() else cleaned
-        elif resume.name and not resume.headline and len(cleaned.split()) <= 12:
+        elif resume.name and not resume.headline and len(cleaned.split()) <= 12 and len(cleaned) >= 4:
             resume.headline = cleaned
     if not sections and len(header) > 2:
         # No recognisable headings: keep everything after the name as the summary
@@ -350,9 +402,9 @@ def parse_resume(text: str) -> StructuredResume:
         elif section in ("experience", "projects", "education"):
             getattr(resume, section).extend(_parse_entries(body))
         elif section in ("certifications", "achievements"):
-            getattr(resume, section).extend(_strip_bullet(line) for line in body if line.strip())
+            getattr(resume, section).extend(_list_items(body))
         else:
-            items = [_strip_bullet(line) for line in body if line.strip()]
+            items = _list_items(body)
             if items:
                 resume.additional.append(ExtraSection(heading=title.title(), items=items))
     for entries in (resume.experience, resume.projects, resume.education):
@@ -483,7 +535,7 @@ def render_resume_text(resume: StructuredResume) -> str:
         lines.append(resume.name)
     if resume.headline:
         lines.append(resume.headline)
-    contact = " | ".join(x for x in [resume.email, resume.phone, resume.location, *resume.links] if x)
+    contact = " | ".join(plain_links(x) for x in [resume.email, resume.phone, resume.location, *resume.links] if x)
     if contact:
         lines.append(contact)
     lines.append("")

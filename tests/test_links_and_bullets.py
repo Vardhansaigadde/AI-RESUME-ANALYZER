@@ -82,8 +82,10 @@ class TestPdfLinks(unittest.TestCase):
 
     def test_hidden_links_reach_the_parsed_resume(self):
         resume = parse_resume(extract_text_from_file(self.pdf, "resume.pdf"))
-        self.assertIn(GITHUB, resume.links)
-        self.assertIn(LINKEDIN, resume.links)
+        # Links keep their place and label ("[GitHub](...)"), so look for the address in each
+        self.assertTrue(any(GITHUB in link for link in resume.links), resume.links)
+        self.assertTrue(any(LINKEDIN in link for link in resume.links), resume.links)
+        self.assertFalse(any("PROJECTS" in link for link in resume.links))  # a heading is never a link
         self.assertEqual(resume.email, "sample.student@example.com")
         self.assertEqual(resume.name, "Sample Student")
         self.assertEqual(resume.headline, "")  # "GitHub | LinkedIn | Email" is not a headline
@@ -118,8 +120,8 @@ class TestDocxLinks(unittest.TestCase):
         self.assertEqual(set(extract_hyperlinks(content, "docx")), {GITHUB, LINKEDIN})
         resume = parse_resume(extract_text_from_file(content, "resume.docx"))
         self.assertEqual(resume.name, "Sample Student")
-        self.assertIn(GITHUB, resume.links)
-        self.assertIn(LINKEDIN, resume.links)
+        self.assertIn(f"[GitHub]({GITHUB})", resume.links)
+        self.assertIn(f"[LinkedIn]({LINKEDIN})", resume.links)
         self.assertEqual(resume.projects[0].bullets, ["Built a chat app."])
 
     def test_docx_without_links_is_unchanged(self):

@@ -25,13 +25,15 @@ from app.schemas.resume import StructuredResume
 from app.schemas.tailor import TailorResponse
 from app.services.resume_sections import BULLET_GLYPHS, _match_heading
 from app.services.resume_tailor import fix_date, typed_skills
+from app.services.rich_text import INLINE_LINK_RE
 
 LAYOUT_CHANGES = {"skills-group", "projects-order", "headline"}
 _GLYPHS = re.compile(rf"^[\s{re.escape(BULLET_GLYPHS)}\-*–]+")
 
 
 def _norm(text: str) -> str:
-    text = _GLYPHS.sub("", text or "")
+    text = INLINE_LINK_RE.sub(lambda m: m.group(1), text or "")  # "[Python](url)" reads "Python" in the file
+    text = _GLYPHS.sub("", text)
     return re.sub(r"[\s.]+$", "", re.sub(r"\s+", " ", text).strip()).lower()
 
 

@@ -337,6 +337,28 @@ keeps a bullet that wraps mid-phrase ("... the forecast for / Hyderabad") togeth
 Personal Details, Declaration, Languages Known, Strengths and similar headings, so their lines
 (a date of birth, a father's name) no longer end up in the skills list.
 
+### Reading real resumes faithfully
+
+Tested on a real student PDF, the reader keeps the student's own design:
+
+- **Links stay where they are.** Each clickable link in a PDF or Word file is put back on its line
+  (`_place_pdf_links`, `_docx_text` in `app/services/parser.py`): a word link keeps its word
+  ("[GitHub](url)", shown as "GitHub" in the header), a link icon after a title becomes that
+  entry's link (shown as "caree-fit.vercel.app" or, for long addresses, "LinkedIn post"), and a
+  link on a bullet makes the bullet's text the link. Section headings are never linked; links that
+  can't be placed still go to the header.
+- **Spacing:** PDFs that pack letters tightly ("GitHubskillverification") are re-read with finer
+  letter spacing.
+- **Sections:** headings made only of heading words ("Achievements & Awards", "Certificates &
+  Additional Information") are recognised, keeping the student's heading text; wrapped lines in
+  bulleted lists join the item above; a project title after a wrapped bullet starts a new project;
+  what's left on the contact line is the location.
+- **Skills:** the student's own groups ("Programming: Python, Java") are kept, and the fixed resume
+  doesn't regroup them; new skills are added at the end. 55 newer skills (FastAPI, LangChain, DBMS,
+  Tally, CATIA, VLSI…) now have proper groups, including a new "Electronics & embedded" group.
+- **Fixed resume:** Tech lines name tools, not topics, and need at least two; the degree is found
+  whether it's an education entry's title or subtitle; a new headline is only offered.
+
 ### Feedback
 
 A quiet "Was this helpful? 👍 👎" line sits at the end of the resume report, the Earn guide and the

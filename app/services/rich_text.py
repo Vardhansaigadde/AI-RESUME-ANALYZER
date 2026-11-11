@@ -42,6 +42,32 @@ def short_url(value: str) -> str:
     return re.sub(r"^(?:https?://)?(?:www\.)?", "", (value or "").strip(), flags=re.IGNORECASE).rstrip("/")
 
 
+def link_label(value: str) -> str:
+    """How an entry's link reads next to its title (same rules as linkLabel in lib/richText.js)."""
+    short = short_url(value)
+    if len(short) <= 32:
+        return short
+    host = short.split("/")[0].lower()
+    if host.endswith("linkedin.com"):
+        return "LinkedIn post" if re.search(r"/(posts|feed)/", short) else "LinkedIn"
+    if host.endswith("github.com"):
+        return "GitHub"
+    if "drive.google" in host or "docs.google" in host:
+        return "Google Drive"
+    if host.endswith("youtube.com") or host == "youtu.be":
+        return "Video"
+    return f"{host}"
+
+
+def contact_link(value: str) -> tuple[str, str | None]:
+    """A header link as (text, url): "[GitHub](https://github.com/you)" reads "GitHub"; an address reads as typed."""
+    raw = (value or "").strip()
+    labelled = re.fullmatch(INLINE_LINK_RE, raw)
+    if labelled:
+        return labelled.group(1), safe_url(labelled.group(2))
+    return raw, safe_url(raw)
+
+
 def split_links(text: str) -> list[tuple[str, str | None]]:
     """Split text into (piece, url) parts; url is None for plain pieces and unsafe links."""
     parts: list[tuple[str, str | None]] = []

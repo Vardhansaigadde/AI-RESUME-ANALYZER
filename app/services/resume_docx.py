@@ -28,7 +28,7 @@ from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
 
 from app.schemas.resume import ResumeEntry, StructuredResume
-from app.services.rich_text import group_skills, safe_url, short_url, split_links
+from app.services.rich_text import contact_link, group_skills, link_label, safe_url, split_links
 
 TEMPLATES_PATH = Path(__file__).resolve().parent.parent / "data" / "resume_templates.json"
 DEFAULT_TEMPLATE = "classic"
@@ -202,7 +202,7 @@ def _line_with_date(document: Document, s: _Style, text: str, date: str, bold: b
     url = safe_url(link)
     if url:
         paragraph.add_run("  ")
-        _hyperlink(paragraph, short_url(link), url, color=MUTED, size=max(s.t["size"] - 1, 8))
+        _hyperlink(paragraph, link_label(link), url, color=MUTED, size=max(s.t["size"] - 1, 8))
     if date:
         run = paragraph.add_run(f"\t{date}")
         run.font.color.rgb = _rgb(MUTED)
@@ -254,7 +254,7 @@ def _header(document: Document, resume: StructuredResume, s: _Style) -> None:
         (resume.email.strip(), safe_url(resume.email)),
         (resume.phone.strip(), f"tel:{re.sub(r'[^0-9+]', '', resume.phone)}" if resume.phone.strip() else None),
         (resume.location.strip(), None),
-        *[(x.strip(), safe_url(x)) for x in resume.links],
+        *[contact_link(x) for x in resume.links],
     ]
     items = [(text, url) for text, url in items if text]
     links = sum(1 for x in resume.links if x.strip())

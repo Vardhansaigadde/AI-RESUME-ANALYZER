@@ -26,6 +26,32 @@ export const shortUrl = (value) =>
     .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
     .replace(/\/$/, '');
 
+/**
+ * A contact link as it should read in the header: "[GitHub](https://github.com/you)" shows the word
+ * GitHub linked to the address (as the student designed it); a plain address shows as typed.
+ */
+export function contactLink(value) {
+  const raw = String(value || '').trim();
+  const labelled = /^\[([^\]\n]{1,200})\]\(([^)\s]{1,500})\)$/.exec(raw);
+  if (labelled) return { text: labelled[1], url: safeUrl(labelled[2]), address: labelled[2] };
+  return { text: raw, url: safeUrl(raw), address: raw };
+}
+
+/**
+ * How an entry's link reads next to its title: short addresses as they are ("careerfit.vercel.app"),
+ * long ones as a short label ("LinkedIn post") instead of a line of tracking codes.
+ */
+export function linkLabel(value) {
+  const short = shortUrl(value);
+  if (short.length <= 32) return short;
+  const host = short.split('/')[0].toLowerCase();
+  if (host.endsWith('linkedin.com')) return /\/(posts|feed)\//.test(short) ? 'LinkedIn post' : 'LinkedIn';
+  if (host.endsWith('github.com')) return 'GitHub';
+  if (host.includes('drive.google') || host.includes('docs.google')) return 'Google Drive';
+  if (host.endsWith('youtube.com') || host === 'youtu.be') return 'Video';
+  return `${host}`;
+}
+
 /** Split text into [{ text, url }] parts; url is null for plain text and unsafe links. */
 export function splitLinks(text) {
   const value = String(text || '');
