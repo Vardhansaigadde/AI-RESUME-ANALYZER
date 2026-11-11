@@ -145,6 +145,15 @@ SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
         "declaration",
         "languages known",
         "strengths",
+        "coding and problem solving",
+        "coding profiles",
+        "competitive programming",
+        "online profiles",
+        "coding platforms",
+        "research interests",
+        "areas of interest",
+        "technical interests",
+        "fields of interest",
         "hobbies and interests",
         "extra curricular activities",
     ),
@@ -215,6 +224,13 @@ def _split_items(lines: list[str]) -> list[str]:
     seen: set[str] = set()
     for raw in lines:
         line = _strip_bullet(raw)
+        links = INLINE_LINK_RE.findall(line)
+        if links:
+            # A line of profile links ("CodeChef: [vardhan_2423](https://...)") is kept whole
+            if line not in seen:
+                seen.add(line)
+                items.append(line)
+            continue
         label = ""
         if ":" in line and len(line.split(":", 1)[0].split()) <= 4:
             label, line = (x.strip() for x in line.split(":", 1))  # "Programming Languages: ..." starts a group
@@ -249,6 +265,19 @@ def _titled(text: str) -> ResumeEntry:
     if not found:
         return ResumeEntry(title=text)
     return ResumeEntry(title=_ENTRY_LINK.sub("", text).strip(), link=found.group(1))
+
+
+_SMALL_WORDS = {"a", "an", "the", "and", "or", "of", "for", "in", "on", "to", "with", "&", "-", "–", "|"}
+
+
+def _looks_like_title(text: str) -> bool:
+    """A short name in Title Case ("Java Mini Games Hub"), not a sentence or a "Label:" line."""
+    words = text.split()
+    if not 2 <= len(words) <= 8 or text.rstrip().endswith((".", "!", "?", ",", ":", ";")) or ":" in text:
+        return False
+    content = [w for w in words if w.lower() not in _SMALL_WORDS]
+    capital = [w for w in content if w[:1].isupper() or w[:1].isdigit()]
+    return bool(content) and len(capital) / len(content) >= 0.75
 
 
 def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
@@ -288,7 +317,7 @@ def _parse_entries(lines: list[str]) -> list[ResumeEntry]:
                     bool(BULLET_RE.match(ahead[0]))
                     or (len(ahead) == 2 and not BULLET_RE.match(ahead[0]) and bool(BULLET_RE.match(ahead[1])))
                 )
-            )
+            ) or (bool(ahead) and _looks_like_title(visible))
 
         if is_bullet:
             if current is None:
@@ -497,6 +526,10 @@ def split_trailing_date(text: str) -> tuple[str, str]:
     return match["rest"].strip(" |,·•-–—("), match["date"].strip()
 
 
+# "2024 – 2028 | CGPA: 9.02": a date range, a separator, then more
+_LEADING_DATE = re.compile(r"^\s*(.{4,30}?)\s*[|·•,]\s*(\S.*)$")
+
+
 def _move_dates(entries: list[ResumeEntry]) -> None:
     """Give each entry a separate date when its subtitle or title ends with one."""
     for entry in entries:
@@ -509,11 +542,17 @@ def _move_dates(entries: list[ResumeEntry]) -> None:
                 entry.date = date
                 break
         else:
-            # A line that is only a date ("2022 – 2026") under the entry is its date, not a bullet
+            # A line that is only a date ("2022 – 2026") under the entry is its date, not a bullet;
+            # "2024 – 2028 | CGPA: 9.02" gives its date and keeps the rest
             for i, bullet in enumerate(entry.bullets):
                 if _is_date_only(bullet):
                     entry.date = bullet.strip()
                     del entry.bullets[i]
+                    break
+                lead = _LEADING_DATE.match(bullet)
+                if lead and _is_date_only(lead.group(1)):
+                    entry.date = lead.group(1).strip()
+                    entry.bullets[i] = lead.group(2).strip()
                     break
 
 

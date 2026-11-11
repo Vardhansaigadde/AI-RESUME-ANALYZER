@@ -188,11 +188,80 @@ class MessyWordExportTests(unittest.TestCase):
         self.assertEqual(resume.skills[:2], ["Tools: Git", "Docker"])
 
 
+SECOND_RESUME = """SAMPLE STUDENT
+Eluru | Phone: +91 98765 43210 | Email: sample@example.com
+LinkedIn: [LinkedIn](https://www.linkedin.com/in/sample/) | GitHub: [GitHub](https://github.com/sample)
+PROFESSIONAL SUMMARY
+Second-year B.Tech student with strong foundations in C/C++, data structures and algorithms.
+EDUCATION
+Bachelor of Technology - Computer Science (AI & ML)
+Sample University, Surampalem
+2024 - 2028 | CGPA: 9.02
+TECHNICAL SKILLS
+Programming Languages: C, C++ (Proficient), Python, Java (Familiar)
+Database: SQL
+CODING & PROBLEM SOLVING
+Solved 500+ problems on [HackerRank](https://www.hackerrank.com/profile/sample), [CodeChef](https://www.codechef.com/users/sample)
+TECHNICAL PROJECTS
+Event Registration Portal
+Developed a web-based system to manage college event registrations.
+Features:
+\u2022 Student login and authentication
+\u2022 Registration tracking system
+Tech Stack: HTML, CSS, JavaScript
+Java Mini Games Hub
+Built a collection of simple Java-based games to demonstrate OOP concepts.
+Games Included:
+\u2022 Number Guessing Game
+\u2022 Tictactoe
+Tech Stack: Java, OOP
+RESEARCH INTERESTS
+Artificial Intelligence
+Machine Learning
+"""
+
+
+class SecondRealResumeTests(unittest.TestCase):
+    """A second real layout: coding-profile and research-interest sections, dateless Title Case projects."""
+
+    def setUp(self):
+        self.resume = parse_resume(SECOND_RESUME)
+
+    def test_skills_stay_clean_and_coding_profiles_get_their_own_section(self):
+        self.assertEqual(self.resume.skills, ["Programming Languages: C", "C++", "Python", "Java", "Database: SQL"])
+        coding = next(x for x in self.resume.additional if x.heading == "Coding & Problem Solving")
+        self.assertIn("[CodeChef](https://www.codechef.com/users/sample)", coding.items[0])
+
+    def test_title_case_project_after_a_tech_stack_line_starts_a_new_project(self):
+        projects = self.resume.projects
+        self.assertEqual([p.title for p in projects], ["Event Registration Portal", "Java Mini Games Hub"])
+        self.assertTrue(projects[1].subtitle.startswith("Built a collection"))
+        self.assertIn("Games Included:", projects[1].bullets)
+
+    def test_research_interests_and_education_date(self):
+        research = next(x for x in self.resume.additional if x.heading == "Research Interests")
+        self.assertEqual(research.items, ["Artificial Intelligence", "Machine Learning"])
+        education = self.resume.education[0]
+        self.assertEqual(education.date, "2024 - 2028")
+        self.assertEqual(education.bullets, ["CGPA: 9.02"])
+
+    def test_new_skills_get_their_own_row_and_header_labels_are_not_skills(self):
+        result = tailor_resume(self.resume, job_text="Software Engineer Intern\nRequirements: Java, Python, SQL, Git.")
+        added = [s for s in result.resume.skills if s not in self.resume.skills]
+        if added:
+            self.assertTrue(added[0].startswith("Other skills: "))
+        self.assertNotIn("GitHub", " ".join(added))  # "GitHub" in the header is a link label, not a skill
+
+
 class LinkDisplayTests(unittest.TestCase):
     def test_labels(self):
         self.assertEqual(contact_link(f"[GitHub]({GITHUB})"), ("GitHub", GITHUB))
         self.assertEqual(link_label(DEMO), "quiz-app.example.com")
         self.assertEqual(link_label(POST), "LinkedIn post")
+
+    def test_word_the_program_not_a_word_game(self):
+        self.assertIn("word", extract_skills("microsoft word, excel and powerpoint"))
+        self.assertNotIn("word", extract_skills("games included: number guessing, word guessing"))
 
     def test_react_in_a_tech_stack_but_not_as_a_verb(self):
         self.assertIn("react", extract_skills("built with python, fastapi, react and mongodb"))

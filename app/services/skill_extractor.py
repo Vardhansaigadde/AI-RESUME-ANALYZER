@@ -48,6 +48,18 @@ CONTEXT_DEPENDENT_SKILLS: dict[str, tuple[str, ...]] = {
         "swiftui",
         "cocoa",
     ),
+    # "Word" the program, not "Word Guessing" or "a word"
+    "word": (
+        "microsoft",
+        "ms",
+        "office",
+        "excel",
+        "powerpoint",
+        "outlook",
+        "google docs",
+        "documentation",
+        "typing",
+    ),
     "react": (
         "javascript",
         "frontend",
