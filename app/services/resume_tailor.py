@@ -404,6 +404,13 @@ def tech_line(entry: ResumeEntry, target: _Target, names: list[str]) -> list[str
     return [_display(s, source, ", ".join(names)) for s in used[:6]]
 
 
+def _as_row(added: list[str], labels: list[str]) -> list[str]:
+    """New skills for a resume whose skills are grouped: their own row, so they don't join the last group."""
+    if not added or not labels:
+        return list(added)
+    return [f"Other skills: {added[0]}", *added[1:]]
+
+
 def skill_catalog(names: list[str], target: _Target) -> list[CatalogSkill]:
     """Every candidate skill with its row, in display order (group order, most wanted first).
 
@@ -542,7 +549,9 @@ def tailor_resume(
         return applied
 
     original_text = render_resume_text(resume)
-    claimed = extract_skills(clean_text(original_text))
+    # Skills come from the resume's content, not its contact links ("GitHub" there is a label)
+    content = resume.model_copy(update={"links": [], "email": "", "phone": "", "location": ""})
+    claimed = extract_skills(clean_text(render_resume_text(content)))
     target = _Target(job_text, target_role, claimed)
 
     # ---- skills: used-but-unlisted ones are added; likely-known and wanted ones are only offered
@@ -551,11 +560,13 @@ def tailor_resume(
     typed_canonical = {c for c in (_canonical(t) for t in typed) if c}
     # Group names count too: "Generative AI & NLP: ..." means both are listed
     typed_canonical |= extract_skills(clean_text(" , ".join(labels)))
+    # Only projects and jobs count as "used" (the header's "GitHub" is a link label, not a skill)
+    used_in_entries = set().union(*(_entry_skills(e) for e in [*resume.experience, *resume.projects]))
     listed = {t.lower() for t in typed} | typed_canonical
     from_entries = sorted(
         (
             s
-            for s in claimed - typed_canonical
+            for s in used_in_entries - typed_canonical
             if _technical(s) and s not in listed and not any(s in t or t in s for t in listed if len(t) > 3)
         ),
         key=lambda s: (-target.weight(s), s),
@@ -610,9 +621,13 @@ def tailor_resume(
     own_groups = len(labels) >= 2  # the student grouped their skills their own way: keep it
     if names and not own_groups and [s.lower() for s in grouped] != [s.lower() for s in resume.skills]:
         title = "Grouped your skills" + (", with the most wanted first" if target.wanted else "")
-        skills = grouped if change("skills-group", "Skills", "reordered", title) else [*resume.skills, *added]
+        skills = (
+            grouped
+            if change("skills-group", "Skills", "reordered", title)
+            else [*resume.skills, *_as_row(added, labels)]
+        )
     else:
-        skills = [*resume.skills, *added]
+        skills = [*resume.skills, *_as_row(added, labels)]
 
     # ---- projects: best match first (only when there is something to match)
     order = list(range(len(resume.projects)))

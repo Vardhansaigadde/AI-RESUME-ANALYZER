@@ -83,7 +83,10 @@ export function applyChanges(original, data, kept, confirmed) {
   add(confirmed);
   const grouped = groupedRows(data.skill_catalog, names);
   const changed = grouped.map((s) => s.toLowerCase()).join('|') !== (original.skills || []).map((s) => s.toLowerCase()).join('|');
-  resume.skills = isKept('skills-group') && changed ? grouped : [...(original.skills || []), ...added];
+  // Grouped by the student: new skills get their own row instead of joining the last group
+  const labelled = (original.skills || []).some((s) => LABEL.test(s));
+  const extra = labelled && added.length ? [`Other skills: ${added[0]}`, ...added.slice(1)] : added;
+  resume.skills = isKept('skills-group') && changed ? grouped : [...(original.skills || []), ...extra];
 
   if (isKept('projects-order')) resume.projects = byId['projects-order'].patch.order.map((i) => resume.projects[i]);
   return resume;
