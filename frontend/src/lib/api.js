@@ -164,6 +164,7 @@ export async function downloadFixedDocx(file, payload) {
   return {
     applied: Number(response.headers.get('x-fitlens-applied') || 0),
     missed: Number(response.headers.get('x-fitlens-missed') || 0),
+    pages: (response.headers.get('x-fitlens-pages') || '1,1').split(',').map(Number),
   };
 }
 

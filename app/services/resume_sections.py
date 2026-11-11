@@ -136,6 +136,17 @@ SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
         "additional information",
         "leadership",
         "positions of responsibility",
+        # Common on Indian resumes; kept as their own sections so they never leak into skills
+        "personal details",
+        "personal information",
+        "personal profile",
+        "personal data",
+        "personal info",
+        "declaration",
+        "languages known",
+        "strengths",
+        "hobbies and interests",
+        "extra curricular activities",
     ),
 }
 _HEADING_LOOKUP = {phrase: section for section, phrases in SECTION_HEADINGS.items() for phrase in phrases}

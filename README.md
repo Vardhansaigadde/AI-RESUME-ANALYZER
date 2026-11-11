@@ -52,7 +52,7 @@ provider.
 - **Earn while you study.** A freelancing guide that starts from zero skills: services that free AI tools make
   doable, a 30-day plan to the first client, platforms, message templates, pricing, getting paid in India,
   scam warnings and tax basics, with services matched to the student's resume.
-- **Production quality.** 319 automated tests and linting on every pull request (GitHub Actions), a
+- **Production quality.** 323 automated tests and linting on every pull request (GitHub Actions), a
   Dockerised API with rate limiting and file-signature checks, and row-level security in PostgreSQL.
 - **Privacy first.** Resumes are processed in memory and never stored or sent to an AI service.
 
@@ -127,7 +127,7 @@ Decisions worth calling out:
 | Backend | Python 3.14, FastAPI, Pydantic, pdfplumber, python-docx |
 | Frontend | React 19, Vite, Tailwind CSS 4, Framer Motion |
 | Data and auth | Supabase (PostgreSQL, Google / email sign-in, row-level security) |
-| Quality and delivery | pytest (319 tests), ruff, GitHub Actions CI, Docker, Render, Vercel |
+| Quality and delivery | pytest (323 tests), ruff, GitHub Actions CI, Docker, Render, Vercel |
 
 ## Run it locally
 

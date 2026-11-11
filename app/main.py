@@ -177,7 +177,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
     # Lets the browser read the .docx filename on cross-origin downloads
-    expose_headers=["Content-Disposition", "X-FitLens-Applied", "X-FitLens-Missed"],
+    expose_headers=["Content-Disposition", "X-FitLens-Applied", "X-FitLens-Missed", "X-FitLens-Pages"],
 )
 
 

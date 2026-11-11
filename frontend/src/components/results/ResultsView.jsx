@@ -39,7 +39,8 @@ export default function ResultsView({
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [jobSearch, setJobSearch] = useState({ loading: false, error: null, params: null, data: null });
   const [githubCheck, setGithubCheck] = useState({ loading: false, error: null, data: null, username: '' });
-  const [fixing, setFixing] = useState(false);
+  // The resume the fixed version starts from, taken when the student opens it
+  const [fixing, setFixing] = useState(null);
 
   const studentMode = Boolean(result.student_mode);
   const targetRole = result.role_gap?.role || null;
@@ -192,14 +193,14 @@ export default function ResultsView({
       {fixing ? (
         <div className="mt-6">
           <FixedResume
-            resume={JSON.parse(snapshot(draft))}
+            resume={fixing}
             jobText={resumeOnly ? '' : jobText}
             defaultRole={targetRole}
             roles={result.role_gap?.available_roles || []}
             file={pristine ? file : null}
             notify={notify}
             onBack={() => {
-              setFixing(false);
+              setFixing(null);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onOpenBuilder={onOpenBuilder}
@@ -210,7 +211,7 @@ export default function ResultsView({
           <button
             type="button"
             onClick={() => {
-              setFixing(true);
+              setFixing(JSON.parse(snapshot(draft)));
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="group mt-5 flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-accent/40 bg-accent-soft/50 px-4 py-3 text-left transition hover:bg-accent-soft"
