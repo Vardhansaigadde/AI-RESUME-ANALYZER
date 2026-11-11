@@ -32,6 +32,19 @@ class TailorChange(BaseModel):
     before: str = ""
     after: str = ""
     applied: bool = True
+    patch: dict = Field(default_factory=dict, description="What to set when kept, so the browser can apply it.")
+
+
+class LikelySkill(BaseModel):
+    """A skill the student very likely knows (offered, never added without a tick)."""
+
+    skill: str
+    because: str = Field(..., description="The skill on the resume that implies it.")
+
+
+class CatalogSkill(BaseModel):
+    name: str
+    group: str
 
 
 class ScorePair(BaseModel):
@@ -47,9 +60,13 @@ class TailorResponse(BaseModel):
     resume: StructuredResume
     template: str
     changes: list[TailorChange]
+    likely_skills: list[LikelySkill] = Field(default_factory=list)
     suggested_skills: list[str] = Field(
         default_factory=list, description="Skills the job or role wants that the resume doesn't show: add only if true."
     )
-    notes: list[str] = Field(default_factory=list, description="Things only the student can add.")
+    skill_catalog: list[CatalogSkill] = Field(
+        default_factory=list, description="Candidate skills and their rows, in display order."
+    )
+    notes: list[str] = Field(default_factory=list, description="Things only the student can add or remove.")
     before: ScorePair
     after: ScorePair

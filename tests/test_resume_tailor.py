@@ -46,14 +46,27 @@ def ids(response):
 
 
 class BulletTests(unittest.TestCase):
-    def test_weak_openings_become_action_verbs(self):
-        self.assertEqual(improve_bullet("worked on a weather app using html"), "Built a weather app using HTML.")
-        self.assertEqual(improve_bullet("responsible for fetching data"), "Fetched data.")
-        self.assertEqual(improve_bullet("managing the data cleaning steps"), "Managed the data cleaning steps.")
+    def test_taking_part_is_never_upgraded_to_building(self):
+        self.assertEqual(
+            improve_bullet("worked on a weather app using html"), "Contributed to a weather app using HTML."
+        )
         self.assertEqual(
             improve_bullet("helped build internal dashboards in python"),
-            "Collaborated to build internal dashboards in Python.",
+            "Contributed to building internal dashboards in Python.",
         )
+        self.assertEqual(improve_bullet("we worked on a chatbot"), "Contributed to a chatbot.")
+        self.assertEqual(improve_bullet("assisted with documentation"), "Contributed to documentation.")
+        self.assertEqual(improve_bullet("was part of the web team"), "was part of the web team")
+
+    def test_own_work_gets_an_action_verb(self):
+        self.assertEqual(
+            improve_bullet("worked on the college app independently from scratch"),
+            "Built the college app independently from scratch.",
+        )
+        self.assertEqual(improve_bullet("responsible for fetching data"), "Fetched data.")
+        self.assertEqual(improve_bullet("responsible for the database"), "Managed the database.")
+        self.assertEqual(improve_bullet("managing the data cleaning steps"), "Managed the data cleaning steps.")
+        self.assertEqual(improve_bullet("made a portfolio website"), "Built a portfolio website.")
 
     def test_strong_bullets_stay_exactly_as_written(self):
         bullet = "Built a REST API in Flask used by 1,200 students"
@@ -70,9 +83,11 @@ class TailorTests(unittest.TestCase):
         result = tailor_resume(RESUME, job_text=JOB)
         self.assertEqual(result.mode, "job")
         self.assertEqual(result.role, "Backend Developer")
-        self.assertTrue({"skills-used", "skills-likely", "summary", "dates", "tech:projects:0"} <= ids(result))
+        self.assertTrue({"skills-used", "summary", "dates", "tech:projects:0"} <= ids(result))
         skills = " ".join(result.resume.skills).lower()
-        self.assertIn("pandas", skills)  # likely known from Machine Learning, and the job asks for it
+        # Likely known from Machine Learning and asked for by the job: offered, never added on its own
+        self.assertEqual([(s.skill, s.because) for s in result.likely_skills], [("pandas", "Machine Learning")])
+        self.assertNotIn("pandas", skills)
         for missing in ("Docker", "SQL", "AWS"):  # wanted but not shown: only suggested
             self.assertIn(missing, result.suggested_skills)
             self.assertNotIn(missing.lower(), skills)
@@ -80,14 +95,13 @@ class TailorTests(unittest.TestCase):
         self.assertEqual(result.resume.projects[0].subtitle, "Tech: CSS, HTML, JavaScript")
 
     def test_undo_and_confirmed_skills(self):
-        result = tailor_resume(
-            RESUME, job_text=JOB, skip=["bullet:projects:0:0", "skills-likely"], confirmed_skills=["SQL"]
-        )
+        result = tailor_resume(RESUME, job_text=JOB, skip=["bullet:projects:0:0"], confirmed_skills=["SQL", "pandas"])
         self.assertEqual(result.resume.projects[0].bullets[0], RESUME.projects[0].bullets[0])
         skills = " ".join(result.resume.skills).lower()
-        self.assertNotIn("pandas", skills)
+        self.assertIn("pandas", skills)
         self.assertIn("sql", skills)
         self.assertNotIn("SQL", result.suggested_skills)
+        self.assertEqual(result.likely_skills, [])
 
     def test_a_good_summary_is_kept_and_ours_is_only_offered(self):
         summary = (
@@ -113,10 +127,26 @@ class TailorTests(unittest.TestCase):
     def test_general_mode_adds_nothing_role_specific(self):
         result = tailor_resume(RESUME)
         self.assertEqual(result.mode, "general")
-        self.assertNotIn("skills-likely", ids(result))
+        self.assertEqual(result.likely_skills, [])
         self.assertNotIn("projects-order", ids(result))
         self.assertEqual(result.suggested_skills, [])
         self.assertTrue(any("job description" in note for note in result.notes))
+
+
+class IndianResumeHabitTests(unittest.TestCase):
+    def test_personal_details_and_declaration_get_notes(self):
+        text = (
+            TEXT
+            + "\nPERSONAL DETAILS\nDate of Birth: 01-01-2004\nFather's Name: R. Kumar\nDECLARATION\nI hereby declare that the above is true.\n"
+        )
+        notes = " ".join(tailor_resume(parse_resume(text), job_text=JOB).notes)
+        self.assertIn("date of birth, father's name", notes)
+        self.assertIn("Declaration", notes)
+
+    def test_no_notes_when_they_are_absent(self):
+        notes = " ".join(tailor_resume(RESUME, job_text=JOB).notes)
+        self.assertNotIn("Declaration", notes)
+        self.assertNotIn("father", notes)
 
 
 class EndpointTests(unittest.TestCase):
@@ -144,7 +174,8 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(response.headers["x-fitlens-missed"], "0")
         out = Document(io.BytesIO(response.content))
         texts = [p.text for p in out.paragraphs]
-        self.assertIn("• Built a weather app using HTML CSS and JavaScript.", texts)
+        self.assertIn("• Contributed to a weather app using HTML CSS and JavaScript.", texts)
+        self.assertEqual(response.headers["x-fitlens-pages"], "1,1")
         self.assertIn("SUMMARY", texts)
         self.assertIn("2022 – 2026", texts)
         self.assertTrue(texts[texts.index("May 2025 – Jul 2025") + 1].endswith("Tech: Flask, Python"))
@@ -164,6 +195,12 @@ class ParserTests(unittest.TestCase):
     def test_project_titles_without_dates_start_new_entries(self):
         text = "PROJECTS\nWeather App\n• worked on a weather app\nChurn Predictor\n• Trained models\n"
         self.assertEqual([p.title for p in parse_resume(text).projects], ["Weather App", "Churn Predictor"])
+
+    def test_personal_details_and_declaration_never_leak_into_skills(self):
+        text = TEXT + "\nPERSONAL DETAILS\nDate of Birth: 01-01-2004\nDECLARATION\nI hereby declare it is true.\n"
+        resume = parse_resume(text)
+        self.assertEqual(resume.skills, ["Python", "Machine Learning", "Git", "Communication"])
+        self.assertEqual([x.heading for x in resume.additional], ["Personal Details", "Declaration"])
 
     def test_a_bullet_wrapped_mid_phrase_stays_one_bullet(self):
         text = "PROJECTS\nWeather App\n• Built an app with the forecast for\nHyderabad and Vijayawada\n• Deployed it\n"

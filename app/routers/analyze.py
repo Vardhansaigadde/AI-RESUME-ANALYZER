@@ -328,6 +328,7 @@ async def resume_tailor_docx(file: UploadFile = File(...), payload: str = Form(.
             "Content-Disposition": f'attachment; filename="{stem}_fixed.docx"',
             "X-FitLens-Applied": str(len(report["applied"])),
             "X-FitLens-Missed": str(len(report["missed"])),
+            "X-FitLens-Pages": ",".join(str(n) for n in report["pages"]),
         },
     )
 

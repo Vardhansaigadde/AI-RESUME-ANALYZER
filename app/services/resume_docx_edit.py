@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from io import BytesIO
+import math
 import re
 
 from docx import Document
@@ -143,10 +144,40 @@ def _section_paragraphs(doc: _Doc, section: str) -> tuple[Paragraph | None, list
     return heading, body
 
 
+EMU_PER_PT = 12700
+
+
+def estimate_pages(doc) -> int:
+    """Roughly how many pages the document fills, from its page size, margins and font sizes.
+
+    Only used to compare a file before and after our edits, so the shared errors
+    (spacing, columns, images) cancel out.
+    """
+    section = doc.sections[0]
+
+    def pt(value, default: float) -> float:
+        return value / EMU_PER_PT if value else default
+
+    width = pt(section.page_width, 595) - pt(section.left_margin, 72) - pt(section.right_margin, 72)
+    height = pt(section.page_height, 842) - pt(section.top_margin, 72) - pt(section.bottom_margin, 72)
+    normal = doc.styles["Normal"].font.size
+    default_size = normal.pt if normal else 11.0
+    used = 0.0
+    for p in doc.element.body.iter(qn("w:p")):
+        par = Paragraph(p, doc._body)
+        sizes = [r.font.size.pt for r in par.runs if r.font.size]
+        size = max(sizes) if sizes else default_size
+        chars_per_line = max(20.0, width / (size * 0.5))
+        lines = max(1, math.ceil(len(par.text) / chars_per_line))
+        used += lines * size * 1.2 + size * 0.25
+    return max(1, math.ceil(used / max(height, 100)))
+
+
 def apply_to_docx(data: bytes, original: StructuredResume, fixed: TailorResponse) -> tuple[bytes, dict[str, list[str]]]:
     """The student's Word file with the applied changes, and which changes were applied, missed or left to layout."""
     doc = _Doc(data)
-    report: dict[str, list[str]] = {"applied": [], "missed": [], "layout": []}
+    pages_before = estimate_pages(doc.doc)
+    report: dict[str, list] = {"applied": [], "missed": [], "layout": []}
 
     def done(cid: str, ok: bool) -> None:
         report["applied" if ok else "missed"].append(cid)
@@ -200,6 +231,7 @@ def apply_to_docx(data: bytes, original: StructuredResume, fixed: TailorResponse
         for cid in skill_ids:
             done(cid, ok)
 
+    report["pages"] = [pages_before, estimate_pages(doc.doc)]
     return doc.save(), report
 
 
