@@ -25,6 +25,10 @@ services:
         sync: false
       - key: ADZUNA_APP_KEY
         sync: false
+      # Optional: free Jooble API key (https://jooble.org/api/about) for on-site
+      # jobs in India and other countries.
+      - key: JOOBLE_API_KEY
+        sync: false
       # Optional: free Sentry DSN (https://sentry.io) for error alerts. Without it,
       # errors (including browser crashes) still go to Render's logs.
       - key: SENTRY_DSN

@@ -12,8 +12,17 @@ Sources:
   environment variables (a free developer key). Its API returns only a short
   snippet of each posting, so those fit scores are rougher.
 
-Both sources ask that each posting links back to them and names them as the
-source, which the frontend does.
+- Remote OK (https://remoteok.com/api): remote jobs, no key needed. Its terms
+  ask for a followed link back and naming "Remote OK" as the source.
+- Arbeitnow (https://www.arbeitnow.com/api/job-board-api): jobs in Europe,
+  mostly Germany, no key needed. It has no search, so the newest 300 postings
+  are cached for an hour and filtered here. Shown for Germany and Anywhere.
+- Jooble (https://jooble.org/api/about): on-site jobs in India and elsewhere.
+  Optional: switched on by the JOOBLE_API_KEY environment variable (free key).
+  Like Adzuna it returns only a snippet of each posting.
+
+Every source asks that each posting links back to it and names it as the
+source, which the frontend does (plain links, no rel="nofollow").
 """
 
 from __future__ import annotations
@@ -66,6 +75,18 @@ CURRENCY = {"IN": "₹", "US": "$", "GB": "£", "CA": "C$", "AU": "A$", "DE": "�
 
 HIMALAYAS_URL = "https://himalayas.app/jobs/api/search"
 ADZUNA_URL = "https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+REMOTEOK_URL = "https://remoteok.com/api"
+ARBEITNOW_URL = "https://www.arbeitnow.com/api/job-board-api"
+JOOBLE_URL = "https://jooble.org/api/{key}"
+ARBEITNOW_COUNTRIES = {"DE", ANYWHERE}
+FEED_TTL = 3600  # Remote OK and Arbeitnow feeds, shared by every search
+
+# Query words that say what kind of job, not what it is about
+GERMAN_PLACES = frozenset(
+    "germany deutschland berlin munich münchen hamburg frankfurt cologne köln stuttgart düsseldorf leipzig "
+    "dresden hannover nuremberg nürnberg bremen essen dortmund bonn karlsruhe mannheim".split()
+)
+QUERY_FILLER = frozenset("job jobs role roles remote fresher freshers entry level intern internship trainee".split())
 
 # Titles that are clearly not for students or freshers
 SENIOR_TITLE = re.compile(
@@ -118,6 +139,45 @@ def _http_get_json(url: str) -> Any:
             return json.loads(response.read().decode("utf-8"))
     except Exception as exc:  # network errors, HTTP 4xx/5xx, bad JSON
         raise SourceError(str(exc)) from exc
+
+
+def _http_post_json(url: str, payload: dict) -> Any:
+    """POST JSON and read JSON back (patched in tests). The URL may hold a key, so it is never logged."""
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"User-Agent": USER_AGENT, "Accept": "application/json", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:  # noqa: S310 (fixed https URL)
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise SourceError(type(exc).__name__ + (f" {exc.code}" if hasattr(exc, "code") else "")) from exc
+
+
+def matches_query(query: str, *texts: str) -> bool:
+    """Every meaningful query word appears in these texts (for feeds that can't be searched).
+
+    Callers pass the title and tags only: a description mentions too much (a Vue role
+    "works alongside our Python team") to say what the job is.
+    """
+    words = [w for w in clean_text(query).split() if w not in QUERY_FILLER]
+    if not words:  # e.g. "internship": only the kind of job was asked for
+        return not INTERN_TITLE.search(query) or bool(INTERN_TITLE.search(" ".join(texts)))
+    have = set(clean_text(" ".join(texts)).split())
+    return all(w in have for w in words)
+
+
+def _feed(url: str) -> Any:
+    """A whole-feed download shared by every search for FEED_TTL seconds."""
+    key = ("feed", url)
+    cached = CACHE.get(key, FEED_TTL)
+    if cached is not None:
+        return cached
+    data = _http_get_json(url)
+    CACHE.put(key, data)
+    return data
 
 
 def html_to_text(raw: str) -> str:
@@ -273,10 +333,157 @@ def fetch_adzuna(query: str, country: str, kind: str) -> list[dict]:
     return postings
 
 
+def _remoteok_tag(query: str) -> str:
+    """Remote OK filters by tag: use the first skill in the query ("python developer" -> python)."""
+    skills = sorted(extract_skills(clean_text(query)))
+    return skills[0].replace(" ", "-") if skills else ""
+
+
+def fetch_remoteok(query: str, country: str, kind: str) -> list[dict]:
+    tag = _remoteok_tag(query)
+    data = _feed(f"{REMOTEOK_URL}?{urlencode({'tag': tag})}" if tag else REMOTEOK_URL)
+    if not isinstance(data, list):
+        raise SourceError("unexpected response")
+    place = COUNTRIES.get(country, "").lower()
+
+    postings = []
+    for job in data:
+        if not isinstance(job, dict) or "position" not in job:
+            continue  # the first item is Remote OK's terms notice
+        title = (job.get("position") or "").strip()
+        url = job.get("url") or ""
+        if not title or not url:
+            continue
+        location = (job.get("location") or "").strip()
+        if (
+            country != ANYWHERE
+            and location
+            and not any(word in location.lower() for word in ("worldwide", "anywhere", "global", place))
+        ):
+            continue
+        tags = [str(t) for t in job.get("tags") or []]
+        if not matches_query(query, title, " ".join(tags)):
+            continue
+        if location.lower() in ("remote", "anywhere"):
+            location = ""
+        text = html_to_text(job.get("description") or "")
+        postings.append(
+            {
+                "id": f"remoteok:{job.get('id') or url}",
+                "title": title,
+                "company": (job.get("company") or "").strip(),
+                "location": "Remote · " + (location or "Worldwide"),
+                "remote": True,
+                "employment_type": "",
+                "level": "",
+                "posted": _iso_date(job.get("epoch") or job.get("date")),
+                "salary": _salary(job.get("salary_min"), job.get("salary_max"), "$", "year"),
+                "url": url,
+                "source": "Remote OK",
+                "text": text,
+                "short_description": False,
+            }
+        )
+        if len(postings) >= RESULTS_PER_SOURCE:
+            break
+    return postings
+
+
+def fetch_arbeitnow(query: str, country: str, kind: str) -> list[dict]:
+    data = _feed(ARBEITNOW_URL)
+    if not isinstance(data, dict) or not isinstance(data.get("data"), list):
+        raise SourceError("unexpected response")
+
+    postings = []
+    for job in data["data"]:
+        title = (job.get("title") or "").strip()
+        url = job.get("url") or ""
+        if not title or not url:
+            continue
+        tags = [str(t) for t in job.get("tags") or []]
+        if not matches_query(query, title, " ".join(tags)):
+            continue
+        remote = job.get("remote") is True
+        location = (job.get("location") or "").strip()
+        if location.lower() == "remote":
+            location = ""
+        if country == "DE" and not (remote or set(location.lower().replace(",", " ").split()) & GERMAN_PLACES):
+            continue
+        text = html_to_text(job.get("description") or "")
+        types = [str(t) for t in job.get("job_types") or []]
+        postings.append(
+            {
+                "id": f"arbeitnow:{job.get('slug') or url}",
+                "title": title,
+                "company": (job.get("company_name") or "").strip(),
+                "location": ("Remote · " if remote else "") + (location or "Europe"),
+                "remote": remote,
+                "employment_type": ", ".join(types),
+                "level": "",
+                "posted": _iso_date(job.get("created_at")),
+                "salary": "",
+                "url": url,
+                "source": "Arbeitnow",
+                "text": text,
+                "short_description": False,
+            }
+        )
+        if len(postings) >= RESULTS_PER_SOURCE:
+            break
+    return postings
+
+
+def jooble_key() -> str:
+    return os.getenv("JOOBLE_API_KEY", "").strip()
+
+
+def fetch_jooble(query: str, country: str, kind: str) -> list[dict]:
+    key = jooble_key()
+    if not key:
+        return []
+    payload = {
+        "keywords": f"{query} internship" if kind == "internship" else query,
+        "location": "" if country == ANYWHERE else COUNTRIES.get(country, ""),
+        "page": "1",
+    }
+    data = _http_post_json(JOOBLE_URL.format(key=key), payload)
+    if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
+        raise SourceError("unexpected response")
+
+    postings = []
+    for job in data["jobs"][:RESULTS_PER_SOURCE]:
+        title = html_to_text(job.get("title") or "")
+        link = job.get("link") or ""
+        if not title or not link:
+            continue
+        postings.append(
+            {
+                "id": f"jooble:{job.get('id') or link}",
+                "title": title,
+                "company": (job.get("company") or "").strip(),
+                "location": (job.get("location") or "").strip(),
+                "remote": False,
+                "employment_type": (job.get("type") or "").strip(),
+                "level": "",
+                "posted": _iso_date((job.get("updated") or "")[:19]),
+                "salary": (job.get("salary") or "").strip(),
+                "url": link,
+                "source": "Jooble",
+                "text": html_to_text(job.get("snippet") or ""),
+                "short_description": True,
+            }
+        )
+    return postings
+
+
 SOURCES = {
     "Himalayas": {"fetch": fetch_himalayas, "url": "https://himalayas.app", "ttl": 6 * 3600},
+    "Remote OK": {"fetch": fetch_remoteok, "url": "https://remoteok.com", "ttl": FEED_TTL},
     "Adzuna": {"fetch": fetch_adzuna, "url": "https://www.adzuna.com", "ttl": 3600},
+    "Jooble": {"fetch": fetch_jooble, "url": "https://jooble.org", "ttl": 3600},
+    "Arbeitnow": {"fetch": fetch_arbeitnow, "url": "https://www.arbeitnow.com", "ttl": FEED_TTL},
 }
+ONSITE_SOURCES = ("Adzuna", "Jooble")
 
 
 def _source_off_reason(name: str, country: str) -> str:
@@ -285,6 +492,10 @@ def _source_off_reason(name: str, country: str) -> str:
             return "On-site jobs are not set up on this server."
         if country not in ADZUNA_COUNTRIES:
             return "On-site jobs aren't available for this location."
+    if name == "Jooble" and not jooble_key():
+        return "Jooble isn't set up on this server."
+    if name == "Arbeitnow" and country not in ARBEITNOW_COUNTRIES:
+        return "Only has jobs in Europe, mostly Germany."
     return ""
 
 
@@ -329,7 +540,7 @@ def rank_skills(skills: list[str]) -> list[str]:
 def _keep(posting: dict, kind: str) -> bool:
     title = posting["title"]
     if kind == "internship":
-        return posting["employment_type"].lower() == "intern" or bool(INTERN_TITLE.search(title))
+        return "intern" in posting["employment_type"].lower() or bool(INTERN_TITLE.search(title))
     if kind == "entry":
         return not SENIOR_TITLE.search(title)
     return True

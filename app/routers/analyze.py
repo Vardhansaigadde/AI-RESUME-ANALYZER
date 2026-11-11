@@ -36,7 +36,7 @@ from app.schemas.insights import LearnRequest, LearnResponse, RoleGapRequest, Ro
 from app.schemas.jobs import JobSearchRequest, JobSearchResponse
 from app.schemas.resume import RecheckRequest, StructuredResume
 from app.services.github_check import check_github
-from app.services.job_search import ADZUNA_COUNTRIES, COUNTRIES, adzuna_keys
+from app.services.job_search import ADZUNA_COUNTRIES, COUNTRIES, adzuna_keys, jooble_key
 from app.services.pipeline import (
     MAX_FILE_SIZE,
     REQUIRED_ANALYZE_MODELS,
@@ -274,13 +274,13 @@ async def jobs(payload: JobSearchRequest) -> dict[str, Any]:
 @router.get("/jobs/options")
 async def job_options() -> dict[str, Any]:
     """Countries for the job search, and which ones also have on-site jobs."""
-    onsite = adzuna_keys() is not None
+    adzuna, jooble = adzuna_keys() is not None, bool(jooble_key())
     return {
         "countries": [
-            {"code": code, "name": name, "onsite": onsite and code in ADZUNA_COUNTRIES}
+            {"code": code, "name": name, "onsite": jooble or (adzuna and code in ADZUNA_COUNTRIES)}
             for code, name in COUNTRIES.items()
         ],
-        "onsite_enabled": onsite,
+        "onsite_enabled": adzuna or jooble,
     }
 
 

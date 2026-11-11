@@ -268,12 +268,23 @@ country and job type are sent to the job sites; the resume stays on the server.
 - **[Adzuna](https://developer.adzuna.com)** — on-site jobs in India and six other countries.
   Optional: set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` (free developer key). Adzuna returns only a
   snippet of each posting, so those scores are rougher (the card says so). Cached for 1 hour.
+- **[Remote OK](https://remoteok.com/api)** — remote jobs, free, no key. It is filtered by a tag
+  (the first skill in the search, e.g. `python`), then postings must have every search word in
+  their title or tags. Its terms ask for a followed link back and the name "Remote OK", which every
+  card gives (links have no `rel="nofollow"`).
+- **[Jooble](https://jooble.org/api/about)** — on-site jobs in India and elsewhere, aggregated
+  from many job sites. Optional: set `JOOBLE_API_KEY` (free key). The key sits in the request URL,
+  so that URL is never logged. Snippets only, like Adzuna.
+- **[Arbeitnow](https://www.arbeitnow.com/api/job-board-api)** — jobs in Europe, mostly Germany,
+  free, no key, for students searching Germany or Anywhere. It has no search, so its newest 300
+  postings are downloaded once an hour, shared by every search, and filtered here by title and
+  tags (and to German cities when the country is Germany).
 
-Both ask that listings link back to them and name them as the source, which every card does.
-Results are cached in memory by (source, query, country, type), so popular searches rarely reach
-the job sites. Remotive and Arbeitnow were considered and left out: Remotive's free API now
-returns only a handful of jobs, and Arbeitnow is almost all Germany. Skill extraction is cached by
-text, so scoring 20 postings takes about a second.
+All of them ask that listings link back to them and name them as the source, which every card
+does. Results are cached in memory by (source, query, country, type), so popular searches rarely
+reach the job sites. Sources come from the [public-apis](https://github.com/public-apis/public-apis)
+list; Remotive was left out because its free API now returns only a handful of jobs. Skill
+extraction is cached by text, so scoring 20 postings takes about a second.
 
 The response also has `skill_demand`: the 12 skills mentioned most across the postings found (at
 least 3 postings, and a skill must appear in 2), with each one's share and whether the resume shows

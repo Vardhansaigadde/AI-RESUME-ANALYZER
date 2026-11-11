@@ -33,6 +33,7 @@ const KINDS = [
 ];
 
 const FALLBACK_COUNTRIES = [{ code: 'IN', name: 'India', onsite: false }];
+const ONSITE_SOURCES = ['Adzuna', 'Jooble'];
 
 // Fetched once per page load
 let optionsRequest = null;
@@ -419,7 +420,7 @@ export default function JobsTab({ resume, defaultQuery, defaultKind, studentMode
     }
   };
   const jobs = data ? [...data.jobs].sort(SORTS[sort]) : [];
-  const onsiteOff = data?.sources?.find((s) => s.name === 'Adzuna' && s.status === 'off');
+  const onsiteOff = data && !data.sources?.some((s) => ONSITE_SOURCES.includes(s.name) && s.status === 'ok');
 
   if (locked) {
     return ready ? (
