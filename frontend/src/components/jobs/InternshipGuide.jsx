@@ -1,6 +1,7 @@
 import { ChevronDown, Mail, Rocket, ShieldAlert, Sparkles, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { BOOSTERS, FIELDS, RED_FLAGS, ROUTES, SPEED, TEMPLATES, YEARS } from '../../lib/internshipGuide';
+import { HelpfulPrompt } from '../ui/Feedback';
 import { BulletList, CopyCard, ExternalLink, Section } from '../ui/Guide';
 
 const SPEED_ORDER = { fast: 0, medium: 1, slow: 2 };
@@ -122,6 +123,8 @@ export default function InternshipGuide({ notify, onNavigate }) {
       <Section id="fake" icon={ShieldAlert} title="Fake internships to avoid" subtitle="Report fraud at cybercrime.gov.in or call 1930.">
         <BulletList items={RED_FLAGS} icon={ShieldAlert} tone="text-pen" />
       </Section>
+
+      <HelpfulPrompt page="internships" question="Was this guide helpful?" />
     </div>
   );
 }

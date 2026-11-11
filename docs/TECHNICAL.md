@@ -292,6 +292,17 @@ it. Soft skills and generic words from the extractor's catch-all domain group ("
 "research") are left out unless a target role lists them, so "accounting" or "SEO" still count.
 
 
+### Feedback
+
+A quiet "Was this helpful? 👍 👎" line sits at the end of the resume report, the Earn guide and the
+internship guide, and a "Feedback" link in the footer opens a small form (`components/ui/Feedback.jsx`).
+Nothing pops up on its own: a message box opens only after a click, the email field is optional,
+and a page that was answered never asks again (remembered in the browser). Feedback goes to
+`public.submit_feedback()` in `supabase/feedback.sql`, which validates it, allows 10 a day per
+browser and 1,000 a day in total, and writes to `private.feedback`, which the public API can't
+read. The admin dashboard shows thumbs per page and the latest messages through `admin_feedback()`,
+which returns nothing for non-admins. Run `supabase/feedback.sql` once after `admin.sql`.
+
 ### Paid internship guide
 
 `/jobs?view=guide` (`frontend/src/components/jobs/InternshipGuide.jsx`, content in

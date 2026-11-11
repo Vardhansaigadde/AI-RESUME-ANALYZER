@@ -1,3 +1,5 @@
+import { FooterFeedback } from '../ui/Feedback';
+
 export const REPO_URL = 'https://github.com/Vardhansaigadde/AI-RESUME-ANALYZER';
 
 export default function Footer({ onNavigate }) {
@@ -21,6 +23,7 @@ export default function Footer({ onNavigate }) {
         <nav className="flex items-center gap-4" aria-label="Footer">
           {link('/privacy', 'Privacy')}
           {link('/terms', 'Terms')}
+          <FooterFeedback />
         </nav>
       </div>
     </footer>

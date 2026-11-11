@@ -76,6 +76,11 @@ export function PrivacyPage({ onHome }) {
           kept with it, and it is only used for these totals.
         </li>
         <li>
+          <strong>Feedback.</strong> If you answer “Was this helpful?” or send a message, we store the page, your answer,
+          your message and the same random browser id (to stop spam). Your email is stored only if you type it, and only to
+          reply to you. Please don't include personal details in messages; ask us and we'll delete your feedback.
+        </li>
+        <li>
           <strong>Error reports.</strong> If a page crashes, your browser sends us the error message, the technical stack
           trace and the page path (no query string), so we can fix it. No resume content, form contents or IP address is
           included. Server errors may also be sent to our error-monitoring service (Sentry) without request contents,

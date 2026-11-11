@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 const VISITOR_KEY = 'fitlens:visitor';
 const TRACKED = new Set(['home', 'check', 'analysis', 'build', 'jobs', 'learn', 'earn', 'tracker', 'privacy', 'terms']);
 
-function visitorId() {
+export function visitorId() {
   try {
     let id = localStorage.getItem(VISITOR_KEY);
     if (!id) {

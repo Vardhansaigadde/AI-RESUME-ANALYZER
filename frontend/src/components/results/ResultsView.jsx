@@ -13,6 +13,7 @@ import JobsTab from './JobsTab';
 import LearnTab from './LearnTab';
 import OverviewTab from './OverviewTab';
 import SummaryCards from './SummaryCards';
+import { HelpfulPrompt } from '../ui/Feedback';
 
 export default function ResultsView({
   result,
@@ -255,6 +256,7 @@ export default function ResultsView({
           </motion.div>
         </AnimatePresence>
       </div>
+      <HelpfulPrompt page="results" question="Was this report helpful?" />
     </motion.main>
   );
 }
