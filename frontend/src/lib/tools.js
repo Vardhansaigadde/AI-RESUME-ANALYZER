@@ -27,7 +27,7 @@ export const TOOLS = [
     short: 'Jobs',
     icon: Briefcase,
     tone: 'bg-ok-soft text-ok',
-    description: 'Live openings, what employers ask for, and one-click searches on LinkedIn, Internshala and more.',
+    description: 'Live openings, what employers ask for, one-click searches on LinkedIn, Internshala and more, and every way to land a paid internship.',
   },
   {
     id: 'learn',
