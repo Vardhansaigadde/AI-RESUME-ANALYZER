@@ -65,7 +65,7 @@ def docx_bytes(build) -> bytes:
 class TestResumeSections(unittest.TestCase):
     def test_parses_contact_and_sections(self):
         r = parse_resume(STUDENT_RESUME)
-        self.assertEqual(r.name, "Alex Sample")
+        self.assertEqual(r.name, "ALEX SAMPLE")
         self.assertEqual(r.headline, "AI & ML Student | Aspiring Software Engineer")
         self.assertEqual(r.email, "alex.sample@example.com")
         self.assertEqual(r.phone, "+91 98765 43210")
@@ -170,14 +170,14 @@ class TestAtsChecker(unittest.TestCase):
         self.assertEqual((layout.tables, layout.images, layout.text_boxes, layout.multi_column), (0, 0, 0, False))
         self.assertEqual(layout.header_footer_text, "")
         text = extract_text_from_docx(content)
-        self.assertIn("Alex Sample", text)
+        self.assertIn("ALEX SAMPLE", text)
         self.assertIn("• Built a responsive portal", text)
 
 
 class TestEditEndpoints(unittest.TestCase):
     def test_analyze_returns_resume_and_ats(self):
         payload = client.post("/api/analyze", json={"resume_text": STUDENT_RESUME, "job_text": JOB}).json()
-        self.assertEqual(payload["resume"]["name"], "Alex Sample")
+        self.assertEqual(payload["resume"]["name"], "ALEX SAMPLE")
         self.assertIn(payload["ats"]["verdict"], ["ATS-friendly", "Needs a few fixes", "Needs work"])
         self.assertTrue(0 <= payload["ats"]["score"] <= 100)
 

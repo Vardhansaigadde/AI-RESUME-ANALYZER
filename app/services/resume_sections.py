@@ -387,7 +387,7 @@ def parse_resume(text: str) -> StructuredResume:
                 resume.location = place
             continue
         if not resume.name and len(cleaned.split()) <= 5 and re.fullmatch(r"[A-Za-z .'-]+", cleaned):
-            resume.name = cleaned.title() if cleaned.isupper() else cleaned
+            resume.name = cleaned  # exactly as the student wrote it ("GADDE JASWITHA" stays in capitals)
         elif resume.name and not resume.headline and len(cleaned.split()) <= 12 and len(cleaned) >= 4:
             resume.headline = cleaned
     if not sections and len(header) > 2:
